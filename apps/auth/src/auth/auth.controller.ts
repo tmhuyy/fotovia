@@ -12,12 +12,12 @@ import { JwtAuthGuard } from './guard/jwt-auth.guard';
 export class AuthController {
     constructor(private readonly authService: AuthService) {}
 
-    @UseGuards(JwtAuthGuard)
-    @Get('/protected')
-    hello(@GetUser() user: User) {
-        console.log(user);
-        return `Here is ${user.id}`;
-    }
+    // @UseGuards(JwtAuthGuard)
+    // @Get('/protected')
+    // hello(@GetUser() user: User) {
+    //     console.log(user);
+    //     return `Here is ${user.id}`;
+    // }
 
     @Post('/signup')
     signUp(@Body() createUserDto: CreateUserDto) {
