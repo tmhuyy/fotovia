@@ -11,6 +11,7 @@ import * as bcrypt from 'bcrypt';
 import { SignInUserDto } from '../dtos/signin-user.dto';
 import { AccessToken } from '../interface/access-token.interface';
 import { InjectRepository } from '@nestjs/typeorm';
+import { CheckUserTypeEnum } from '../enum/check-user.type.enum';
 
 @Injectable()
 export class UserRepository extends Repository<User> {
@@ -36,25 +37,29 @@ export class UserRepository extends Repository<User> {
 
             await this.repo.save(user);
         } catch (err) {
+            console.log(err.detail);
             throw new BadRequestException(`Sign up Failed`);
         }
     }
 
-    async checkUser(username: string) {
+    async checkUser(value: string, type: CheckUserTypeEnum) {
         const foundUser = await this.repo.findOne({
             where: {
-                username,
+                [type]: value,
             },
         });
 
         if (!foundUser) throw new NotFoundException('User is not exist');
-        return foundUser
+        return foundUser;
     }
 
-    async signIn(signInUserDto: SignInUserDto): Promise<AccessToken> {
+    async signIn(signInUserDto: SignInUserDto) {
         const { username, password } = signInUserDto;
 
-        const foundUser = await this.checkUser(username)
+        const foundUser = await this.checkUser(
+            username,
+            CheckUserTypeEnum.USERNAME,
+        );
 
         const result: boolean = await bcrypt.compare(
             password,
@@ -64,10 +69,20 @@ export class UserRepository extends Repository<User> {
         if (!result)
             throw new UnauthorizedException('Username or Password is wrong');
 
-        const payload = {
-            username
-        };
-        return payload;
+        // const payload = {
+        //     username,
+        //     userId: foundUser.id
+        // };
+        return foundUser;
     }
 
+    async updateHashedRefreshToken(
+        userId: string,
+        refreshTokenValue: string | null,
+    ) {
+        const user = await this.repo.findOne({ where: { id: userId } });
+        const updatedUser = { ...user, hashedRefreshToken: refreshTokenValue };
+        const result = this.repo.save(updatedUser);
+        return result;
+    }
 }
