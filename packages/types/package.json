@@ -25,6 +25,7 @@
     },
     "dependencies": {
         "@nestjs/mapped-types": "^2.1.0",
+        "@nestjs/swagger": "^11.2.0",
         "class-validator": "^0.14.2",
         "typeorm": "^0.3.27"
     }

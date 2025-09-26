@@ -73,14 +73,4 @@ export class UserRepository extends Repository<User> {
     //     // };
     //     return foundUser;
     // }
-
-    async updateHashedRefreshToken(
-        userId: string,
-        refreshTokenValue: string | null,
-    ) {
-        const user = await this.repo.findOne({ where: { id: userId } });
-        const updatedUser = { ...user, hashedRefreshToken: refreshTokenValue };
-        const result = this.repo.save(updatedUser);
-        return result;
-    }
 }
