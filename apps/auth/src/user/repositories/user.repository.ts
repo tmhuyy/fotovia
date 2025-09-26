@@ -6,12 +6,10 @@ import {
     NotFoundException,
     UnauthorizedException,
 } from '@nestjs/common';
-import { CreateUserDto } from '../dtos/create-user.dto';
 import * as bcrypt from 'bcrypt';
-import { SignInUserDto } from '../dtos/signin-user.dto';
-import { AccessToken } from '../interface/access-token.interface';
+import { CreateUserDto, SignInUserDto } from '@repo/types';
 import { InjectRepository } from '@nestjs/typeorm';
-import { CheckUserTypeEnum } from '../enum/check-user.type.enum';
+import { CheckUserTypeEnum } from "@repo/types"
 
 @Injectable()
 export class UserRepository extends Repository<User> {
@@ -53,28 +51,28 @@ export class UserRepository extends Repository<User> {
         return foundUser;
     }
 
-    async signIn(signInUserDto: SignInUserDto) {
-        const { username, password } = signInUserDto;
+    // async signIn(signInUserDto: SignInUserDto) {
+    //     const { username, password } = signInUserDto;
 
-        const foundUser = await this.checkUser(
-            username,
-            CheckUserTypeEnum.USERNAME,
-        );
+    //     const foundUser = await this.checkUser(
+    //         username,
+    //         CheckUserTypeEnum.USERNAME,
+    //     );
 
-        const result: boolean = await bcrypt.compare(
-            password,
-            foundUser.password,
-        );
+    //     const result: boolean = await bcrypt.compare(
+    //         password,
+    //         foundUser.password,
+    //     );
 
-        if (!result)
-            throw new UnauthorizedException('Username or Password is wrong');
+    //     if (!result)
+    //         throw new UnauthorizedException('Username or Password is wrong');
 
-        // const payload = {
-        //     username,
-        //     userId: foundUser.id
-        // };
-        return foundUser;
-    }
+    //     // const payload = {
+    //     //     username,
+    //     //     userId: foundUser.id
+    //     // };
+    //     return foundUser;
+    // }
 
     async updateHashedRefreshToken(
         userId: string,

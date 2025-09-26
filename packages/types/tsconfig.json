@@ -7,6 +7,6 @@
         "experimentalDecorators": true,
         "emitDecoratorMetadata": true
     },
-    "include": ["src"],
+    "include": ["src", "../../apps/auth/src/auth/enum"],
     "exclude": ["node_modules", "dist"]
 }

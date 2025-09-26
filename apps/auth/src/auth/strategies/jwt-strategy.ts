@@ -1,15 +1,16 @@
-import { UserRepository } from '../repositories/user.repository';
+import { UserService } from 'src/user/user.service';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import { SignInUserDto } from '../dtos/signin-user.dto';
-import { User } from '../entities/user.entity';
 import { ConfigService } from '@nestjs/config';
+import { SignInUserDto } from '@repo/types';
+import { User } from 'src/user/entities/user.entity';
+import { JwtValidation } from '../interface/jwt-validation.payload.interface';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
     constructor(
-        private readonly userRepository: UserRepository,
+        private readonly userService: UserService,
         private readonly configService: ConfigService,
     ) {
         super({
@@ -18,10 +19,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         });
     }
 
-    async validate(payload: SignInUserDto): Promise<User> {
+    async validate(payload: JwtValidation): Promise<User> {
         // doing sth after access token is valid
-        const { username } = payload;
-        const user = await this.userRepository.findOne({ where: { username } });
+        const { userId } = payload;
+        const user = await this.userService.findOne({ id: userId });
 
         if (!user) throw new UnauthorizedException('User is not exist');
 

@@ -4,20 +4,23 @@ import {
     NotFoundException,
     UnauthorizedException,
 } from '@nestjs/common';
-import { UserRepository } from './repositories/user.repository';
-import { CreateUserDto } from './dtos/create-user.dto';
-import { SignInUserDto } from './dtos/signin-user.dto';
+
 import { JwtService } from '@nestjs/jwt';
 import { RefreshTokenConfig } from './strategies/config/refresh-token.config';
 import { ConfigType } from '@nestjs/config';
-import { User } from './entities/user.entity';
-import { AccessToken } from './interface/access-token.interface';
+
 import * as bcrypt from 'bcrypt';
-import { CheckUserTypeEnum } from './enum/check-user.type.enum';
+import { CheckUserTypeEnum, CreateUserDto, SignInUserDto } from '@repo/types';
+import { UserService } from 'src/user/user.service';
+import { UserRepository } from 'src/user/repositories/user.repository';
+import { User } from 'src/user/entities/user.entity';
+import { RefreshTokenPayload } from './interface/refresh-token.payload.interface';
+import { AccessTokenPayload } from './interface/access-token.payload.interface';
 
 @Injectable()
 export class AuthService {
     constructor(
+        private readonly userService: UserService,
         private readonly userRepository: UserRepository,
         private readonly jwtService: JwtService,
         @Inject(RefreshTokenConfig.KEY)
@@ -33,13 +36,13 @@ export class AuthService {
     }
 
     signUp(createUserDto: CreateUserDto) {
-        return this.userRepository.createUser(createUserDto);
+        return this.userService.createUser(createUserDto);
     }
 
     async signIn(signInUserDto: SignInUserDto) {
-        const signedInUser = await this.userRepository.signIn(signInUserDto);
+        const signedInUser = await this.userService.signIn(signInUserDto);
 
-        const payload = {
+        const payload: AccessTokenPayload = {
             username: signedInUser.username,
             userId: signedInUser.id,
         };
@@ -51,10 +54,7 @@ export class AuthService {
 
         const hashedRefreshToken = await this.hashToken(refreshToken);
 
-        await this.userRepository.save({
-            ...signedInUser,
-            hashedRefreshToken,
-        });
+        await this.userService.save({ ...signedInUser, hashedRefreshToken });
 
         return { accessToken, refreshToken };
     }
@@ -67,7 +67,7 @@ export class AuthService {
 
         if (!compared) throw new UnauthorizedException('Invalid Refresh Token');
 
-        const payload = {
+        const payload: RefreshTokenPayload = {
             username: user.username,
             userId: user.id,
         };
@@ -79,33 +79,22 @@ export class AuthService {
 
         const hashedRefreshToken = await this.hashToken(refreshToken);
 
-        this.userRepository.save({
-            ...user,
-            hashedRefreshToken,
-        });
+        await this.userService.save({ ...user, hashedRefreshToken });
 
         return { accessToken, refreshToken };
     }
 
-    async findUser(userId: string) {
-        const foundUser = await this.userRepository.findOne({
-            where: { id: userId },
-        });
-        if (!foundUser) throw new NotFoundException('User is not exist');
+    // async findUser(userId: string) {
+    //     const foundUser = await this.userRepository.findOne({
+    //         where: { id: userId },
+    //     });
+    //     if (!foundUser) throw new NotFoundException('User is not exist');
 
-        return foundUser;
-    }
+    //     return foundUser;
+    // }
 
     async signOut(user: User) {
-        const foundUser = await this.userRepository.checkUser(
-            user.id,
-            CheckUserTypeEnum.USER_ID,
-        );
-
-        await this.userRepository.save({
-            ...foundUser,
-            hashedRefreshToken: null,
-        });
+        await this.userService.save({ ...user, hashedRefreshToken: null });
 
         return 'Success';
     }
