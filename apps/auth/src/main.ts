@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { ConfigService } from '@nestjs/config';
 
 async function bootstrap() {
     // const logger = new Logger();
@@ -24,6 +25,6 @@ async function bootstrap() {
     const documentFactory = () => SwaggerModule.createDocument(app, config);
     SwaggerModule.setup('api', app, documentFactory);
 
-    await app.listen(3000);
+    await app.listen(app.get(ConfigService).getOrThrow('PORT') || '3000');
 }
 bootstrap();
