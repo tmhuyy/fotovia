@@ -7,7 +7,9 @@ import { AuthGuard } from '@nestjs/passport';
 import { JwtAuthGuard } from './guard/jwt-auth.guard';
 import { CreateUserDto, SignInUserDto } from '@repo/types';
 import { User } from 'src/user/entities/user.entity';
+import { ApiBearerAuth } from '@nestjs/swagger';
 
+@ApiBearerAuth()
 @Controller('auth')
 export class AuthController {
     constructor(private readonly authService: AuthService) {}
