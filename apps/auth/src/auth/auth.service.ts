@@ -95,7 +95,5 @@ export class AuthService {
 
     async signOut(user: User) {
         await this.userService.save({ ...user, hashedRefreshToken: null });
-
-        return 'Success';
     }
 }
