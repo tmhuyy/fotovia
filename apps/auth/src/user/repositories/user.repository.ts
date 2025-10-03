@@ -2,6 +2,7 @@ import { DataSource, Repository } from 'typeorm';
 import { User } from '../entities/user.entity';
 import {
     BadRequestException,
+    ConflictException,
     Injectable,
     NotFoundException,
     UnauthorizedException,
@@ -9,13 +10,16 @@ import {
 import * as bcrypt from 'bcrypt';
 import { CreateUserDto, SignInUserDto } from '@repo/types';
 import { InjectRepository } from '@nestjs/typeorm';
-import { CheckUserTypeEnum } from "@repo/types"
+import { CheckUserTypeEnum } from '@repo/types';
+import { QueryFailedError } from 'typeorm';
+import { Logger } from '@nestjs/common';
 
 @Injectable()
 export class UserRepository extends Repository<User> {
     // constructor(private dataSource: DataSource) {
     //   super(User, dataSource.createEntityManager());
     // }
+    private readonly logger = new Logger(UserRepository.name);
 
     constructor(@InjectRepository(User) private repo: Repository<User>) {
         super(repo.target, repo.manager, repo.queryRunner);
@@ -35,8 +39,15 @@ export class UserRepository extends Repository<User> {
 
             await this.repo.save(user);
         } catch (err) {
-            console.log(err.detail);
-            throw new BadRequestException(`Sign up Failed`);
+            if (err instanceof QueryFailedError) {
+                // Postgres error codes: https://www.postgresql.org/docs/current/errcodes-appendix.html
+                if ((err as any).code === '23505') {
+                    this.logger.error('Duplicate username error', err.stack);
+
+                    throw new ConflictException('Username already exists');
+                }
+            }
+            throw new BadRequestException(`Sign up failed`);
         }
     }
 

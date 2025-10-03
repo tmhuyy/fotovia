@@ -16,7 +16,8 @@ import { LoggerModule } from 'nestjs-pino';
             imports: [ConfigModule],
             inject: [ConfigService],
             useFactory: async (configService: ConfigService) => {
-                const isProduction = configService.get('ENV');
+                // const isProduction = configService.get('ENV') === "DEV";
+                const isProduction = true
                 return {
                     pinoHttp: {
                         transport: isProduction
@@ -24,7 +25,9 @@ import { LoggerModule } from 'nestjs-pino';
                             : {
                                   target: 'pino-pretty',
                                   options: {
-                                      singleLine: true,
+                                      colorize: true,
+                                      singleLine: false,
+                                      levelFirst: true,
                                   },
                               },
                         level: isProduction ? 'info' : 'debug',
