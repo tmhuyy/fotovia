@@ -4,10 +4,12 @@ import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import { Logger } from 'nestjs-pino';
+import { ResponseInterceptor } from './response.interceptor';
 
 async function bootstrap() {
     // const logger = new Logger();
     const app = await NestFactory.create(AppModule);
+    app.useGlobalInterceptors(new ResponseInterceptor());
     app.useLogger(app.get(Logger));
     app.useGlobalPipes(
         new ValidationPipe({
