@@ -26,14 +26,14 @@ export class UserRepository extends Repository<User> {
     }
 
     async createUser(createUserDto: CreateUserDto) {
-        const { username, password } = createUserDto;
+        const { email, password } = createUserDto;
 
         const salt = await bcrypt.genSalt();
         const hashedPassword = await bcrypt.hash(password, salt);
 
         try {
             const user = this.repo.create({
-                username,
+                email,
                 password: hashedPassword,
             });
 
@@ -42,7 +42,7 @@ export class UserRepository extends Repository<User> {
             if (err instanceof QueryFailedError) {
                 // Postgres error codes: https://www.postgresql.org/docs/current/errcodes-appendix.html
                 if ((err as any).code === '23505') {
-                    this.logger.error('Duplicate username error', err.stack);
+                    this.logger.error('Duplicate email error', err.stack);
 
                     throw new ConflictException('Username already exists');
                 }
@@ -63,10 +63,10 @@ export class UserRepository extends Repository<User> {
     }
 
     // async signIn(signInUserDto: SignInUserDto) {
-    //     const { username, password } = signInUserDto;
+    //     const { email, password } = signInUserDto;
 
     //     const foundUser = await this.checkUser(
-    //         username,
+    //         email,
     //         CheckUserTypeEnum.USERNAME,
     //     );
 
@@ -79,7 +79,7 @@ export class UserRepository extends Repository<User> {
     //         throw new UnauthorizedException('Username or Password is wrong');
 
     //     // const payload = {
-    //     //     username,
+    //     //     email,
     //     //     userId: foundUser.id
     //     // };
     //     return foundUser;

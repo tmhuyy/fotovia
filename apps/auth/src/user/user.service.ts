@@ -18,11 +18,11 @@ export class UserService {
     }
 
     async signIn(signInUserDto: SignInUserDto) {
-        const { username, password } = signInUserDto;
+        const { email, password } = signInUserDto;
 
         const foundUser = await this.checkUser(
-            username,
-            CheckUserTypeEnum.USERNAME,
+            email,
+            CheckUserTypeEnum.EMAIL,
         );
 
         const result: boolean = await bcrypt.compare(
@@ -34,7 +34,7 @@ export class UserService {
             throw new UnauthorizedException('Username or Password is wrong');
 
         // const payload = {
-        //     username,
+        //     email,
         //     userId: foundUser.id
         // };
         return foundUser;

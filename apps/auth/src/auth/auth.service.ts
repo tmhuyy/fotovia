@@ -43,7 +43,7 @@ export class AuthService {
         const signedInUser = await this.userService.signIn(signInUserDto);
 
         const payload: AccessTokenPayload = {
-            username: signedInUser.username,
+            email: signedInUser.email,
             userId: signedInUser.id,
         };
 
@@ -68,7 +68,7 @@ export class AuthService {
         if (!compared) throw new UnauthorizedException('Invalid Refresh Token');
 
         const payload: RefreshTokenPayload = {
-            username: user.username,
+            email: user.email,
             userId: user.id,
         };
 

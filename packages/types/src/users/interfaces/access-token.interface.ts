@@ -1,4 +1,3 @@
-export interface AccessToken
-{
-    username: string
-}
+// export interface AccessToken {
+//     email: string;
+// }

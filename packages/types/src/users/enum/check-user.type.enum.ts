@@ -1,4 +1,4 @@
 export enum CheckUserTypeEnum {
-    USERNAME = "username",
+    EMAIL = "email",
     USER_ID = "id"
 }

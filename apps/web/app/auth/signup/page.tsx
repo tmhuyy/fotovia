@@ -10,8 +10,8 @@ export default function Signup() {
         <form action={formAction} className="w-full max-w-xs">
             <Stack spacing={2} >
                 <TextField
-                    name="username"
-                    label="Username"
+                    name="email"
+                    label="email"
                     variant="outlined"
                     type="text"
                 />
