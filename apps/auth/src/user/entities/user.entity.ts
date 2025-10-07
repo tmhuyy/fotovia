@@ -1,3 +1,4 @@
+import { Moment } from 'moment';
 import {
     Column,
     CreateDateColumn,
@@ -14,14 +15,17 @@ export class User {
     email: string;
     @Column()
     password: string;
-    @Column({ default: null })
+    @Column({ nullable: true })
     hashedRefreshToken: string | null;
 
-    @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+    @Column({ nullable: true, type: 'timestamptz' })
+    loggedInAt: Moment;
+
+    @CreateDateColumn({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
     createdAt: Date;
 
     @UpdateDateColumn({
-        type: 'timestamp',
+        type: 'timestamptz',
         default: () => 'CURRENT_TIMESTAMP',
         onUpdate: 'CURRENT_TIMESTAMP',
     })

@@ -7,8 +7,9 @@ import {
 
 import { JwtService } from '@nestjs/jwt';
 import { RefreshTokenConfig } from './strategies/config/refresh-token.config';
-import { ConfigType } from '@nestjs/config';
-
+import { ConfigService, ConfigType } from '@nestjs/config';
+import * as moment from 'moment';
+import * as ms from 'ms';
 import * as bcrypt from 'bcrypt';
 import { CheckUserTypeEnum, CreateUserDto, SignInUserDto } from '@repo/types';
 import { UserService } from 'src/user/user.service';
@@ -27,6 +28,7 @@ export class AuthService {
         private readonly refreshTokenConfig: ConfigType<
             typeof RefreshTokenConfig
         >,
+        private readonly configService: ConfigService,
     ) {}
 
     async hashToken(value: string) {
@@ -44,7 +46,6 @@ export class AuthService {
         // const signedInUser = await this.userService.signIn(signInUserDto);
         ///
         const payload: AccessTokenPayload = {
-            email: user.email,
             userId: user.id,
         };
 
@@ -55,12 +56,46 @@ export class AuthService {
 
         const hashedRefreshToken = await this.hashToken(refreshToken);
 
-        await this.userService.save({ ...user, hashedRefreshToken });
+        await this.userService.save({
+            ...user,
+            hashedRefreshToken,
+            loggedInAt: moment(Date.now()),
+        });
 
         return { accessToken, refreshToken };
     }
 
+    checkExpiredRefreshToken(loggedInAt: moment.Moment) {
+        const refreshTokenExpiredTimeMs = ms(
+            this.configService.getOrThrow<string>(
+                'REFRESH_JWT_EXPIRE_IN',
+            ) as unknown as ms.StringValue,
+        );
+
+        const now = moment.utc();
+        const elapsedMs = now.diff(moment.utc(loggedInAt), 'milliseconds');
+
+        console.log(
+            `---DEBUG---refreshTokenExpiredTimeMs: ${refreshTokenExpiredTimeMs}`,
+        );
+        console.log(`---DEBUG---now:${now}`);
+        console.log(`---DEBUG---loggedInAtUtc:${moment.utc(loggedInAt)}`);
+        console.log(
+            `---DEBUG---duration between loggedInAt and now : ${now.diff(moment.utc(loggedInAt), 'minute')} mins`,
+        );
+
+        if (elapsedMs > refreshTokenExpiredTimeMs) {
+            throw new UnauthorizedException('Expired Refresh Token');
+        }
+    }
+
     async refreshToken(user: User, refresh_token: string) {
+        try {
+            this.checkExpiredRefreshToken(user.loggedInAt);
+        } catch (err) {
+            throw new UnauthorizedException(err);
+        }
+
         const compared: boolean = await bcrypt.compare(
             refresh_token,
             user.hashedRefreshToken,
@@ -69,7 +104,6 @@ export class AuthService {
         if (!compared) throw new UnauthorizedException('Invalid Refresh Token');
 
         const payload: RefreshTokenPayload = {
-            email: user.email,
             userId: user.id,
         };
 
@@ -95,6 +129,10 @@ export class AuthService {
     // }
 
     async signOut(user: User) {
-        await this.userService.save({ ...user, hashedRefreshToken: null });
+        await this.userService.save({
+            ...user,
+            hashedRefreshToken: null,
+            loggedInAt: null,
+        });
     }
 }

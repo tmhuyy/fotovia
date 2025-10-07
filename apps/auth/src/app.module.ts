@@ -17,7 +17,7 @@ import { LoggerModule } from 'nestjs-pino';
             inject: [ConfigService],
             useFactory: async (configService: ConfigService) => {
                 // const isProduction = configService.get('ENV') === "DEV";
-                const isProduction = true
+                const isProduction = true;
                 return {
                     pinoHttp: {
                         transport: isProduction
