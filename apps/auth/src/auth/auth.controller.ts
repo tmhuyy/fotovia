@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Res, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
 
 import { RefreshAuthGuard } from './guard/refresh-auth.guard';
@@ -7,7 +7,8 @@ import { AuthGuard } from '@nestjs/passport';
 import { JwtAuthGuard } from './guard/jwt-auth.guard';
 import { CreateUserDto, SignInUserDto } from '@repo/types';
 import { User } from 'src/user/entities/user.entity';
-import { ApiBearerAuth } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody } from '@nestjs/swagger';
+import { LocalAuthGuard } from './guard/local-auth.guard';
 
 @ApiBearerAuth()
 @Controller('auth')
@@ -26,9 +27,14 @@ export class AuthController {
         return this.authService.signUp(createUserDto);
     }
 
-    @Post('/signin')
-    signIn(@Body() signInUserDto: SignInUserDto) {
-        return this.authService.signIn(signInUserDto);
+    @UseGuards(LocalAuthGuard)
+    @Post('/login')
+    @ApiBody({ type: SignInUserDto })
+    signIn(
+        @GetUser() user: User,
+        // @Res({ passthrough: true }) response: Response,
+    ) {
+        return this.authService.signIn(user);
     }
 
     @UseGuards(RefreshAuthGuard)

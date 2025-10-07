@@ -39,12 +39,13 @@ export class AuthService {
         return this.userService.createUser(createUserDto);
     }
 
-    async signIn(signInUserDto: SignInUserDto) {
-        const signedInUser = await this.userService.signIn(signInUserDto);
-
+    async signIn(user: User) {
+        ///
+        // const signedInUser = await this.userService.signIn(signInUserDto);
+        ///
         const payload: AccessTokenPayload = {
-            email: signedInUser.email,
-            userId: signedInUser.id,
+            email: user.email,
+            userId: user.id,
         };
 
         const [accessToken, refreshToken] = await Promise.all([
@@ -54,7 +55,7 @@ export class AuthService {
 
         const hashedRefreshToken = await this.hashToken(refreshToken);
 
-        await this.userService.save({ ...signedInUser, hashedRefreshToken });
+        await this.userService.save({ ...user, hashedRefreshToken });
 
         return { accessToken, refreshToken };
     }

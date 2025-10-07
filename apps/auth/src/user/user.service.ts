@@ -17,13 +17,23 @@ export class UserService {
         return this.userRepository.createUser(createUserDto);
     }
 
+    async verifyUser(email: string, password: string) {
+        const foundUser = await this.checkUser(email, CheckUserTypeEnum.EMAIL);
+
+        const result: boolean = await bcrypt.compare(
+            password,
+            foundUser.password,
+        );
+
+        if (!result)
+            throw new UnauthorizedException('Username or Password is wrong');
+        return foundUser;
+    }
+
     async signIn(signInUserDto: SignInUserDto) {
         const { email, password } = signInUserDto;
 
-        const foundUser = await this.checkUser(
-            email,
-            CheckUserTypeEnum.EMAIL,
-        );
+        const foundUser = await this.checkUser(email, CheckUserTypeEnum.EMAIL);
 
         const result: boolean = await bcrypt.compare(
             password,

@@ -9,6 +9,7 @@ import { AccessTokenConfig } from './strategies/config/access-token.config';
 import { RefreshTokenConfig } from './strategies/config/refresh-token.config';
 import { RefreshJwtStrategy } from './strategies/refresh-fwt-strategy';
 import { UserModule } from 'src/user/user.module';
+import { LocalStrategy } from './strategies/local-strategy';
 
 @Module({
     imports: [
@@ -30,7 +31,7 @@ import { UserModule } from 'src/user/user.module';
         // }),
         UserModule, // or just UserModule if there's no circular dependency
     ],
-    providers: [AuthService, JwtStrategy, RefreshJwtStrategy],
+    providers: [AuthService, JwtStrategy, RefreshJwtStrategy, LocalStrategy],
     exports: [JwtStrategy, RefreshJwtStrategy, PassportModule], // any module import authModule can use these dependency injection
     controllers: [AuthController],
 })
