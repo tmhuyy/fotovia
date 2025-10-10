@@ -6,6 +6,7 @@ import { ConfigService } from '@nestjs/config';
 import { SignInUserDto } from '@repo/types';
 import { User } from 'src/user/entities/user.entity';
 import { JwtValidation } from '../interface/jwt-validation.payload.interface';
+import { Request } from 'express';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -15,7 +16,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     ) {
         super({
             secretOrKey: configService.get('JWT_SECRET'),
-            jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+            // jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(), //get access token from header
+            jwtFromRequest: ExtractJwt.fromExtractors([
+                (req: Request) => req?.cookies?.Authentication,
+            ]),
         });
     }
 
