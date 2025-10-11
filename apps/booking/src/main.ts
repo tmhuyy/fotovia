@@ -5,13 +5,12 @@ import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import { Logger } from 'nestjs-pino';
-// import { ResponseInterceptor } from './response.interceptor';
-
+import { ResponseInterceptor } from '@repo/common';
 
 async function bootstrap() {
- const app = await NestFactory.create(BookingModule);
+    const app = await NestFactory.create(BookingModule);
     app.use(cookieParser());
-    // app.useGlobalInterceptors(new ResponseInterceptor());
+    app.useGlobalInterceptors(new ResponseInterceptor());
     // app.useLogger(app.get(Logger));
     app.useGlobalPipes(
         new ValidationPipe({
