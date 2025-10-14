@@ -18,11 +18,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
             secretOrKey: configService.get('JWT_SECRET'),
             // jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(), //get access token from header
             jwtFromRequest: ExtractJwt.fromExtractors([
-                (req: Request) => req?.cookies?.Authentication,
+                (req: any) =>
+                    req?.cookies?.Authentication || req?.Authentication,
             ]),
         });
     }
 
+    //4th
     async validate(payload: JwtValidation): Promise<User> {
         // doing sth after access token is valid
         const { userId } = payload;
@@ -30,6 +32,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
         if (!user) throw new UnauthorizedException('User is not exist');
 
-        return user; // store in request body
+        return user; // store in request body -> req.user (default in passport)
     }
 }

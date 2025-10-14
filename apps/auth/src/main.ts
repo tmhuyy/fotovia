@@ -6,9 +6,19 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import { Logger } from 'nestjs-pino';
 import { ResponseInterceptor } from '@repo/common';
+import { Transport } from '@nestjs/microservices';
+
 async function bootstrap() {
     // const logger = new Logger();
     const app = await NestFactory.create(AppModule);
+    const configService = app.get(ConfigService)
+    app.connectMicroservice({
+        transport: Transport.TCP,
+        options: {
+            host: '0.0.0.0',
+            port: configService.getOrThrow('TCP_PORT')
+        },
+    });
     app.use(cookieParser());
     app.useGlobalInterceptors(new ResponseInterceptor());
     app.useLogger(app.get(Logger));
@@ -29,7 +39,7 @@ async function bootstrap() {
 
     const documentFactory = () => SwaggerModule.createDocument(app, config);
     SwaggerModule.setup('api', app, documentFactory);
-
-    await app.listen(app.get(ConfigService).getOrThrow('PORT') || '3000');
+    await app.startAllMicroservices();
+    await app.listen(configService.getOrThrow('HTTP_PORT') || '3000');
 }
 bootstrap();

@@ -6,7 +6,7 @@ import { CreateBookingDto } from './dtos/create-booking.dto';
 export class BookingService {
     constructor(private readonly bookingRepository: BookingRepository) {}
 
-    async createBooking(createBookingDto: CreateBookingDto) {
+    async createBooking(createBookingDto: CreateBookingDto, userId: string) {
         const booking = this.bookingRepository.create({ ...createBookingDto });
 
         await this.bookingRepository.save(booking);

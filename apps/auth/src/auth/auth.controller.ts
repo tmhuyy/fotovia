@@ -10,21 +10,23 @@ import {
 import { AuthService } from './auth.service';
 
 import { RefreshAuthGuard } from './guard/refresh-auth.guard';
-import { GetUser } from './decorator/get-user.decorator';
+import { GetUser } from '@repo/common';
 import { AuthGuard } from '@nestjs/passport';
-import { JwtAuthGuard } from './guard/jwt-auth.guard';
+import { JwtStrategyAuthGuard } from './guard/jwt-auth.guard';
 import { CreateUserDto, SignInUserDto } from '@repo/types';
 import { User } from 'src/user/entities/user.entity';
 import { ApiBearerAuth, ApiBody } from '@nestjs/swagger';
 import { LocalAuthGuard } from './guard/local-auth.guard';
 import { Request, Response } from 'express';
+import { MessagePattern, Payload } from '@nestjs/microservices';
 
 @ApiBearerAuth()
 @Controller('auth')
 export class AuthController {
     constructor(private readonly authService: AuthService) {}
 
-    @UseGuards(JwtAuthGuard)
+    // http transport
+    @UseGuards(JwtStrategyAuthGuard)
     @Get('/me')
     hello(@GetUser() user: User) {
         console.log(user);
@@ -56,9 +58,20 @@ export class AuthController {
         return this.authService.refreshToken(user, response, request);
     }
 
-    @UseGuards(JwtAuthGuard)
+    @UseGuards(JwtStrategyAuthGuard)
     @Post('/signout')
     signout(@GetUser() user: User) {
         return this.authService.signOut(user);
+    }
+
+    // rpc transport
+    //3rd
+    @UseGuards(JwtStrategyAuthGuard)
+    @MessagePattern('authenticate')
+    async authenticate(
+        @Payload() data: any, // here is the returned data from request + returned result after validate JWT strategy -> is user object
+    ): Promise<User> {
+        //5th
+        return data.user; 
     }
 }

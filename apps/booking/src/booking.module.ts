@@ -7,6 +7,8 @@ import { LoggerModule } from 'nestjs-pino';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BookingRepository } from './repositories/booking.repository';
 import { Booking } from './entities/booking.entity';
+import { ClientsModule, Transport } from '@nestjs/microservices';
+import { AUTH_SERVICE } from '@repo/common';
 
 @Module({
     imports: [
@@ -31,7 +33,23 @@ import { Booking } from './entities/booking.entity';
                 };
             },
         }),
-        TypeOrmModule.forFeature([Booking])
+        TypeOrmModule.forFeature([Booking]),
+        ClientsModule.registerAsync([
+            {
+                name: AUTH_SERVICE,
+                imports: [ConfigModule],
+                inject: [ConfigService],
+                useFactory: async (configService: ConfigService) => {
+                    return {
+                        transport: Transport.TCP,
+                        options: {
+                            host: configService.get('AUTH_TCP_HOST'),
+                            port: configService.get('AUTH_TCP_PORT'),
+                        },
+                    };
+                },
+            },
+        ]),
     ],
     providers: [BookingService, BookingRepository],
     controllers: [BookingController],

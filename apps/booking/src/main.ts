@@ -9,6 +9,7 @@ import { ResponseInterceptor } from '@repo/common';
 
 async function bootstrap() {
     const app = await NestFactory.create(BookingModule);
+    const configService = app.get(ConfigService)
     app.use(cookieParser());
     app.useGlobalInterceptors(new ResponseInterceptor());
     // app.useLogger(app.get(Logger));
@@ -30,6 +31,6 @@ async function bootstrap() {
     const documentFactory = () => SwaggerModule.createDocument(app, config);
     SwaggerModule.setup('api', app, documentFactory);
 
-    await app.listen(app.get(ConfigService).getOrThrow('PORT') || '3000');
+    await app.listen(configService.getOrThrow('HTTP_PORT') || '4000');
 }
 bootstrap();
