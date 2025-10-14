@@ -6,9 +6,9 @@ import {
     PrimaryGeneratedColumn,
     UpdateDateColumn,
 } from 'typeorm';
-
+import { IUser } from '@repo/common';
 @Entity()
-export class User {
+export class User implements IUser {
     @PrimaryGeneratedColumn('uuid')
     id: string;
     @Column({ unique: true })
@@ -21,7 +21,10 @@ export class User {
     @Column({ nullable: true, type: 'timestamptz' })
     loggedInAt: Moment;
 
-    @CreateDateColumn({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
+    @CreateDateColumn({
+        type: 'timestamptz',
+        default: () => 'CURRENT_TIMESTAMP',
+    })
     createdAt: Date;
 
     @UpdateDateColumn({
