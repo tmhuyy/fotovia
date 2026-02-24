@@ -12,29 +12,29 @@ import { LoggerModule } from 'nestjs-pino';
             envFilePath: [`.env`],
             validationSchema: ConfigSchemaValidation,
         }),
-        LoggerModule.forRootAsync({
-            imports: [ConfigModule],
-            inject: [ConfigService],
-            useFactory: async (configService: ConfigService) => {
-                // const isProduction = configService.get('ENV') === "DEV";
-                const isProduction = true;
-                return {
-                    pinoHttp: {
-                        transport: isProduction
-                            ? undefined
-                            : {
-                                  target: 'pino-pretty',
-                                  options: {
-                                      colorize: true,
-                                      singleLine: false,
-                                      levelFirst: true,
-                                  },
-                              },
-                        level: isProduction ? 'info' : 'debug',
-                    },
-                };
-            },
-        }),
+        // LoggerModule.forRootAsync({
+        //     imports: [ConfigModule],
+        //     inject: [ConfigService],
+        //     useFactory: async (configService: ConfigService) => {
+        //         // const isProduction = configService.get('ENV') === "DEV";
+        //         const isProduction = true;
+        //         return {
+        //             pinoHttp: {
+        //                 transport: isProduction
+        //                     ? undefined
+        //                     : {
+        //                           target: 'pino-pretty',
+        //                           options: {
+        //                               colorize: true,
+        //                               singleLine: false,
+        //                               levelFirst: true,
+        //                           },
+        //                       },
+        //                 level: isProduction ? 'info' : 'debug',
+        //             },
+        //         };
+        //     },
+        // }),
         TypeOrmModule.forRootAsync({
             imports: [ConfigModule],
             inject: [ConfigService],
@@ -42,12 +42,15 @@ import { LoggerModule } from 'nestjs-pino';
                 return {
                     type: 'postgres',
                     autoLoadEntities: true,
-                    synchronize: true, // for data migration,
+                    synchronize: configService.get('ENV') === 'DEV', // for data migration,
                     host: configService.get('DB_HOST'),
                     port: configService.get('DB_PORT'),
                     username: configService.get('DB_USERNAME'),
                     password: configService.get('DB_PASSWORD'),
                     database: configService.get('DB_DATABASE'),
+                    ssl: {
+                        rejectUnauthorized: false,
+                    },
                 };
             },
         }),
