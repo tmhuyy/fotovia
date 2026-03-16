@@ -21,4 +21,8 @@ export class ProfileService {
     ): Promise<Profile> {
         return this.profileRepository.updateProfile(updateProfileDto, userId);
     }
+
+    async getMyProfile(userId: string): Promise<Profile> {
+        return this.profileRepository.getProfileByUserId(userId);
+    }
 }

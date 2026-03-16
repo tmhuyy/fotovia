@@ -1,5 +1,10 @@
-import { Body, Controller, Patch, Post, UseGuards } from '@nestjs/common';
-import { ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, Patch, Post, UseGuards } from '@nestjs/common';
+import {
+    ApiCreatedResponse,
+    ApiOkResponse,
+    ApiOperation,
+    ApiTags,
+} from '@nestjs/swagger';
 import { ProfileService } from './profile.service';
 import { CreateProfileDto } from './dtos/create-profile.dto';
 import { Profile } from './entities/profile.entity';
@@ -11,8 +16,19 @@ import { UpdateProfileDto } from './dtos/update-profile.dto';
 export class ProfileController {
     constructor(private readonly profileService: ProfileService) {}
 
+    @UseGuards(JwtAuthGuard)
+    @Get('/me')
+    @ApiOperation({ summary: 'Get my profile' })
+    @ApiOkResponse({
+        description: 'Profile fetched successfully',
+        type: Profile,
+    })
+    async getMyProfile(@GetUser() user: IUser): Promise<Profile> {
+        return this.profileService.getMyProfile(user.id);
+    }
+
     @UseGuards(JwtAuthGuard) //1st
-    @Post("/me")
+    @Post('/me')
     @ApiOperation({ summary: 'Create a new profile' })
     @ApiCreatedResponse({
         description: 'Profile created successfully',
@@ -21,8 +37,7 @@ export class ProfileController {
     async createProfile(
         @Body() createProfileDto: CreateProfileDto,
         @GetUser() user: IUser,
-    ): Promise<Profile>
-    {
+    ): Promise<Profile> {
         return this.profileService.createProfile(createProfileDto, user.id);
     }
 

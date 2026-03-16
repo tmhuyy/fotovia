@@ -25,6 +25,18 @@ export class ProfileRepository extends Repository<Profile> {
         super(repo.target, repo.manager, repo.queryRunner);
     }
 
+    async getProfileByUserId(userId: string): Promise<Profile> {
+        const profile = await this.repo.findOne({
+            where: { userId },
+        });
+
+        if (!profile) {
+            throw new NotFoundException('Profile not found');
+        }
+
+        return profile;
+    }
+
     async createProfile(
         createProfileDto: CreateProfileDto,
         userId: string,
