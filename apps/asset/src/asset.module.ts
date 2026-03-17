@@ -6,9 +6,11 @@ import { ConfigSchemaValidation } from './config.schema';
 import { LoggerModule } from 'nestjs-pino';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AssetRepository } from './repositories/asset.repository';
-import { Booking } from './entities/booking.entity';
+import { Asset } from './entities/asset.entity';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { AUTH_SERVICE } from '@repo/common';
+import { AssetUploadSession } from './entities/asset-upload-session.entity';
+import { AssetUsage } from './entities/asset-usage.entity';
 
 @Module({
     imports: [
@@ -36,7 +38,7 @@ import { AUTH_SERVICE } from '@repo/common';
                 };
             },
         }),
-        TypeOrmModule.forFeature([Booking]),
+        TypeOrmModule.forFeature([Asset, AssetUploadSession, AssetUsage]),
         ClientsModule.registerAsync([
             {
                 name: AUTH_SERVICE,

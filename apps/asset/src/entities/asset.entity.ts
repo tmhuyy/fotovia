@@ -15,6 +15,7 @@ import {
     StorageProvider,
 } from '@repo/types';
 import { AssetUploadSession } from './asset-upload-session.entity';
+import { AssetUsage } from './asset-usage.entity';
 
 @Entity('assets')
 @Index('IDX_ASSETS_OWNER_PURPOSE_STATUS', ['ownerUserId', 'purpose', 'status'])
@@ -117,4 +118,7 @@ export class Asset {
 
     @OneToMany(() => AssetUploadSession, (uploadSession) => uploadSession.asset)
     uploadSessions: AssetUploadSession[];
+
+    @OneToMany(() => AssetUsage, (usage) => usage.asset)
+    usages: AssetUsage[];
 }
