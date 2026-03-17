@@ -31,6 +31,6 @@ async function bootstrap() {
     const documentFactory = () => SwaggerModule.createDocument(app, config);
     SwaggerModule.setup('api', app, documentFactory);
 
-    await app.listen(configService.getOrThrow('HTTP_PORT') || '4000');
+    // await app.listen(configService.getOrThrow('HTTP_PORT') || '4000');
 }
 bootstrap();
