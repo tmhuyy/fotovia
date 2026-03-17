@@ -11,10 +11,12 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
 import { AUTH_SERVICE } from '@repo/common';
 import { AssetUploadSession } from './entities/asset-upload-session.entity';
 import { AssetUsage } from './entities/asset-usage.entity';
+import { SupabaseModule } from './infrastructure/supabase/supabase.module';
 
 @Module({
     imports: [
         ConfigModule.forRoot({
+            isGlobal: true,
             envFilePath: [`.env`],
             validationSchema: ConfigSchemaValidation,
         }),
@@ -55,8 +57,9 @@ import { AssetUsage } from './entities/asset-usage.entity';
                 },
             },
         ]),
+        SupabaseModule,
     ],
     providers: [AssetService, AssetRepository],
     controllers: [AssetController],
 })
-export class BookingModule {}
+export class AssetModule {}

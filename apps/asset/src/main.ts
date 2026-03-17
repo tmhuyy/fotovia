@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import * as cookieParser from 'cookie-parser';
-import { BookingModule } from './asset.module';
+import { AssetModule } from './asset.module';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
@@ -8,7 +8,7 @@ import { Logger } from 'nestjs-pino';
 import { ResponseInterceptor } from '@repo/common';
 
 async function bootstrap() {
-    const app = await NestFactory.create(BookingModule);
+    const app = await NestFactory.create(AssetModule);
     const configService = app.get(ConfigService)
     app.use(cookieParser());
     app.useGlobalInterceptors(new ResponseInterceptor());

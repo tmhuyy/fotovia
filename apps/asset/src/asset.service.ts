@@ -7,7 +7,7 @@ export class AssetService {
     constructor(private readonly assetRepository: AssetRepository) {}
 
     async createBooking(createBookingDto: CreateBookingDto, userId: string) {
-        const booking = this.assetRepository.create({ ...createBookingDto });
+        const booking = this.assetRepository.create({ });
 
         await this.assetRepository.save(booking);
     }
