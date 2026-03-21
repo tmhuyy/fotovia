@@ -1,0 +1,36 @@
+import { Section } from "../common/section";
+import { Container } from "../layout/container";
+import { Button } from "../ui/button";
+
+export const CtaSection = () => {
+  return (
+    <Section>
+      <Container>
+        <div className="rounded-3xl bg-brand-primary px-8 py-12 text-brand-surface md:px-14 md:py-16">
+          <div className="grid gap-8 md:grid-cols-[1.2fr_0.8fr] md:items-center">
+            <div className="space-y-4">
+              <p className="text-xs uppercase tracking-[0.3em] text-brand-accent">
+                Start Booking
+              </p>
+              <h2 className="font-display text-3xl md:text-4xl">
+                Find a photographer who feels like the perfect fit.
+              </h2>
+              <p className="text-sm text-brand-surface/80 md:text-base">
+                Explore curated talent, upload inspiration, and send booking
+                requests in minutes.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-4 md:justify-end">
+              <Button size="lg" className="bg-brand-surface text-brand-primary">
+                Browse Photographers
+              </Button>
+              <Button size="lg" variant="secondary">
+                Try AI Matching
+              </Button>
+            </div>
+          </div>
+        </div>
+      </Container>
+    </Section>
+  );
+};
