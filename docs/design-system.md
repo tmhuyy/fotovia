@@ -1,4 +1,3 @@
-
 # Fotovia Design System
 
 ## Theme direction
@@ -39,28 +38,60 @@ Use the following token names inside Tailwind config:
 - `brand.border`
 - `brand.ai`
 
+## Semantic theme tokens
+
+Use semantic tokens in components so light and dark mode can share the same UI structure.
+
+Recommended semantic tokens:
+
+- `bg-background`
+- `bg-surface`
+- `text-foreground`
+- `text-muted`
+- `border-border`
+- `text-accent`
+- `bg-accent`
+- `text-ai`
+- `bg-ai`
+
+Components should prefer semantic tokens over direct brand tokens.
+
+## Dark mode foundation
+
+Dark mode uses the same semantic token names with dark values:
+
+- background: `#121110`
+- surface: `#1A1917`
+- foreground: `#F5F2ED`
+- muted: `#B9B0A7`
+- border: `#2A2723`
+- accent: `#C8A97E`
+- ai: `#A78BFA`
+
+Dark mode should feel premium, calm, and photography-focused with soft contrast and layered surfaces.
+
 ## Color usage rules
 
 ### Background
-The main page background should use `brand.background`.
+The main page background should use `brand.background` or `bg-background`.
 
 ### Surface
-Cards, panels, and content blocks should use `brand.surface`.
+Cards, panels, and content blocks should use `brand.surface` or `bg-surface`.
 
 ### Primary text
-Main text should use `brand.primary`.
+Main text should use `brand.primary` or `text-foreground`.
 
 ### Secondary text
-Supporting text should use `brand.muted`.
+Supporting text should use `brand.muted` or `text-muted`.
 
 ### Border
-Borders and dividers should use `brand.border`.
+Borders and dividers should use `brand.border` or `border-border`.
 
 ### Accent
-Highlights, badges, and subtle emphasis can use `brand.accent`.
+Highlights, badges, and subtle emphasis can use `brand.accent` or `accent` tokens.
 
 ### AI accent
-`brand.ai` should be used sparingly in AI-related sections only.
+`brand.ai` or `ai` tokens should be used sparingly in AI-related sections only.
 
 It should act as a supporting highlight, not the dominant brand color.
 

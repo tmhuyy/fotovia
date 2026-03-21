@@ -16,19 +16,19 @@ export const RoleIntro = () => {
         <div className="grid gap-6 md:grid-cols-2">
           <Card>
             <CardContent className="space-y-4">
-              <p className="text-xs uppercase tracking-[0.3em] text-brand-muted">
+              <p className="text-xs uppercase tracking-[0.3em] text-muted">
                 For clients
               </p>
-              <h3 className="font-display text-2xl text-brand-primary">
+              <h3 className="font-display text-2xl text-foreground">
                 Book photographers with confidence
               </h3>
-              <p className="text-sm leading-relaxed text-brand-muted">
+              <p className="text-sm leading-relaxed text-muted">
                 Browse curated portfolios, request sessions, and track every
                 booking in one place.
               </p>
               <Link
                 href="/photographers"
-                className="text-sm font-medium text-brand-primary"
+                className="text-sm font-medium text-foreground"
               >
                 Browse photographers
               </Link>
@@ -36,19 +36,19 @@ export const RoleIntro = () => {
           </Card>
           <Card>
             <CardContent className="space-y-4">
-              <p className="text-xs uppercase tracking-[0.3em] text-brand-muted">
+              <p className="text-xs uppercase tracking-[0.3em] text-muted">
                 For photographers
               </p>
-              <h3 className="font-display text-2xl text-brand-primary">
+              <h3 className="font-display text-2xl text-foreground">
                 Join a platform built for your craft
               </h3>
-              <p className="text-sm leading-relaxed text-brand-muted">
+              <p className="text-sm leading-relaxed text-muted">
                 Build your portfolio, receive booking requests, and manage
                 client communication effortlessly.
               </p>
               <Link
                 href="/sign-up?role=photographer"
-                className="text-sm font-medium text-brand-primary"
+                className="text-sm font-medium text-foreground"
               >
                 Become a photographer
               </Link>

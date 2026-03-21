@@ -12,9 +12,9 @@ export const AuthFooterLinks = ({
   href,
 }: AuthFooterLinksProps) => {
   return (
-    <p className="text-center text-sm text-brand-muted">
+    <p className="text-center text-sm text-muted">
       {text} {" "}
-      <Link href={href} className="font-medium text-brand-primary">
+      <Link href={href} className="font-medium text-foreground">
         {linkLabel}
       </Link>
     </p>

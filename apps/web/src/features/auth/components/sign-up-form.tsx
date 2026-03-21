@@ -71,15 +71,15 @@ export const SignUpForm = () => {
         <Button type="submit" className="w-full" disabled={isSubmitting}>
           {isSubmitting ? "Creating account..." : "Create Account"}
         </Button>
-        <p className="text-center text-xs text-brand-muted">
+        <p className="text-center text-xs text-muted">
           Prefer a sign-up link?{" "}
-          <Link href="/register-email" className="font-medium text-brand-primary">
+          <Link href="/register-email" className="font-medium text-foreground">
             Email me a link
           </Link>
         </p>
-        <p className="text-center text-xs text-brand-muted">
+        <p className="text-center text-xs text-muted">
           Already have an account?{" "}
-          <Link href="/sign-in" className="font-medium text-brand-primary">
+          <Link href="/sign-in" className="font-medium text-foreground">
             Sign in
           </Link>
         </p>

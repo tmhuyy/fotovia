@@ -35,7 +35,7 @@ export const PasswordField = ({
         <button
           type="button"
           onClick={() => setIsVisible((prev) => !prev)}
-          className="text-xs font-medium text-brand-muted hover:text-brand-primary"
+          className="text-xs font-medium text-muted hover:text-foreground"
         >
           {isVisible ? "Hide" : "Show"}
         </button>

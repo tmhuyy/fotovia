@@ -29,7 +29,7 @@ export const RoleSelector = () => {
 
   return (
     <div className="space-y-3">
-      <p className="text-sm font-medium text-brand-primary">
+      <p className="text-sm font-medium text-foreground">
         Choose your role
       </p>
       <div className="grid gap-3 md:grid-cols-2">
@@ -39,10 +39,10 @@ export const RoleSelector = () => {
             <label
               key={option.value}
               className={cn(
-                "cursor-pointer rounded-2xl border border-brand-border bg-brand-surface p-4 transition",
+                "cursor-pointer rounded-2xl border border-border bg-surface p-4 transition",
                 isActive
-                  ? "border-brand-primary bg-brand-background"
-                  : "hover:border-brand-accent"
+                  ? "border-foreground bg-background"
+                  : "hover:border-accent"
               )}
             >
               <input
@@ -51,10 +51,10 @@ export const RoleSelector = () => {
                 className="sr-only"
                 {...register("role")}
               />
-              <p className="text-sm font-medium text-brand-primary">
+              <p className="text-sm font-medium text-foreground">
                 {option.title}
               </p>
-              <p className="mt-2 text-xs text-brand-muted">
+              <p className="mt-2 text-xs text-muted">
                 {option.description}
               </p>
             </label>

@@ -108,6 +108,44 @@ This file tracks the progress of frontend tasks for Fotovia.
 - `apps/web/src/features/auth/schemas/sign-up.schema.ts`
 - `apps/web/src/features/auth/schemas/register-email.schema.ts`
 
+## Phase 4: Responsive and Dark Mode Foundation
+**Status:** Completed
+
+### Scope
+- Strengthen responsive behavior across homepage and auth flows
+- Introduce dark mode system and theme toggling
+- Convert components to semantic theme tokens
+
+### Delivered
+- Responsive refinements:
+  - Navbar now wraps and scales CTA actions on smaller screens.
+  - Section spacing and container padding adjusted for mobile-to-desktop rhythm.
+  - Card grids now adapt at `sm` and `lg` breakpoints.
+  - Auth shell and card padding adjusted for mobile comfort.
+- Dark mode foundation:
+  - Added `next-themes` provider and theme toggle component.
+  - Semantic color tokens introduced (`background`, `surface`, `foreground`, `muted`, `border`, `accent`, `ai`).
+  - Dark theme values defined with premium neutral contrast.
+  - Homepage and auth components updated to use semantic tokens.
+
+### Decisions
+- Dark mode uses CSS variable overrides on `.dark` with system theme as default.
+- Primary CTA colors invert using `bg-foreground` + `text-background` for contrast in both modes.
+
+### Notes
+- No API/auth logic changes.
+- Role-based flows remain UI-only.
+
+### Key Files
+- `apps/web/src/app/globals.css`
+- `apps/web/src/providers/theme-provider.tsx`
+- `apps/web/src/components/common/theme-toggle.tsx`
+- `apps/web/src/components/layout/container.tsx`
+- `apps/web/src/components/common/section.tsx`
+- `apps/web/src/components/home/navbar.tsx`
+- `apps/web/src/components/home/hero-section.tsx`
+- `apps/web/src/features/auth/components/auth-shell.tsx`
+
 ### Next Recommended Phase
 - Connect auth UI to real services in `services/auth.service.ts`.
 - Add `auth.store.ts` and `auth-token.ts` with real session handling.

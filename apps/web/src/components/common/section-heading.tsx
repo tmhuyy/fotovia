@@ -16,15 +16,15 @@ export const SectionHeading = ({
   return (
     <div className={cn("max-w-2xl space-y-4", className)}>
       {eyebrow ? (
-        <p className="text-xs uppercase tracking-[0.3em] text-brand-muted">
+        <p className="text-xs uppercase tracking-[0.3em] text-muted">
           {eyebrow}
         </p>
       ) : null}
-      <h2 className="font-display text-3xl text-brand-primary md:text-4xl">
+      <h2 className="font-display text-3xl text-foreground md:text-4xl">
         {title}
       </h2>
       {description ? (
-        <p className="text-base leading-relaxed text-brand-muted">
+        <p className="text-base leading-relaxed text-muted">
           {description}
         </p>
       ) : null}

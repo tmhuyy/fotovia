@@ -59,6 +59,7 @@ Suggested route groups:
   providers/
     app-provider.tsx
     query-provider.tsx
+    theme-provider.tsx
 
   store/
     auth.store.ts

@@ -10,7 +10,7 @@ import { Footer } from "./footer";
 
 export const HomePage = () => {
   return (
-    <div className="min-h-screen bg-brand-background">
+    <div className="min-h-screen bg-background">
       <Navbar />
       <main>
         <HeroSection />

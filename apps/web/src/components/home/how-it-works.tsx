@@ -29,19 +29,19 @@ export const HowItWorks = () => {
           title="A calm, guided booking experience"
           description="From discovery to confirmation, every step is designed for clarity and ease."
         />
-        <div className="grid gap-6 md:grid-cols-3">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {steps.map((step, index) => (
             <div
               key={step.title}
-              className="rounded-2xl border border-brand-border bg-brand-surface p-6 shadow-sm"
+              className="rounded-2xl border border-border bg-surface p-6 shadow-sm"
             >
-              <p className="text-xs uppercase tracking-[0.3em] text-brand-muted">
+              <p className="text-xs uppercase tracking-[0.3em] text-muted">
                 Step {index + 1}
               </p>
-              <h3 className="mt-4 font-display text-xl text-brand-primary">
+              <h3 className="mt-4 font-display text-xl text-foreground">
                 {step.title}
               </h3>
-              <p className="mt-3 text-sm leading-relaxed text-brand-muted">
+              <p className="mt-3 text-sm leading-relaxed text-muted">
                 {step.description}
               </p>
             </div>

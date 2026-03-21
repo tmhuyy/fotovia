@@ -35,7 +35,7 @@ export const AuthTextField = ({
       <div className="flex items-center justify-between">
         <Label htmlFor={name}>{label}</Label>
         {helperText ? (
-          <span className="text-xs text-brand-muted">{helperText}</span>
+          <span className="text-xs text-muted">{helperText}</span>
         ) : null}
       </div>
       <Input

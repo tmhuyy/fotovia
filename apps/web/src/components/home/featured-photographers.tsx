@@ -34,21 +34,21 @@ export const FeaturedPhotographers = () => {
           title="Photographers with a signature point of view"
           description="A curated selection of talent known for refined storytelling, light, and composition."
         />
-        <div className="grid gap-6 md:grid-cols-3">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {photographers.map((photographer) => (
             <Card key={photographer.name} className="overflow-hidden">
-              <div className="aspect-[4/3] w-full bg-gradient-to-br from-brand-background to-brand-surface" />
+              <div className="aspect-[4/3] w-full bg-gradient-to-br from-background to-surface" />
               <CardContent className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <p className="font-display text-xl text-brand-primary">
+                  <p className="font-display text-xl text-foreground">
                     {photographer.name}
                   </p>
                   <Badge variant="accent">{photographer.tag}</Badge>
                 </div>
-                <p className="text-sm text-brand-muted">
+                <p className="text-sm text-muted">
                   {photographer.specialty}
                 </p>
-                <p className="text-xs uppercase tracking-[0.2em] text-brand-muted">
+                <p className="text-xs uppercase tracking-[0.2em] text-muted">
                   {photographer.location}
                 </p>
               </CardContent>

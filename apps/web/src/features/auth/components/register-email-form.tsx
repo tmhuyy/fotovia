@@ -43,9 +43,9 @@ export const RegisterEmailForm = () => {
         <Button type="submit" className="w-full" disabled={isSubmitting}>
           {isSubmitting ? "Sending link..." : "Send Sign-up Link"}
         </Button>
-        <p className="text-center text-xs text-brand-muted">
+        <p className="text-center text-xs text-muted">
           Already have an account?{" "}
-          <Link href="/sign-in" className="font-medium text-brand-primary">
+          <Link href="/sign-in" className="font-medium text-foreground">
             Sign in
           </Link>
         </p>

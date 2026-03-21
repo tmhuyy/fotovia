@@ -45,9 +45,9 @@ export const SignInForm = () => {
         <Button type="submit" className="w-full" disabled={isSubmitting}>
           {isSubmitting ? "Signing in..." : "Sign In"}
         </Button>
-        <p className="text-center text-xs text-brand-muted">
+        <p className="text-center text-xs text-muted">
           New to Fotovia?{" "}
-          <Link href="/sign-up" className="font-medium text-brand-primary">
+          <Link href="/sign-up" className="font-medium text-foreground">
             Create an account
           </Link>
         </p>

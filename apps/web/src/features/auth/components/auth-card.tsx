@@ -8,7 +8,7 @@ interface AuthCardProps {
 export const AuthCard = ({ children }: AuthCardProps) => {
   return (
     <Card className="shadow-sm">
-      <CardContent className="space-y-6 p-8">{children}</CardContent>
+      <CardContent className="space-y-6 p-6 sm:p-8">{children}</CardContent>
     </Card>
   );
 };
