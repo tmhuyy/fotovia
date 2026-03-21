@@ -1,5 +1,6 @@
 import { Navbar } from "./navbar";
 import { HeroSection } from "./hero-section";
+import { RoleIntro } from "./role-intro";
 import { FeaturedPhotographers } from "./featured-photographers";
 import { AiFeatureIntro } from "./ai-feature-intro";
 import { HowItWorks } from "./how-it-works";
@@ -13,6 +14,7 @@ export const HomePage = () => {
       <Navbar />
       <main>
         <HeroSection />
+        <RoleIntro />
         <FeaturedPhotographers />
         <AiFeatureIntro />
         <HowItWorks />

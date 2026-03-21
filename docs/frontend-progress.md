@@ -72,6 +72,42 @@ This file tracks the progress of frontend tasks for Fotovia.
 - `apps/web/src/features/auth/schemas/sign-up.schema.ts`
 - `apps/web/src/features/auth/schemas/register-email.schema.ts`
 
+## Phase 3: Auth Flow Refinement and Role-Based Entry UX
+**Status:** Completed
+
+### Scope
+- Refine homepage CTA for clear entry into auth
+- Introduce explicit role selection for sign-up
+- Keep auth UI consistent with Premium Neutral styling
+- Evaluate register-email flow alignment
+
+### Delivered
+- Homepage CTA refinements:
+  - Navbar now includes sign-in, get started, and become a photographer entry points.
+  - Hero CTA updated to focus on finding a photographer or joining as a photographer.
+  - Added a role-introduction block to clarify client vs photographer paths.
+- Sign-up flow now includes explicit role selection with two role cards.
+- Register-email flow now includes role selection and updated copy.
+- Added role query parameter handling (`role=client|photographer`) for sign-up entry links.
+
+### Decisions
+- Register-email page kept but de-emphasized; surfaced as an optional link in sign-up.
+- Role selection is required in both sign-up and register-email to keep future onboarding aligned.
+
+### Notes
+- Still UI-only. No API calls, auth services, or tokens implemented.
+- Role selection is prepared for payload integration in the next phase.
+
+### Key Files
+- `apps/web/src/components/home/navbar.tsx`
+- `apps/web/src/components/home/hero-section.tsx`
+- `apps/web/src/components/home/role-intro.tsx`
+- `apps/web/src/features/auth/components/role-selector.tsx`
+- `apps/web/src/features/auth/components/sign-up-form.tsx`
+- `apps/web/src/features/auth/components/register-email-form.tsx`
+- `apps/web/src/features/auth/schemas/sign-up.schema.ts`
+- `apps/web/src/features/auth/schemas/register-email.schema.ts`
+
 ### Next Recommended Phase
 - Connect auth UI to real services in `services/auth.service.ts`.
 - Add `auth.store.ts` and `auth-token.ts` with real session handling.

@@ -7,7 +7,7 @@ export default function RegisterEmailPage() {
     <AuthCard>
       <AuthFormHeader
         title="Start with your email"
-        description="We'll send a secure sign-up link to continue your registration."
+        description="Choose your role and we'll send a secure sign-up link to continue."
       />
       <RegisterEmailForm />
     </AuthCard>

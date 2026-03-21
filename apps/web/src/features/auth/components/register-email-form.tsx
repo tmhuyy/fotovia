@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { Button } from "../../../components/ui/button";
 import { AuthTextField } from "./auth-text-field";
+import { RoleSelector } from "./role-selector";
 import {
   registerEmailSchema,
   type RegisterEmailFormValues,
@@ -16,6 +17,7 @@ export const RegisterEmailForm = () => {
   const form = useForm<RegisterEmailFormValues>({
     resolver: zodResolver(registerEmailSchema),
     defaultValues: {
+      role: "client",
       email: "",
     },
   });
@@ -30,6 +32,7 @@ export const RegisterEmailForm = () => {
   return (
     <FormProvider {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+        <RoleSelector />
         <AuthTextField
           name="email"
           label="Email"

@@ -1,4 +1,10 @@
-export type AuthPageKind = "sign-in" | "sign-up" | "register-email" | "check-email";
+export type AuthRole = "client" | "photographer";
+
+export type AuthPageKind =
+  | "sign-in"
+  | "sign-up"
+  | "register-email"
+  | "check-email";
 
 export interface AuthFooterLink {
   text: string;

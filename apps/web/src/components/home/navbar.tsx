@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Container } from "../layout/container";
-import { Button } from "../ui/button";
+import { buttonVariants } from "../ui/button";
 
 const navLinks = [
   { label: "Photographers", href: "/photographers" },
@@ -24,10 +24,24 @@ export const Navbar = () => {
           ))}
         </nav>
         <div className="flex items-center gap-3">
-          <Button variant="secondary" size="sm">
-            Explore
-          </Button>
-          <Button size="sm">Book a Photographer</Button>
+          <Link
+            href="/sign-in"
+            className="text-sm text-brand-muted hover:text-brand-primary"
+          >
+            Sign in
+          </Link>
+          <Link
+            href="/sign-up?role=photographer"
+            className={buttonVariants({ variant: "secondary", size: "sm" })}
+          >
+            Become a photographer
+          </Link>
+          <Link
+            href="/sign-up?role=client"
+            className={buttonVariants({ size: "sm" })}
+          >
+            Get started
+          </Link>
         </div>
       </Container>
     </header>

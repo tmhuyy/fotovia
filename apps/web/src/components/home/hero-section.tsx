@@ -1,4 +1,5 @@
-import { Button } from "../ui/button";
+import Link from "next/link";
+import { buttonVariants } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { Container } from "../layout/container";
 
@@ -16,10 +17,18 @@ export const HeroSection = () => {
             matching to find the perfect photographer for your next moment.
           </p>
           <div className="flex flex-wrap gap-4">
-            <Button size="lg">Explore Photographers</Button>
-            <Button size="lg" variant="secondary">
-              Try AI Style Match
-            </Button>
+            <Link
+              href="/photographers"
+              className={buttonVariants({ size: "lg" })}
+            >
+              Find a photographer
+            </Link>
+            <Link
+              href="/sign-up?role=photographer"
+              className={buttonVariants({ size: "lg", variant: "secondary" })}
+            >
+              Join as photographer
+            </Link>
           </div>
           <div className="flex items-center gap-6 text-xs uppercase tracking-[0.3em] text-brand-muted">
             <span>Editorial</span>
