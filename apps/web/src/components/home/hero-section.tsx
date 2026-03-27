@@ -1,9 +1,16 @@
+"use client";
+
 import Link from "next/link";
 import { buttonVariants } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { Container } from "../layout/container";
+import { useMockSessionStore } from "../../store/mock-session.store";
 
 export const HeroSection = () => {
+  const { isAuthenticated, role } = useMockSessionStore();
+  const isPhotographer = isAuthenticated && role === "photographer";
+  const isClient = isAuthenticated && role === "client";
+
   return (
     <section className="relative overflow-hidden">
       <Container className="grid gap-12 py-16 sm:py-20 md:grid-cols-[1.1fr_0.9fr] md:items-center md:py-28">
@@ -17,18 +24,63 @@ export const HeroSection = () => {
             matching to find the perfect photographer for your next moment.
           </p>
           <div className="flex flex-wrap gap-4">
-            <Link
-              href="/photographers"
-              className={buttonVariants({ size: "lg" })}
-            >
-              Find a photographer
-            </Link>
-            <Link
-              href="/sign-up?role=photographer"
-              className={buttonVariants({ size: "lg", variant: "secondary" })}
-            >
-              Join as photographer
-            </Link>
+            {!isAuthenticated ? (
+              <>
+                <Link
+                  href="/photographers"
+                  className={buttonVariants({ size: "lg" })}
+                >
+                  Find a photographer
+                </Link>
+                <Link
+                  href="/sign-up?role=photographer"
+                  className={buttonVariants({
+                    size: "lg",
+                    variant: "secondary",
+                  })}
+                >
+                  Join as photographer
+                </Link>
+              </>
+            ) : null}
+            {isClient ? (
+              <>
+                <Link
+                  href="/photographers"
+                  className={buttonVariants({ size: "lg" })}
+                >
+                  Explore photographers
+                </Link>
+                <Link
+                  href="/profile"
+                  className={buttonVariants({
+                    size: "lg",
+                    variant: "secondary",
+                  })}
+                >
+                  View profile
+                </Link>
+              </>
+            ) : null}
+            {isPhotographer ? (
+              <>
+                <Link
+                  href="/photographer/dashboard"
+                  className={buttonVariants({ size: "lg" })}
+                >
+                  Open workspace
+                </Link>
+                <Link
+                  href="/profile"
+                  className={buttonVariants({
+                    size: "lg",
+                    variant: "secondary",
+                  })}
+                >
+                  View profile
+                </Link>
+              </>
+            ) : null}
           </div>
           <div className="flex items-center gap-6 text-xs uppercase tracking-[0.3em] text-muted">
             <span>Editorial</span>

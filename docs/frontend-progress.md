@@ -253,3 +253,39 @@ This file tracks the progress of frontend tasks for Fotovia.
 ### Next Recommended Phase
 - Decide how mock session should integrate with real session once backend is stable.
 - Use mock session state to power role-based navbar or dashboard entry in development.
+
+## Phase 8 (Phase B): Auth-aware Homepage and Navbar
+**Status:** Completed
+
+### Scope
+- Use mock session state to adapt homepage and navbar.
+- Provide sign-out actions for mocked sessions.
+- Keep public UI premium and minimal.
+
+### Delivered
+- Navbar now adapts to mock session state:
+  - Signed out: Sign in, Get started, Become a photographer.
+  - Client: Explore photographers, Profile, Sign out.
+  - Photographer: Workspace, Profile, Sign out.
+- Hero CTAs now adapt by role:
+  - Signed out: Find a photographer + Join as photographer.
+  - Client: Explore photographers + View profile.
+  - Photographer: Open workspace + View profile.
+- Sign-out clears mock session and returns UI to signed-out state.
+
+### Decisions
+- Auth-aware behavior is powered by the mock session store only.
+- No protected routing or real auth integration added.
+
+### Notes
+- Placeholder links are used for future profile/workspace routes.
+- Visual direction and responsive layout preserved.
+
+### Key Files
+- `apps/web/src/components/home/navbar.tsx`
+- `apps/web/src/components/home/hero-section.tsx`
+- `apps/web/src/store/mock-session.store.ts`
+
+### Next Recommended Phase
+- Connect navbar and hero to real auth/session data when backend stabilizes.
+- Introduce lightweight profile and dashboard entry pages.
