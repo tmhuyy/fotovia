@@ -328,3 +328,38 @@ This file tracks the progress of frontend tasks for Fotovia.
 ### Next Recommended Phase
 - Wire profile data to real backend services.
 - Add profile image upload and portfolio management.
+
+## Phase 10: Photographer Listing UI Foundation
+**Status:** Completed
+
+### Scope
+- Add public photographer listing route with mock discovery UX.
+- Build filter/search/sort UI and responsive photographer cards.
+- Introduce mock dataset for discovery.
+
+### Delivered
+- New `/photographers` route for public discovery.
+- Mock photographer dataset with specialties, styles, locations, pricing, and tags.
+- Discovery controls: search, specialty, style, location, budget, and sort.
+- Frontend-only filtering and sorting with empty state handling.
+- Premium card grid layout with role-neutral CTAs for future detail pages.
+
+### Decisions
+- Listing uses mock data and client-side filtering only.
+- Cards link to `/photographers/[id]` placeholder for future detail pages.
+
+### Notes
+- No backend integration, booking flow, or AI match logic added.
+- UI remains Premium Neutral with dark mode support.
+
+### Key Files
+- `apps/web/src/app/photographers/page.tsx`
+- `apps/web/src/features/photographer/components/photographers-page.tsx`
+- `apps/web/src/features/photographer/components/photographer-card.tsx`
+- `apps/web/src/features/photographer/components/photographer-filters.tsx`
+- `apps/web/src/features/photographer/data/mock-photographers.ts`
+- `apps/web/src/features/photographer/types/photographer.types.ts`
+
+### Next Recommended Phase
+- Add photographer detail page foundation (`/photographers/[id]`).
+- Introduce booking request UI scaffold.
