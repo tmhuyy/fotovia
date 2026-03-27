@@ -2,13 +2,14 @@ import { getPhotographerDetailBySlug } from "../../../features/photographer/data
 import { PhotographerDetailPage } from "../../../features/photographer/components/photographer-detail-page";
 
 interface PhotographerDetailRouteProps {
-  params: { slug: string };
+    params: Promise<{ slug: string }>;
 }
 
-export default function PhotographerDetailRoute({
-  params,
+export default async function PhotographerDetailRoute({
+    params,
 }: PhotographerDetailRouteProps) {
-  const photographer = getPhotographerDetailBySlug(params.slug);
+    const { slug } = await params;
+    const photographer = getPhotographerDetailBySlug(decodeURIComponent(slug));
 
-  return <PhotographerDetailPage photographer={photographer} />;
+    return <PhotographerDetailPage photographer={photographer} />;
 }
