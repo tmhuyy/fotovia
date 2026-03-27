@@ -2,13 +2,14 @@ import { getPhotographerDetail } from "../../../features/photographer/data/mock-
 import { PhotographerDetailPage } from "../../../features/photographer/components/photographer-detail-page";
 
 interface PhotographerDetailRouteProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
-export default function PhotographerDetailRoute({
+export default async function PhotographerDetailRoute({
   params,
 }: PhotographerDetailRouteProps) {
-  const photographer = getPhotographerDetail(params.id);
+  const { id } = await params;
+  const photographer = getPhotographerDetail(decodeURIComponent(id));
 
   return <PhotographerDetailPage photographer={photographer} />;
 }
