@@ -216,3 +216,40 @@ This file tracks the progress of frontend tasks for Fotovia.
 - Add role-based redirects after successful auth.
 - Introduce lightweight onboarding for client vs photographer.
 - Add protected routes and authenticated layouts.
+
+## Phase 7 (Phase A): Mock Session and Dev Cheat Panel
+**Status:** Completed
+
+### Scope
+- Add a frontend-only mock session store with persistence.
+- Provide a dev-only cheat panel for switching mock auth states.
+- Document env flag for dev visibility.
+
+### Delivered
+- New mock session store with persisted state (`signed out`, `client`, `photographer`).
+- Session persistence uses localStorage (key: `fotovia-mock-session`).
+- Dev-only cheat panel with quick actions:
+  - Sign in as client
+  - Sign in as photographer
+  - Sign out
+- Mock state displays current role and user summary.
+- Env flag `NEXT_PUBLIC_ENABLE_DEV_CHEATS` added to control visibility (also enabled in development by default).
+
+### Decisions
+- Mock session is isolated from real auth/token logic to avoid backend dependency.
+- URL and UI flows remain unchanged; no public UI uses mock state yet.
+
+### Notes
+- No API calls, token storage changes, or protected routes added.
+- Panel is fixed in the corner and styled as a subtle internal tool.
+
+### Key Files
+- `apps/web/src/store/mock-session.store.ts`
+- `apps/web/src/components/dev/dev-cheat-panel.tsx`
+- `apps/web/src/providers/app-provider.tsx`
+- `apps/web/.env.example`
+- `apps/web/README.md`
+
+### Next Recommended Phase
+- Decide how mock session should integrate with real session once backend is stable.
+- Use mock session state to power role-based navbar or dashboard entry in development.

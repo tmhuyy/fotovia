@@ -134,9 +134,12 @@ Current example:
 ```env
 NEXT_PUBLIC_API_BASE_URL=http://localhost:3000
 NEXT_PUBLIC_AUTH_API_URL=http://localhost:3000
+NEXT_PUBLIC_ENABLE_DEV_CHEATS=false
 ```
 
 Update these values to match your backend services.
+
+Set `NEXT_PUBLIC_ENABLE_DEV_CHEATS=true` to show the dev-only mock session panel.
 
 ## Main structure
 
