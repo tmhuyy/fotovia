@@ -419,3 +419,40 @@ This file tracks the progress of frontend tasks for Fotovia.
 ### Notes
 - UUIDs remain internal-only for future backend alignment.
 - No backend/API integration added.
+
+## Phase 12: Booking Request UI Foundation
+**Status:** Completed
+
+### Scope
+- Add booking request route and UI foundation.
+- Build booking request form with summary and success states.
+- Wire detail-to-booking CTA for marketplace flow continuity.
+
+### Delivered
+- New booking route: `/photographers/[slug]/book`.
+- Booking request page layout with back link, header, form, and summary sidebar.
+- React Hook Form + Zod validation for booking request fields.
+- Booking summary card that updates as form values change.
+- Mock confirmation state after submit with next-step CTAs.
+- Booking CTA on photographer detail now links into the booking request flow.
+
+### Decisions
+- Booking flow remains frontend-only with mock submit handling.
+- Booking summary uses mock photographer data and form values only.
+
+### Notes
+- No booking API integration, payments, or request management yet.
+- Success state is local and resettable for repeated mock submissions.
+
+### Key Files
+- `apps/web/src/app/photographers/[slug]/book/page.tsx`
+- `apps/web/src/features/booking/components/booking-request-page.tsx`
+- `apps/web/src/features/booking/components/booking-request-form.tsx`
+- `apps/web/src/features/booking/components/booking-summary-card.tsx`
+- `apps/web/src/features/booking/components/booking-success.tsx`
+- `apps/web/src/features/booking/schemas/booking-request.schema.ts`
+- `apps/web/src/features/photographer/components/photographer-detail-cta.tsx`
+
+### Next Recommended Phase
+- Connect booking request form to real booking API.
+- Add booking history and request management UI.

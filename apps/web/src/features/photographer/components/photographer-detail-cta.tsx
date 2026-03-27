@@ -1,5 +1,6 @@
+import Link from "next/link";
 import { Card, CardContent } from "../../../components/ui/card";
-import { Button } from "../../../components/ui/button";
+import { buttonVariants } from "../../../components/ui/button";
 import type { PhotographerDetail } from "../types/photographer-detail.types";
 
 interface PhotographerDetailCtaProps {
@@ -21,11 +22,14 @@ export const PhotographerDetailCta = ({
           </p>
           <p className="text-sm text-muted">{photographer.availability}</p>
         </div>
-        <Button type="button" className="w-full" disabled>
+        <Link
+          href={`/photographers/${encodeURIComponent(photographer.slug)}/book`}
+          className={buttonVariants({ size: "md" })}
+        >
           Request booking
-        </Button>
+        </Link>
         <p className="text-xs text-muted">
-          Booking requests open in the next phase.
+          Share a few details to start your booking request.
         </p>
       </CardContent>
     </Card>
