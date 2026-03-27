@@ -289,3 +289,42 @@ This file tracks the progress of frontend tasks for Fotovia.
 ### Next Recommended Phase
 - Connect navbar and hero to real auth/session data when backend stabilizes.
 - Introduce lightweight profile and dashboard entry pages.
+
+## Phase 9 (Phase C): Profile UI Foundation
+**Status:** Completed
+
+### Scope
+- Add profile route and UI foundation.
+- Build role-aware profile presentation for clients and photographers.
+- Introduce mock-only edit profile form.
+
+### Delivered
+- New `/profile` route with role-aware layout and profile sections.
+- Profile summary card with avatar placeholder, role badge, and contact details.
+- Profile edit form with React Hook Form + Zod (mock save only).
+- Role-aware sections:
+  - Client: saved photographers and booking preferences.
+  - Photographer: portfolio preview and availability snapshot.
+- Mock profile data helper wired to mock session state.
+
+### Decisions
+- Profile uses mock session state only; no API integration.
+- Profile edits save locally and update UI only.
+
+### Notes
+- Placeholder links remain for future profile/workspace routes.
+- Design remains Premium Neutral with dark mode support.
+
+### Key Files
+- `apps/web/src/app/profile/page.tsx`
+- `apps/web/src/features/profile/components/profile-page.tsx`
+- `apps/web/src/features/profile/components/profile-details-form.tsx`
+- `apps/web/src/features/profile/components/profile-summary-card.tsx`
+- `apps/web/src/features/profile/components/profile-role-highlights.tsx`
+- `apps/web/src/features/profile/data/mock-profile.ts`
+- `apps/web/src/features/profile/schemas/profile.schema.ts`
+- `apps/web/src/components/ui/textarea.tsx`
+
+### Next Recommended Phase
+- Wire profile data to real backend services.
+- Add profile image upload and portfolio management.
