@@ -363,3 +363,41 @@ This file tracks the progress of frontend tasks for Fotovia.
 ### Next Recommended Phase
 - Add photographer detail page foundation (`/photographers/[id]`).
 - Introduce booking request UI scaffold.
+
+## Phase 11: Photographer Detail UI Foundation
+**Status:** Completed
+
+### Scope
+- Add photographer detail route and UI foundation.
+- Extend mock data to support detail sections.
+- Introduce portfolio, services, and CTA presentation.
+
+### Delivered
+- New `/photographers/[id]` detail route.
+- Detail hero with cover placeholder, avatar, specialty, and trust signals.
+- About, portfolio preview, services, and testimonials sections.
+- Sticky booking CTA card with availability teaser.
+- Extended mock detail data (intro, experience, services, portfolio, testimonials).
+
+### Decisions
+- Detail page uses mock data only; no API integration.
+- Booking CTA is present but disabled until booking flow is built.
+
+### Notes
+- Listing cards already link to `/photographers/[id]`.
+- UI remains Premium Neutral with dark mode support.
+
+### Key Files
+- `apps/web/src/app/photographers/[id]/page.tsx`
+- `apps/web/src/features/photographer/components/photographer-detail-page.tsx`
+- `apps/web/src/features/photographer/components/photographer-detail-hero.tsx`
+- `apps/web/src/features/photographer/components/photographer-detail-cta.tsx`
+- `apps/web/src/features/photographer/components/photographer-portfolio-section.tsx`
+- `apps/web/src/features/photographer/components/photographer-services-section.tsx`
+- `apps/web/src/features/photographer/components/photographer-testimonials-section.tsx`
+- `apps/web/src/features/photographer/data/mock-photographer-details.ts`
+- `apps/web/src/features/photographer/types/photographer-detail.types.ts`
+
+### Next Recommended Phase
+- Build booking request UI and route.
+- Add AI style match prompts to detail view.
