@@ -10,10 +10,14 @@ import { AuthTextField } from "./auth-text-field";
 import { PasswordField } from "./password-field";
 import { RoleSelector } from "./role-selector";
 import { signUpSchema, type SignUpFormValues } from "../schemas/sign-up.schema";
+import { authService } from "../../../services/auth.service";
+import { useAuthStore } from "../../../store/auth.store";
 
 export const SignUpForm = () => {
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [formSuccess, setFormSuccess] = useState<string | null>(null);
   const searchParams = useSearchParams();
+  const { setAuth } = useAuthStore();
   const form = useForm<SignUpFormValues>({
     resolver: zodResolver(signUpSchema),
     defaultValues: {
@@ -33,11 +37,18 @@ export const SignUpForm = () => {
   }, [searchParams, form]);
 
   const onSubmit = async (values: SignUpFormValues) => {
-    setIsSubmitting(true);
-    await new Promise((resolve) => setTimeout(resolve, 600));
-    setIsSubmitting(false);
-    console.log("Sign up payload", values);
+    setFormError(null);
+    setFormSuccess(null);
+    try {
+      const response = await authService.signUp(values);
+      setAuth({ accessToken: response.accessToken, user: response.user });
+      setFormSuccess("Account created. You're ready to continue.");
+    } catch {
+      setFormError("We couldn't create your account. Please try again.");
+    }
   };
+
+  const { isSubmitting } = form.formState;
 
   return (
     <FormProvider {...form}>
@@ -68,6 +79,16 @@ export const SignUpForm = () => {
           placeholder="Re-enter your password"
           autoComplete="new-password"
         />
+        {formError ? (
+          <p className="rounded-xl border border-border bg-surface px-4 py-3 text-xs text-accent">
+            {formError}
+          </p>
+        ) : null}
+        {formSuccess ? (
+          <p className="rounded-xl border border-border bg-surface px-4 py-3 text-xs text-muted">
+            {formSuccess}
+          </p>
+        ) : null}
         <Button type="submit" className="w-full" disabled={isSubmitting}>
           {isSubmitting ? "Creating account..." : "Create Account"}
         </Button>

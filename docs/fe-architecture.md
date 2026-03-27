@@ -60,6 +60,7 @@ Suggested route groups:
     app-provider.tsx
     query-provider.tsx
     theme-provider.tsx
+    auth-session-provider.tsx
 
   store/
     auth.store.ts

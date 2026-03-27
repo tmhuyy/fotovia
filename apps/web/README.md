@@ -133,9 +133,10 @@ Current example:
 
 ```env
 NEXT_PUBLIC_API_BASE_URL=http://localhost:3000
+NEXT_PUBLIC_AUTH_API_URL=http://localhost:3000
 ```
 
-Update this value to match your backend gateway or API setup.
+Update these values to match your backend services.
 
 ## Main structure
 

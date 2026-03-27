@@ -146,8 +146,49 @@ This file tracks the progress of frontend tasks for Fotovia.
 - `apps/web/src/components/home/hero-section.tsx`
 - `apps/web/src/features/auth/components/auth-shell.tsx`
 
+## Phase 5: Auth Logic and Session Foundation
+**Status:** Completed
+
+### Scope
+- Direct auth-service connection
+- Auth service + token utilities
+- Zustand auth store
+- Connect sign-in/sign-up to real logic
+- Session initialization groundwork
+
+### Delivered
+- Added `NEXT_PUBLIC_AUTH_API_URL` for direct auth-service connection.
+- Implemented `auth.service.ts` with sign-in, sign-up, register-email, and current-user calls.
+- Added `auth-token.ts` for token storage in localStorage.
+- Added `auth.store.ts` for session state, token handling, and user summary.
+- Added `auth-session-provider.tsx` to initialize session on app load.
+- Connected sign-in and sign-up forms to real service logic with clean error/success states.
+- Register-email now attempts direct auth-service call with graceful messaging.
+
+### Assumptions
+- Auth sign-in endpoint assumed as `POST /auth/signin`.
+- Current user endpoint assumed as `GET /auth/me`.
+- Register-email endpoint assumed as `POST /auth/register-email`.
+- Auth responses assumed to return `accessToken` and `user` (with fallback support for `token`).
+
+### Notes
+- No refresh token flow implemented.
+- No protected routes or dashboard logic yet.
+- Role selection continues to be included in sign-up payloads.
+
+### Key Files
+- `apps/web/src/services/auth.service.ts`
+- `apps/web/src/services/api/axios.ts`
+- `apps/web/src/lib/auth-token.ts`
+- `apps/web/src/store/auth.store.ts`
+- `apps/web/src/providers/auth-session-provider.tsx`
+- `apps/web/src/features/auth/components/sign-in-form.tsx`
+- `apps/web/src/features/auth/components/sign-up-form.tsx`
+- `apps/web/src/features/auth/components/register-email-form.tsx`
+- `apps/web/.env.example`
+
 ### Next Recommended Phase
-- Connect auth UI to real services in `services/auth.service.ts`.
-- Add `auth.store.ts` and `auth-token.ts` with real session handling.
-- Implement password reset and email verification flows.
-- Add route protection and authenticated layout for dashboard routes.
+- Implement protected routes and authenticated layouts.
+- Add role-based redirects and onboarding.
+- Connect current-user loading to React Query.
+- Add password reset and email verification flows if supported.

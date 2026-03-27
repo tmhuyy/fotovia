@@ -1,4 +1,4 @@
-export type AuthRole = "client" | "photographer";
+export type { AuthRole } from "../../types/auth.types";
 
 export type AuthPageKind =
   | "sign-in"

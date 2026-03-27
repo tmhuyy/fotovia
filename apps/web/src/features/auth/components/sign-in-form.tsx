@@ -8,9 +8,13 @@ import { Button } from "../../../components/ui/button";
 import { AuthTextField } from "./auth-text-field";
 import { PasswordField } from "./password-field";
 import { signInSchema, type SignInFormValues } from "../schemas/sign-in.schema";
+import { authService } from "../../../services/auth.service";
+import { useAuthStore } from "../../../store/auth.store";
 
 export const SignInForm = () => {
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [formSuccess, setFormSuccess] = useState<string | null>(null);
+  const { setAuth } = useAuthStore();
   const form = useForm<SignInFormValues>({
     resolver: zodResolver(signInSchema),
     defaultValues: {
@@ -20,11 +24,18 @@ export const SignInForm = () => {
   });
 
   const onSubmit = async (values: SignInFormValues) => {
-    setIsSubmitting(true);
-    await new Promise((resolve) => setTimeout(resolve, 600));
-    setIsSubmitting(false);
-    console.log("Sign in payload", values);
+    setFormError(null);
+    setFormSuccess(null);
+    try {
+      const response = await authService.signIn(values);
+      setAuth({ accessToken: response.accessToken, user: response.user });
+      setFormSuccess("You're signed in. Welcome back.");
+    } catch {
+      setFormError("Unable to sign in. Please check your details and try again.");
+    }
   };
+
+  const { isSubmitting } = form.formState;
 
   return (
     <FormProvider {...form}>
@@ -42,6 +53,16 @@ export const SignInForm = () => {
           placeholder="Enter your password"
           autoComplete="current-password"
         />
+        {formError ? (
+          <p className="rounded-xl border border-border bg-surface px-4 py-3 text-xs text-accent">
+            {formError}
+          </p>
+        ) : null}
+        {formSuccess ? (
+          <p className="rounded-xl border border-border bg-surface px-4 py-3 text-xs text-muted">
+            {formSuccess}
+          </p>
+        ) : null}
         <Button type="submit" className="w-full" disabled={isSubmitting}>
           {isSubmitting ? "Signing in..." : "Sign In"}
         </Button>

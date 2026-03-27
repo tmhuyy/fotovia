@@ -11,9 +11,11 @@ import {
   registerEmailSchema,
   type RegisterEmailFormValues,
 } from "../schemas/register-email.schema";
+import { authService } from "../../../services/auth.service";
 
 export const RegisterEmailForm = () => {
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [formSuccess, setFormSuccess] = useState<string | null>(null);
   const form = useForm<RegisterEmailFormValues>({
     resolver: zodResolver(registerEmailSchema),
     defaultValues: {
@@ -23,11 +25,17 @@ export const RegisterEmailForm = () => {
   });
 
   const onSubmit = async (values: RegisterEmailFormValues) => {
-    setIsSubmitting(true);
-    await new Promise((resolve) => setTimeout(resolve, 600));
-    setIsSubmitting(false);
-    console.log("Register email payload", values);
+    setFormError(null);
+    setFormSuccess(null);
+    try {
+      await authService.registerEmail(values.email, values.role);
+      setFormSuccess("Check your inbox for the sign-up link.");
+    } catch {
+      setFormError("We couldn't send the email link. Please try again.");
+    }
   };
+
+  const { isSubmitting } = form.formState;
 
   return (
     <FormProvider {...form}>
@@ -40,6 +48,16 @@ export const RegisterEmailForm = () => {
           placeholder="you@fotovia.com"
           autoComplete="email"
         />
+        {formError ? (
+          <p className="rounded-xl border border-border bg-surface px-4 py-3 text-xs text-accent">
+            {formError}
+          </p>
+        ) : null}
+        {formSuccess ? (
+          <p className="rounded-xl border border-border bg-surface px-4 py-3 text-xs text-muted">
+            {formSuccess}
+          </p>
+        ) : null}
         <Button type="submit" className="w-full" disabled={isSubmitting}>
           {isSubmitting ? "Sending link..." : "Send Sign-up Link"}
         </Button>
