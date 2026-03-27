@@ -187,8 +187,32 @@ This file tracks the progress of frontend tasks for Fotovia.
 - `apps/web/src/features/auth/components/register-email-form.tsx`
 - `apps/web/.env.example`
 
+## Phase 6: Sign-Up Role URL Sync
+**Status:** Completed
+
+### Scope
+- Keep sign-up role selection in sync with the URL query param
+- Normalize role param and enforce predictable fallback behavior
+
+### Delivered
+- Sign-up role now derives from `role` query param with normalization.
+- URL updates only when the user explicitly changes role selection.
+- Removed the form watch -> URL sync effect that caused router.replace ping-pong.
+- Missing or invalid role param falls back to `client` and updates the URL once.
+
+### Decisions
+- Role param remains the single source of truth for sign-up deep links.
+- Fallback behavior defaults to `client` for missing/invalid values.
+- One-way sync from URL -> form only; no automatic form -> URL effects.
+
+### Notes
+- No auth API changes.
+- No homepage CTA changes required; existing links already aligned.
+
+### Key Files
+- `apps/web/src/features/auth/components/sign-up-form.tsx`
+
 ### Next Recommended Phase
-- Implement protected routes and authenticated layouts.
-- Add role-based redirects and onboarding.
-- Connect current-user loading to React Query.
-- Add password reset and email verification flows if supported.
+- Add role-based redirects after successful auth.
+- Introduce lightweight onboarding for client vs photographer.
+- Add protected routes and authenticated layouts.

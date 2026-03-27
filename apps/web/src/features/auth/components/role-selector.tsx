@@ -3,6 +3,7 @@
 import { useFormContext } from "react-hook-form";
 import { cn } from "../../../lib/utils";
 import { FieldError } from "./field-error";
+import type { AuthRole } from "../../../types/auth.types";
 
 const roleOptions = [
   {
@@ -17,7 +18,11 @@ const roleOptions = [
   },
 ];
 
-export const RoleSelector = () => {
+interface RoleSelectorProps {
+  onRoleChange?: (role: AuthRole) => void;
+}
+
+export const RoleSelector = ({ onRoleChange }: RoleSelectorProps) => {
   const {
     register,
     watch,
@@ -26,6 +31,12 @@ export const RoleSelector = () => {
 
   const selected = watch("role");
   const fieldError = (errors as Record<string, { message?: string }>)["role"];
+  const roleRegister = register("role", {
+    onChange: (event) => {
+      const value = event.target.value as AuthRole;
+      onRoleChange?.(value);
+    },
+  });
 
   return (
     <div className="space-y-3">
@@ -49,7 +60,7 @@ export const RoleSelector = () => {
                 type="radio"
                 value={option.value}
                 className="sr-only"
-                {...register("role")}
+                {...roleRegister}
               />
               <p className="text-sm font-medium text-foreground">
                 {option.title}

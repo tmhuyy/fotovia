@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { FormProvider, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Button } from "../../../components/ui/button";
 import { AuthTextField } from "./auth-text-field";
 import { PasswordField } from "./password-field";
@@ -12,10 +12,13 @@ import { RoleSelector } from "./role-selector";
 import { signUpSchema, type SignUpFormValues } from "../schemas/sign-up.schema";
 import { authService } from "../../../services/auth.service";
 import { useAuthStore } from "../../../store/auth.store";
+import type { AuthRole } from "../../../types/auth.types";
 
 export const SignUpForm = () => {
   const [formError, setFormError] = useState<string | null>(null);
   const [formSuccess, setFormSuccess] = useState<string | null>(null);
+  const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const { setAuth } = useAuthStore();
   const form = useForm<SignUpFormValues>({
@@ -29,12 +32,32 @@ export const SignUpForm = () => {
     },
   });
 
+  const roleParam = searchParams.get("role");
+  const searchString = useMemo(() => searchParams.toString(), [searchParams]);
+  const normalizedRole: AuthRole =
+    roleParam === "photographer" ? "photographer" : "client";
+  const isRoleValid = roleParam === "client" || roleParam === "photographer";
+
+  const updateRoleParam = useCallback(
+    (nextRole: AuthRole) => {
+      if (roleParam === nextRole) return;
+      const params = new URLSearchParams(searchString);
+      params.set("role", nextRole);
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    },
+    [pathname, roleParam, router, searchString]
+  );
+
   useEffect(() => {
-    const role = searchParams.get("role");
-    if (role === "client" || role === "photographer") {
-      form.setValue("role", role);
+    if (!isRoleValid) {
+      updateRoleParam("client");
+      return;
     }
-  }, [searchParams, form]);
+
+    if (form.getValues("role") !== normalizedRole) {
+      form.setValue("role", normalizedRole, { shouldValidate: true });
+    }
+  }, [form, isRoleValid, normalizedRole, updateRoleParam]);
 
   const onSubmit = async (values: SignUpFormValues) => {
     setFormError(null);
@@ -53,7 +76,7 @@ export const SignUpForm = () => {
   return (
     <FormProvider {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-        <RoleSelector />
+        <RoleSelector onRoleChange={updateRoleParam} />
         <AuthTextField
           name="fullName"
           label="Full name"
