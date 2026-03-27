@@ -382,10 +382,21 @@ const detailExtras: Record<
   },
 };
 
-export const getPhotographerDetail = (id: string): PhotographerDetail | null => {
-  const base = mockPhotographers.find((photographer) => photographer.id === id);
+const normalizeSlug = (slug: string) =>
+  decodeURIComponent(slug).trim().toLowerCase();
+
+export const getPhotographerDetailBySlug = (
+  slug: string
+): PhotographerDetail | null => {
+  const normalizedSlug = normalizeSlug(slug);
+  if (!normalizedSlug) return null;
+
+  const base = mockPhotographers.find(
+    (photographer) => photographer.slug === normalizedSlug
+  );
   if (!base) return null;
-  const extras = detailExtras[id];
+
+  const extras = detailExtras[normalizedSlug];
   if (!extras) return null;
 
   return {

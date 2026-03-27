@@ -346,7 +346,7 @@ This file tracks the progress of frontend tasks for Fotovia.
 
 ### Decisions
 - Listing uses mock data and client-side filtering only.
-- Cards link to `/photographers/[id]` placeholder for future detail pages.
+- Cards link to `/photographers/[slug]` placeholder for future detail pages.
 
 ### Notes
 - No backend integration, booking flow, or AI match logic added.
@@ -361,7 +361,7 @@ This file tracks the progress of frontend tasks for Fotovia.
 - `apps/web/src/features/photographer/types/photographer.types.ts`
 
 ### Next Recommended Phase
-- Add photographer detail page foundation (`/photographers/[id]`).
+- Add photographer detail page foundation (`/photographers/[slug]`).
 - Introduce booking request UI scaffold.
 
 ## Phase 11: Photographer Detail UI Foundation
@@ -373,7 +373,7 @@ This file tracks the progress of frontend tasks for Fotovia.
 - Introduce portfolio, services, and CTA presentation.
 
 ### Delivered
-- New `/photographers/[id]` detail route.
+- New `/photographers/[slug]` detail route.
 - Detail hero with cover placeholder, avatar, specialty, and trust signals.
 - About, portfolio preview, services, and testimonials sections.
 - Sticky booking CTA card with availability teaser.
@@ -384,11 +384,11 @@ This file tracks the progress of frontend tasks for Fotovia.
 - Booking CTA is present but disabled until booking flow is built.
 
 ### Notes
-- Listing cards already link to `/photographers/[id]`.
+- Listing cards already link to `/photographers/[slug]`.
 - UI remains Premium Neutral with dark mode support.
 
 ### Key Files
-- `apps/web/src/app/photographers/[id]/page.tsx`
+- `apps/web/src/app/photographers/[slug]/page.tsx`
 - `apps/web/src/features/photographer/components/photographer-detail-page.tsx`
 - `apps/web/src/features/photographer/components/photographer-detail-hero.tsx`
 - `apps/web/src/features/photographer/components/photographer-detail-cta.tsx`
@@ -401,3 +401,21 @@ This file tracks the progress of frontend tasks for Fotovia.
 ### Next Recommended Phase
 - Build booking request UI and route.
 - Add AI style match prompts to detail view.
+
+## Patch: Photographer UUID + Slug Refactor
+**Status:** Completed
+
+### Scope
+- Refactor mock photographer data to use UUID `id` + public `slug`.
+- Update listing and detail routes to use slug-based navigation.
+
+### Delivered
+- Photographer type now includes `id` (UUID) and `slug` (public route value).
+- Mock photographer dataset updated with UUIDs and slugs.
+- Detail lookup now resolves by slug (`getPhotographerDetailBySlug`).
+- Detail route updated to `/photographers/[slug]`.
+- Listing cards now link to `/photographers/{slug}`.
+
+### Notes
+- UUIDs remain internal-only for future backend alignment.
+- No backend/API integration added.

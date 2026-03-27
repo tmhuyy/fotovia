@@ -2,7 +2,8 @@ import type { PhotographerProfile } from "../types/photographer.types";
 
 export const mockPhotographers: PhotographerProfile[] = [
   {
-    id: "studio-reverie",
+    id: "d3f9b2a1-8b5d-4c6e-9f21-1f5c9e3b6a01",
+    slug: "studio-reverie",
     name: "Studio Reverie",
     specialty: "Editorial Portraits",
     styles: ["Editorial", "Portrait", "Luxury"],
@@ -14,7 +15,8 @@ export const mockPhotographers: PhotographerProfile[] = [
     tags: ["Cinematic", "Studio", "Travel"],
   },
   {
-    id: "northlight-collective",
+    id: "7b2a6f40-8b9d-4c1a-9d8d-3f2b5c7e91a4",
+    slug: "northlight-collective",
     name: "Northlight Collective",
     specialty: "Wedding + Events",
     styles: ["Documentary", "Romantic", "Classic"],
@@ -26,7 +28,8 @@ export const mockPhotographers: PhotographerProfile[] = [
     tags: ["Weddings", "Events", "Natural Light"],
   },
   {
-    id: "maison-noir",
+    id: "0b9c2e7a-1df8-4c41-9a6f-52f8b1d9c6e3",
+    slug: "maison-noir",
     name: "Maison Noir",
     specialty: "Luxury Branding",
     styles: ["Minimal", "Studio", "Fine Art"],
@@ -38,7 +41,8 @@ export const mockPhotographers: PhotographerProfile[] = [
     tags: ["Branding", "Studio", "Creative Direction"],
   },
   {
-    id: "golden-hour-stories",
+    id: "a6b48c32-3f7a-4c8f-8b12-9d7f2a1c54b9",
+    slug: "golden-hour-stories",
     name: "Golden Hour Stories",
     specialty: "Lifestyle",
     styles: ["Lifestyle", "Documentary", "Warm"],
@@ -50,7 +54,8 @@ export const mockPhotographers: PhotographerProfile[] = [
     tags: ["Lifestyle", "Families", "Outdoor"],
   },
   {
-    id: "atelier-coast",
+    id: "2f7c9b18-6d3a-4f2d-84c7-5a0c1b9e7f32",
+    slug: "atelier-coast",
     name: "Atelier Coast",
     specialty: "Fashion Editorial",
     styles: ["Editorial", "Minimal", "Modern"],
@@ -62,7 +67,8 @@ export const mockPhotographers: PhotographerProfile[] = [
     tags: ["Fashion", "Editorial", "Studio"],
   },
   {
-    id: "terra-loom",
+    id: "b1c7e9f2-5d8a-4b1e-9c37-0f8d2a6e4c51",
+    slug: "terra-loom",
     name: "Terra Loom",
     specialty: "Adventure Elopements",
     styles: ["Adventure", "Cinematic", "Documentary"],
@@ -74,7 +80,8 @@ export const mockPhotographers: PhotographerProfile[] = [
     tags: ["Elopements", "Adventure", "Travel"],
   },
   {
-    id: "lucent-studio",
+    id: "6e2c5b9f-1a3d-4f9b-8c2a-7d4b1f9e3c26",
+    slug: "lucent-studio",
     name: "Lucent Studio",
     specialty: "Food + Hospitality",
     styles: ["Editorial", "Minimal", "Studio"],
@@ -86,7 +93,8 @@ export const mockPhotographers: PhotographerProfile[] = [
     tags: ["Food", "Hospitality", "Studio"],
   },
   {
-    id: "haven-frames",
+    id: "9a1d7c3b-4e8f-4b9a-8d1e-2f6c7b5a4d90",
+    slug: "haven-frames",
     name: "Haven Frames",
     specialty: "Family Portraits",
     styles: ["Warm", "Lifestyle", "Natural"],
@@ -98,7 +106,8 @@ export const mockPhotographers: PhotographerProfile[] = [
     tags: ["Families", "Portrait", "Outdoor"],
   },
   {
-    id: "solstice-atelier",
+    id: "3c5e1f9a-7b4d-4a8c-9e2f-6d1b8c3f5a70",
+    slug: "solstice-atelier",
     name: "Solstice Atelier",
     specialty: "Fine Art Portraits",
     styles: ["Fine Art", "Studio", "Moody"],
@@ -110,7 +119,8 @@ export const mockPhotographers: PhotographerProfile[] = [
     tags: ["Fine Art", "Portrait", "Studio"],
   },
   {
-    id: "brassline-studio",
+    id: "5f8b2c7d-9a1e-4c3b-8f6d-1a9c4e7b2d58",
+    slug: "brassline-studio",
     name: "Brassline Studio",
     specialty: "Corporate + Teams",
     styles: ["Clean", "Modern", "Studio"],

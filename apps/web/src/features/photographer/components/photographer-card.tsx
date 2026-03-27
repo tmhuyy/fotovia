@@ -50,7 +50,7 @@ export const PhotographerCard = ({ photographer }: PhotographerCardProps) => {
           <span>From ${photographer.startingPrice}</span>
         </div>
         <Link
-          href={`/photographers/${photographer.id}`}
+          href={`/photographers/${encodeURIComponent(photographer.slug)}`}
           className={buttonVariants({ variant: "secondary", size: "sm" })}
         >
           View profile

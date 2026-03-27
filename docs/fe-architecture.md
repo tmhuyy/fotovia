@@ -164,7 +164,7 @@ This helps keep the codebase clean and maintainable.
 ### Public pages
 - /
 - /photographers
-- /photographers/[id]
+- /photographers/[slug]
 - /login
 - /register
 

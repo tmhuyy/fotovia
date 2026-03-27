@@ -1,5 +1,6 @@
 export interface PhotographerProfile {
   id: string;
+  slug: string;
   name: string;
   specialty: string;
   styles: string[];
