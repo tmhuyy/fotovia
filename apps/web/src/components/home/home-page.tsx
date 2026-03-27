@@ -1,5 +1,6 @@
 import { Navbar } from "./navbar";
 import { HeroSection } from "./hero-section";
+import { BookingEntrySection } from "./booking-entry-section";
 import { RoleIntro } from "./role-intro";
 import { FeaturedPhotographers } from "./featured-photographers";
 import { AiFeatureIntro } from "./ai-feature-intro";
@@ -14,6 +15,7 @@ export const HomePage = () => {
       <Navbar />
       <main>
         <HeroSection />
+        <BookingEntrySection />
         <RoleIntro />
         <FeaturedPhotographers />
         <AiFeatureIntro />

@@ -166,6 +166,7 @@ This helps keep the codebase clean and maintainable.
 - /photographers
 - /photographers/[slug]
 - /photographers/[slug]/book
+- /bookings/new
 - /login
 - /register
 

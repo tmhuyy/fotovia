@@ -30,16 +30,16 @@ export const HeroSection = () => {
                   href="/photographers"
                   className={buttonVariants({ size: "lg" })}
                 >
-                  Find a photographer
+                  Explore photographers
                 </Link>
                 <Link
-                  href="/sign-up?role=photographer"
+                  href="/bookings/new"
                   className={buttonVariants({
                     size: "lg",
                     variant: "secondary",
                   })}
                 >
-                  Join as photographer
+                  Start a booking request
                 </Link>
               </>
             ) : null}
@@ -52,13 +52,13 @@ export const HeroSection = () => {
                   Explore photographers
                 </Link>
                 <Link
-                  href="/profile"
+                  href="/bookings/new"
                   className={buttonVariants({
                     size: "lg",
                     variant: "secondary",
                   })}
                 >
-                  View profile
+                  Start a booking request
                 </Link>
               </>
             ) : null}
@@ -82,6 +82,14 @@ export const HeroSection = () => {
               </>
             ) : null}
           </div>
+          {!isAuthenticated ? (
+            <Link
+              href="/sign-up?role=photographer"
+              className="text-sm font-medium text-foreground"
+            >
+              Are you a photographer? Join the platform.
+            </Link>
+          ) : null}
           <div className="flex items-center gap-6 text-xs uppercase tracking-[0.3em] text-muted">
             <span>Editorial</span>
             <span>Portrait</span>

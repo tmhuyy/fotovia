@@ -1,6 +1,7 @@
+import Link from "next/link";
 import { Section } from "../common/section";
 import { Container } from "../layout/container";
-import { Button } from "../ui/button";
+import { buttonVariants } from "../ui/button";
 
 export const CtaSection = () => {
   return (
@@ -21,12 +22,18 @@ export const CtaSection = () => {
               </p>
             </div>
             <div className="flex flex-wrap gap-4 md:justify-end">
-              <Button size="lg" className="bg-surface text-foreground">
-                Browse Photographers
-              </Button>
-              <Button size="lg" variant="secondary">
-                Try AI Matching
-              </Button>
+              <Link
+                href="/photographers"
+                className={`${buttonVariants({ size: "lg" })} bg-surface text-foreground`}
+              >
+                Explore photographers
+              </Link>
+              <Link
+                href="/bookings/new"
+                className={buttonVariants({ size: "lg", variant: "secondary" })}
+              >
+                Start booking request
+              </Link>
             </div>
           </div>
         </div>

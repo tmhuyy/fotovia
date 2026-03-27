@@ -456,3 +456,38 @@ This file tracks the progress of frontend tasks for Fotovia.
 ### Next Recommended Phase
 - Connect booking request form to real booking API.
 - Add booking history and request management UI.
+
+## Phase 13: Home Booking Entry and Real Featured Photographers
+**Status:** Completed
+
+### Scope
+- Strengthen homepage booking entry paths.
+- Replace featured photographer placeholders with real mock data.
+- Add a guided booking-entry block on the homepage.
+
+### Delivered
+- Featured photographers now use the real mock dataset and link to detail pages.
+- Hero CTAs now emphasize two paths: explore photographers or start a booking request.
+- New booking-entry section with quick brief inputs and a guided-path explainer.
+- Added `/bookings/new` placeholder page for guided booking briefs.
+- Homepage CTA section updated to reinforce browse-first and request-first paths.
+
+### Decisions
+- Guided booking request remains a placeholder route until the full brief flow is built.
+- Quick brief inputs are passed to `/bookings/new` via query params for future prefill use.
+
+### Notes
+- No backend/API integration added.
+- Auth-aware behavior remains intact for signed-in roles.
+
+### Key Files
+- `apps/web/src/components/home/featured-photographers.tsx`
+- `apps/web/src/components/home/hero-section.tsx`
+- `apps/web/src/components/home/booking-entry-section.tsx`
+- `apps/web/src/components/home/cta-section.tsx`
+- `apps/web/src/app/bookings/new/page.tsx`
+- `apps/web/src/features/booking/components/booking-brief-page.tsx`
+
+### Next Recommended Phase
+- Build the full guided booking brief flow.
+- Add recommendation results and matching logic UI scaffolds.
