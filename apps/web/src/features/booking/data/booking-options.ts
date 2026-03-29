@@ -6,6 +6,15 @@ export const sessionTypeOptions = [
   { value: "product", label: "Product or food" },
 ];
 
+export const styleOptions = [
+  { value: "editorial", label: "Editorial" },
+  { value: "cinematic", label: "Cinematic" },
+  { value: "romantic", label: "Romantic" },
+  { value: "modern", label: "Modern minimal" },
+  { value: "documentary", label: "Documentary" },
+  { value: "luxury", label: "Luxury" },
+];
+
 export const budgetOptions = [
   { value: "flexible", label: "Flexible" },
   { value: "under-500", label: "Under $500" },

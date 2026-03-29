@@ -491,3 +491,39 @@ This file tracks the progress of frontend tasks for Fotovia.
 ### Next Recommended Phase
 - Build the full guided booking brief flow.
 - Add recommendation results and matching logic UI scaffolds.
+
+## Phase 14: Guided Booking Brief UI
+**Status:** Completed
+
+### Scope
+- Replace the `/bookings/new` placeholder with a real guided booking brief form.
+- Support prefill values from the homepage quick brief entry.
+- Add a live summary sidebar and next-step CTA.
+
+### Delivered
+- `/bookings/new` now renders a full guided booking brief form with validation.
+- New guided brief fields: session type, date, time, location, budget, style, description, contact preference, inspiration link, notes.
+- Live summary card with brief readiness and a “Find matching photographers” CTA.
+- Local success state confirming brief submission (no backend yet).
+- Prefill support from homepage quick brief query params.
+
+### Decisions
+- Guided booking remains frontend-only with mock submission handling.
+- Recommendation results are deferred; CTA currently routes to the public photographer listing.
+
+### Notes
+- Direct booking flow remains unchanged.
+- Dark mode and responsive behaviors preserved.
+
+### Key Files
+- `apps/web/src/features/booking/components/booking-brief-page.tsx`
+- `apps/web/src/features/booking/components/booking-brief-form.tsx`
+- `apps/web/src/features/booking/components/booking-brief-form-fields.tsx`
+- `apps/web/src/features/booking/components/booking-brief-summary-card.tsx`
+- `apps/web/src/features/booking/components/booking-brief-success.tsx`
+- `apps/web/src/features/booking/schemas/booking-brief.schema.ts`
+- `apps/web/src/features/booking/data/booking-options.ts`
+
+### Next Recommended Phase
+- Build the guided recommendation results page.
+- Connect guided booking briefs to a real backend and matching pipeline.
