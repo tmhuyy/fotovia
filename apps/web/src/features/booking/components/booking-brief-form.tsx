@@ -18,14 +18,14 @@ export const BookingBriefForm = () => {
     <Card>
       <CardHeader className="space-y-2">
         <p className="text-xs uppercase tracking-[0.3em] text-muted">
-          Guided booking brief
+          Brief details
         </p>
         <div>
           <h2 className="text-xl font-semibold text-foreground">
-            Tell us what you are planning
+            Add the details that refine your match.
           </h2>
           <p className="text-sm text-muted">
-            We will use this brief to surface photographers who match your vision.
+            Build on your quick brief with style and preference notes.
           </p>
         </div>
       </CardHeader>

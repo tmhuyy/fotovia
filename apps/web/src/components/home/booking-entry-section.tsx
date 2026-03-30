@@ -50,9 +50,9 @@ export const BookingEntrySection = () => {
     <Section className="pt-0">
       <Container className="space-y-8">
         <SectionHeading
-          eyebrow="Booking entry"
-          title="Not sure who to book yet? Start with a quick brief."
-          description="Share a few essentials and Fotovia will guide you to photographers who fit your vision."
+          eyebrow="Guided booking · Step 1"
+          title="Start your booking brief in under a minute."
+          description="Share the essentials now, then continue your full brief on the next step."
         />
         <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
           <Card>
@@ -118,7 +118,7 @@ export const BookingEntrySection = () => {
                     We will refine details and match you with the right photographers.
                   </p>
                   <Button type="submit" size="sm">
-                    Start booking request
+                    Continue your booking brief
                   </Button>
                 </div>
               </form>
@@ -127,7 +127,7 @@ export const BookingEntrySection = () => {
           <Card>
             <CardContent className="space-y-4">
               <p className="text-xs uppercase tracking-[0.3em] text-muted">
-                Guided path
+                Guided path · Step 1
               </p>
               <h3 className="font-display text-2xl text-foreground">
                 Let Fotovia curate the shortlist.
@@ -136,9 +136,9 @@ export const BookingEntrySection = () => {
                 We will use your brief to surface photographers whose style and availability align with your moment.
               </p>
               <ul className="space-y-2 text-sm text-muted">
-                <li>Share the shoot type, timing, and location.</li>
-                <li>Review a curated list of matching photographers.</li>
-                <li>Send booking requests once you feel confident.</li>
+                <li>Step 1: Share the shoot type, timing, and location.</li>
+                <li>Step 2: Expand the brief and refine preferences.</li>
+                <li>Then: Review curated photographers before requesting.</li>
               </ul>
               <Link
                 href="/photographers"

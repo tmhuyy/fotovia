@@ -527,3 +527,51 @@ This file tracks the progress of frontend tasks for Fotovia.
 ### Next Recommended Phase
 - Build the guided recommendation results page.
 - Connect guided booking briefs to a real backend and matching pipeline.
+
+## Phase 15: 2-Step Guided Booking Flow
+**Status:** Completed
+
+### Scope
+- Treat homepage quick brief as Step 1.
+- Make `/bookings/new` a clear Step 2 continuation.
+- Improve prefill continuity and reduce duplicate feeling.
+
+### Delivered
+- Homepage quick brief CTA now communicates continuation to Step 2.
+- Added Step 1 messaging and flow guidance in the homepage booking-entry block.
+- `/bookings/new` copy updated to “Step 2 of 2” with continuation language.
+- Prefilled Step 1 values now surfaced in a “Prefilled from Step 1” block.
+- Guided booking form copy now emphasizes refining and extending the brief.
+
+### Decisions
+- Prefill continuity continues via query params from the homepage.
+- No backend persistence added yet.
+
+### Notes
+- Direct booking flow remains unchanged and distinct.
+
+### Key Files
+- `apps/web/src/components/home/booking-entry-section.tsx`
+- `apps/web/src/features/booking/components/booking-brief-page.tsx`
+- `apps/web/src/features/booking/components/booking-brief-form.tsx`
+
+### Next Recommended Phase
+- Add recommendation results page and guided-match flow.
+
+## Patch: Guided Booking Prefill Continuity
+**Status:** Completed
+
+### Scope
+- Ensure homepage Step 1 values persist into `/bookings/new`.
+- Prevent empty Step 2 forms when coming from the quick brief.
+
+### Delivered
+- `/bookings/new` now reads query params directly on the client for reliable prefill.
+- Prefilled Step 1 values are merged with server-provided props for continuity.
+
+### Notes
+- No backend persistence added.
+- Direct booking flow unchanged.
+
+### Key Files
+- `apps/web/src/features/booking/components/booking-brief-page.tsx`
