@@ -1,135 +1,167 @@
-# Turborepo starter
+# Fotovia
 
-This Turborepo starter is maintained by the Turborepo core team.
+Fotovia is an online photography booking platform with AI-assisted style matching and photographer recommendation.
 
-## Using this example
+This repository is organized as a monorepo and currently includes the frontend web app, backend services, shared packages, and project documentation.
 
-Run the following command:
+## Repository structure
 
-```sh
-npx create-turbo@latest
+```bash
+apps/
+  web/        # Frontend web app
+  auth/       # Authentication service
+  profile/    # Profile service
+  booking/    # Booking service
+
+packages/     # Shared configs/packages
+docs/         # Project documentation and progress tracking
+
+AGENTS.md     # AI agent guidance
+turbo.json    # Turborepo config
 ```
 
-## What's inside?
+## Current frontend status
 
-This Turborepo includes the following packages/apps:
+The frontend already has:
 
-### Apps and Packages
+- homepage foundation
+- auth UI foundation
+- responsive foundation
+- dark mode foundation
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+For the latest frontend progress, check:
 
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
+- `docs/frontend-progress.md`
+- `docs/fe-architecture.md`
+- `docs/design-system.md`
 
-### Utilities
+## Tech stack
 
-This Turborepo has some additional tools already setup for you:
+### Frontend
 
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
+- Next.js
+- TypeScript
+- Tailwind CSS v4
+- shadcn/ui
+- TanStack Query
+- Axios
+- React Hook Form
+- Zod
+- Zustand
+- next-themes
 
-### Build
+### Monorepo tooling
 
-To build all apps and packages, run the following command:
+- Turborepo
+- Yarn workspaces
+- TypeScript
 
-```
-cd my-turborepo
+## Prerequisites
 
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build
+Make sure these are installed:
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build
-yarn dlx turbo build
-pnpm exec turbo build
-```
+- Node.js 18 or newer
+- Yarn 1.22.19 or compatible
+- Git
 
-You can build a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
+## Getting started
 
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build --filter=docs
+### 1. Clone the repository
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build --filter=docs
-yarn exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-```
-
-### Develop
-
-To develop all apps and packages, run the following command:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev
-yarn exec turbo dev
-pnpm exec turbo dev
+```bash
+git clone <your-repo-url>
+cd fotovia
 ```
 
-You can develop a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
+### 2. Install dependencies
 
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev --filter=web
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev --filter=web
-yarn exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
+```bash
+yarn install
 ```
 
-### Remote Caching
+## Available root scripts
 
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo login
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo login
-yarn exec turbo login
-pnpm exec turbo login
+```bash
+yarn dev
+yarn build
+yarn lint
+yarn check-types
+yarn format
 ```
 
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
+### What they do
 
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
+- `yarn dev` runs development tasks across the monorepo
+- `yarn build` builds all configured apps and packages
+- `yarn lint` runs lint checks
+- `yarn check-types` runs type checking
+- `yarn format` formats supported files with Prettier
 
+## Running apps
+
+### Run the frontend web app
+
+From the repository root:
+
+```bash
+yarn workspace web dev
 ```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo link
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo link
-yarn exec turbo link
-pnpm exec turbo link
+The frontend runs on:
+
+```text
+http://localhost:8888
 ```
 
-## Useful Links
+### Build the frontend
 
-Learn more about the power of Turborepo:
+```bash
+yarn workspace web build
+```
 
-- [Tasks](https://turborepo.com/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.com/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.com/docs/reference/configuration)
-- [CLI Usage](https://turborepo.com/docs/reference/command-line-reference)
+### Start the frontend production build
+
+```bash
+yarn workspace web start
+```
+
+### Lint the frontend
+
+```bash
+yarn workspace web lint
+```
+
+### Type-check the frontend
+
+```bash
+yarn workspace web check-types
+```
+
+## Environment variables
+
+Frontend example env file:
+
+- `apps/web/.env.example`
+
+To use it:
+
+```bash
+cp apps/web/.env.example apps/web/.env.local
+```
+
+Then update the values based on your local backend setup.
+
+## Documentation
+
+Project docs live in the `docs/` folder:
+
+- `docs/system-overview.md`
+- `docs/fe-architecture.md`
+- `docs/design-system.md`
+- `docs/frontend-progress.md`
+
+## Notes
+
+- Root `README.md` is for general repo setup and project overview.
+- App-specific setup should be documented inside each app folder.
+- After each completed frontend phase, update `docs/frontend-progress.md` and related docs so future development sessions can understand the current state of the project.

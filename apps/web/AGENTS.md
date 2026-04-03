@@ -39,6 +39,18 @@ Use these Tailwind tokens:
 
 Do not use raw hex colors directly inside components unless absolutely necessary.
 
+### Semantic tokens and dark mode
+
+Prefer semantic tokens in components so light and dark mode stay consistent:
+
+- `bg-background`
+- `bg-surface`
+- `text-foreground`
+- `text-muted`
+- `border-border`
+- `text-accent`
+- `bg-accent`
+
 ## Implementation priority
 
 ### Sprint 1

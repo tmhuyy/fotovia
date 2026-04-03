@@ -49,6 +49,10 @@ Suggested route groups:
 
   services/
     api/
+      axios.ts
+      types.ts
+      response.ts
+      error.ts
     auth.service.ts
     profile.service.ts
     photographer.service.ts
@@ -59,6 +63,8 @@ Suggested route groups:
   providers/
     app-provider.tsx
     query-provider.tsx
+    theme-provider.tsx
+    auth-session-provider.tsx
 
   store/
     auth.store.ts
@@ -162,7 +168,9 @@ This helps keep the codebase clean and maintainable.
 ### Public pages
 - /
 - /photographers
-- /photographers/[id]
+- /photographers/[slug]
+- /photographers/[slug]/book
+- /bookings/new
 - /login
 - /register
 
