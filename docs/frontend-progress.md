@@ -575,3 +575,45 @@ This file tracks the progress of frontend tasks for Fotovia.
 
 ### Key Files
 - `apps/web/src/features/booking/components/booking-brief-page.tsx`
+
+## Phase X: Sign In API Connection (Reusable Service Pattern)
+**Status:** Completed
+
+### Scope
+- Connect sign-in UI to the real auth backend (`POST /auth/login`).
+- Introduce lightweight API response/error helpers for reuse.
+- Ensure auth requests support credentials for cookie-based auth.
+- Apply minimal backend CORS support for local dev if required.
+
+### Delivered
+- Sign-in now posts to `POST /auth/login` and unwraps the `{ statusCode, data }` response shape.
+- Added API helpers:
+  - `ApiResponse<T>` type
+  - `unwrapResponse` response normalizer
+  - `normalizeApiError` error normalizer
+- `authClient` now uses `withCredentials: true` for cookie-based auth.
+- Sign-in UI now maps backend failures to calm, user-facing messages.
+- Backend auth service enables CORS for `http://localhost:8888` with credentials.
+
+### Decisions
+- Login response normalized to `{ accessToken, refreshToken?, user: null }` to match current backend output.
+- Refresh-token flow and `/auth/me` hydration remain deferred.
+- Sign-up integration remains unchanged in this phase.
+
+### Notes
+- Corrected the earlier assumption of `/auth/signin`; the backend uses `/auth/login`.
+- Access token is still stored via the existing auth store for future API calls.
+
+### Key Files
+- `apps/web/src/services/api/axios.ts`
+- `apps/web/src/services/api/types.ts`
+- `apps/web/src/services/api/response.ts`
+- `apps/web/src/services/api/error.ts`
+- `apps/web/src/services/auth.service.ts`
+- `apps/web/src/features/auth/components/sign-in-form.tsx`
+- `apps/auth/src/main.ts`
+
+### Next Recommended Phase
+- Connect sign-up to real backend response shape.
+- Add `/auth/me` hydration once user payloads are returned.
+- Implement refresh-token handling and route protection.

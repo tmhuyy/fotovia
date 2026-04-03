@@ -49,6 +49,10 @@ Suggested route groups:
 
   services/
     api/
+      axios.ts
+      types.ts
+      response.ts
+      error.ts
     auth.service.ts
     profile.service.ts
     photographer.service.ts

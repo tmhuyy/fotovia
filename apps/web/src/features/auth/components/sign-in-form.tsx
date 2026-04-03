@@ -10,6 +10,7 @@ import { PasswordField } from "./password-field";
 import { signInSchema, type SignInFormValues } from "../schemas/sign-in.schema";
 import { authService } from "../../../services/auth.service";
 import { useAuthStore } from "../../../store/auth.store";
+import { normalizeApiError } from "../../../services/api/error";
 
 export const SignInForm = () => {
   const [formError, setFormError] = useState<string | null>(null);
@@ -30,7 +31,15 @@ export const SignInForm = () => {
       const response = await authService.signIn(values);
       setAuth({ accessToken: response.accessToken, user: response.user });
       setFormSuccess("You're signed in. Welcome back.");
-    } catch {
+    } catch (error) {
+      const { status } = normalizeApiError(
+        error,
+        "Unable to sign in. Please check your details and try again."
+      );
+      if (status === 401) {
+        setFormError("Invalid email or password.");
+        return;
+      }
       setFormError("Unable to sign in. Please check your details and try again.");
     }
   };
