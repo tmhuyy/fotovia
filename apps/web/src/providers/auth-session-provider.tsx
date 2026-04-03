@@ -6,43 +6,55 @@ import { authService } from "../services/auth.service";
 import { useAuthStore } from "../store/auth.store";
 
 interface AuthSessionProviderProps {
-  children: ReactNode;
+    children: ReactNode;
 }
 
 export const AuthSessionProvider = ({ children }: AuthSessionProviderProps) => {
-  const { setAuth, setUser, setLoading } = useAuthStore();
+    const { setAuth, clearAuth, startHydration, finishHydration } =
+        useAuthStore();
 
-  useEffect(() => {
-    const token = authToken.get();
-    if (!token) return;
+    useEffect(() => {
+        let isMounted = true;
 
-    let isMounted = true;
+        const initializeSession = async () => {
+            startHydration();
 
-    const initializeSession = async () => {
-      setLoading(true);
-      setAuth({ accessToken: token, user: null });
-      try {
-        const user = await authService.getCurrentUser();
-        if (isMounted) {
-          setUser(user);
-        }
-      } catch {
-        if (isMounted) {
-          setUser(null);
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
-    };
+            const token = authToken.get();
 
-    initializeSession();
+            if (!token) {
+                if (isMounted) {
+                    clearAuth();
+                    finishHydration();
+                }
+                return;
+            }
 
-    return () => {
-      isMounted = false;
-    };
-  }, [setAuth, setUser, setLoading]);
+            try {
+                const user = await authService.getCurrentUser();
 
-  return <>{children}</>;
+                if (isMounted) {
+                    setAuth({
+                        accessToken: token,
+                        user,
+                    });
+                }
+            } catch {
+                if (isMounted) {
+                    clearAuth();
+                }
+            } finally {
+                if (isMounted) {
+                    finishHydration();
+                }
+            }
+        };
+
+        void initializeSession();
+
+        return () => {
+            isMounted = false;
+        };
+    }, [setAuth, clearAuth, startHydration, finishHydration]);
+
+    return <>{children}</>;
 };

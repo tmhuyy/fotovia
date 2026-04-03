@@ -1,15 +1,19 @@
 # Frontend Auth Integration Notes
 
 ## Purpose
-This document keeps track of the current frontend auth integration state in `apps/web` so future ChatGPT or Codex sessions can continue with the correct assumptions.
+
+This document tracks the current real-auth integration state for `apps/web` so future ChatGPT or Codex sessions can continue with the correct auth assumptions.
 
 ## Current auth endpoints
-Local development setup:
+
+Local development:
+
 - Frontend: `http://localhost:8888`
 - Auth HTTP service: `http://localhost:3000`
 - Auth TCP service: `localhost:3001`
 
 Relevant auth endpoints:
+
 - `GET /auth/me`
 - `POST /auth/signup`
 - `POST /auth/login`
@@ -17,57 +21,57 @@ Relevant auth endpoints:
 - `POST /auth/signout`
 
 ## Current sign-in status
+
 Status: **working**
 
 Behavior:
+
 - Sign-in submits to `POST /auth/login`
-- FE expects backend responses wrapped by the shared response interceptor
-- FE normalizes login response data before storing tokens
-- Successful login redirects to `/`
-- Access token and refresh token are stored for later authenticated flows
+- Frontend stores returned tokens
+- Frontend then requests `/auth/me`
+- Current user is hydrated into the auth store
+- Successful sign-in redirects to `/`
 
-## Validation status
-Sign-in validation now behaves as expected:
-- invalid email shows inline field error
-- invalid password shows inline field error
-- invalid form input does not trigger runtime Zod overlay
-- invalid form input does not trigger fake loading state
-- invalid credentials from the backend show a form-level auth alert
+## Current session hydration status
 
-## Important implementation notes
-- FE must use `/auth/login`, not `/auth/signin`
-- FE auth requests use credentials support
-- Login flow currently stores tokens successfully, but full user hydration is still limited by the current `/auth/me` contract
-- Field validation errors and backend auth failures must remain visually separate
+Status: **working for navbar/main page**
 
-## Dependency compatibility note
-A runtime validation issue appeared during sign-in work.
+Behavior:
 
-Root cause area:
-- compatibility between `zod`
-- and `@hookform/resolvers`
+- On app load, frontend checks stored token
+- If a token exists, frontend requests `/auth/me`
+- Auth store is hydrated from `/auth/me`
+- Navbar waits for hydration before deciding whether to render signed-in or signed-out controls
 
-Rule:
-- if Zod validation starts throwing runtime overlays again, check resolver compatibility before debugging form code deeply
+## Current navbar status
 
-## Current limitation
-The frontend auth flow is only partially unified.
+Status: **working**
 
-Working now:
-- sign-in API connection
-- token storage
-- redirect after login
-- inline validation UX
+Behavior:
 
-Still pending:
-- improve `/auth/me`
-- hydrate real current user data reliably
-- unify auth-aware UI across navbar, home, and profile
-- reduce remaining mock-session dependence
+- Signed-out users see public auth CTA actions
+- Signed-in users see signed-in navbar state
+- Reload no longer shows a signed-out flash before hydration completes
+- Sign-out clears frontend auth state cleanly
+
+## Current known limitation
+
+The real auth session is now usable for sign-in and navbar behavior, but auth-aware UI is not fully unified across the entire app yet.
+
+Still deferred:
+
+- broader auth-aware UI cleanup outside navbar/main-page flow
+- sign-up contract cleanup
+- route protection rules
+- full removal of mock-session usage from development-only tools or older placeholder paths
 
 ## Recommended next phase
-### Auth Session Unification
+
+### Sign-up Contract Cleanup
+
 Goals:
-- improve `/auth/me` usefulness for frontend hydration
-- sync frontend auth-aware UI with real backend session data
-- reduce or remove mock-session usage in production-facing auth paths
+
+- verify frontend sign-up payload matches backend `CreateUserDto`
+- confirm support for role and full-name fields
+- align frontend validation and backend validation
+- decide post-sign-up behavior clearly

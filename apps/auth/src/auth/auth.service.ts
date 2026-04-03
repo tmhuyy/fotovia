@@ -116,11 +116,7 @@ export class AuthService {
         }
     }
 
-    async refreshToken(
-        user: User,
-        response: Response,
-        request: Request,
-    ) {
+    async refreshToken(user: User, response: Response, request: Request) {
         try {
             this.checkExpiredRefreshToken(user.loggedInAt);
         } catch (err) {
@@ -179,12 +175,17 @@ export class AuthService {
     //     return foundUser;
     // }
 
-    async signOut(user: User) {
+    async signOut(user: User, response: Response) {
         await this.userService.save({
             ...user,
             hashedRefreshToken: null,
             loggedInAt: null,
         });
+
+        this.clearAuthCookies(response);
+        return {
+            success: true,
+        };
     }
 
     storeTokenToCookie(
@@ -208,5 +209,19 @@ export class AuthService {
             httpOnly: true,
             expires,
         });
+    }
+
+    private clearAuthCookies(response: Response) {
+        response.clearCookie('Authentication');
+        response.clearCookie('RefreshToken');
+    }
+
+    getMe(user: User) {
+        return {
+            id: user.id,
+            email: user.email,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt,
+        };
     }
 }

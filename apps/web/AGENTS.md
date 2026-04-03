@@ -203,3 +203,12 @@ When working on auth forms such as sign-in or sign-up:
 - Invalid forms must not submit API requests
 - Invalid forms must not leave submit buttons stuck in loading state
 - If validation suddenly starts throwing runtime errors again, check `zod` and `@hookform/resolvers` compatibility first
+
+
+## Auth session hydration rules
+
+- Use `/auth/me` as the frontend source of truth for current signed-in user data.
+- After successful sign-in, hydrate current user data before treating the session as fully ready.
+- Do not show signed-out navbar actions while session hydration is still in progress.
+- Prefer a neutral loading or skeleton state during auth hydration.
+- Production-facing auth-aware UI should prefer the real auth store over mock-session state.

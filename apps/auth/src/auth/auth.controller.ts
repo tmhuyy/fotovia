@@ -7,30 +7,28 @@ import {
     Res,
     UseGuards,
 } from '@nestjs/common';
-import { AuthService } from './auth.service';
-
-import { RefreshAuthGuard } from './guard/refresh-auth.guard';
-import { GetUser } from '@repo/common';
-import { AuthGuard } from '@nestjs/passport';
-import { JwtStrategyAuthGuard } from './guard/jwt-auth.guard';
-import { CreateUserDto, SignInUserDto } from '@repo/types';
-import { User } from 'src/user/entities/user.entity';
 import { ApiBearerAuth, ApiBody } from '@nestjs/swagger';
-import { LocalAuthGuard } from './guard/local-auth.guard';
-import { Request, Response } from 'express';
 import { MessagePattern, Payload } from '@nestjs/microservices';
+import { Request, Response } from 'express';
+
+import { GetUser } from '@repo/common';
+import { CreateUserDto, SignInUserDto } from '@repo/types';
+
+import { AuthService } from './auth.service';
+import { RefreshAuthGuard } from './guard/refresh-auth.guard';
+import { JwtStrategyAuthGuard } from './guard/jwt-auth.guard';
+import { LocalAuthGuard } from './guard/local-auth.guard';
+import { User } from 'src/user/entities/user.entity';
 
 @ApiBearerAuth()
 @Controller('auth')
 export class AuthController {
     constructor(private readonly authService: AuthService) {}
 
-    // http transport
     @UseGuards(JwtStrategyAuthGuard)
     @Get('/me')
-    hello(@GetUser() user: User) {
-        console.log(user);
-        return `Here is ${user.id}`;
+    getMe(@GetUser() user: User) {
+        return this.authService.getMe(user);
     }
 
     @Post('/signup')
@@ -60,18 +58,18 @@ export class AuthController {
 
     @UseGuards(JwtStrategyAuthGuard)
     @Post('/signout')
-    signout(@GetUser() user: User) {
-        return this.authService.signOut(user);
+    signout(
+        @GetUser() user: User,
+        @Res({ passthrough: true }) response: Response,
+    ) {
+        return this.authService.signOut(user, response);
     }
 
     // rpc transport
     //3rd
     @UseGuards(JwtStrategyAuthGuard)
     @MessagePattern('authenticate')
-    async authenticate(
-        @Payload() data: any, // here is the returned data from request + returned result after validate JWT strategy -> is user object
-    ): Promise<User> {
-        //5th
-        return data.user; 
+    async authenticate(@Payload() data: any): Promise<any> {
+        return data.user;
     }
 }

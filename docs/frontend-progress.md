@@ -658,3 +658,43 @@ This file tracks the progress of frontend tasks for Fotovia.
 ### Next Recommended Phase
 - Review `/auth/me` contract and improve frontend session hydration
 - Start reducing mock-session dependence in auth-aware UI
+
+## Phase 18: Auth Session Hydration and Navbar Unification
+**Status:** Completed
+
+### Scope
+- Make `/auth/me` usable for frontend session hydration.
+- Hydrate the signed-in user after successful login.
+- Reflect real signed-in state on the homepage navbar.
+- Prevent the navbar from flashing a signed-out state on reload before session hydration finishes.
+
+### Delivered
+- Updated backend `/auth/me` to return a frontend-usable user summary instead of a placeholder string.
+- Sign-in flow now fetches current user data after successful login before redirecting to `/`.
+- Auth session provider now hydrates session state from stored token + `/auth/me`.
+- Navbar now reflects real signed-in state using the auth store.
+- Navbar reload behavior now avoids showing signed-out actions before session hydration completes.
+- Sign-out clears frontend auth state and returns the navbar to signed-out state cleanly.
+
+### Decisions
+- `/auth/me` is now the source of truth for frontend user hydration after login and on reload.
+- Navbar should not render signed-out CTA state while auth hydration is still in progress.
+- A neutral loading/hydration state is preferred over a signed-out flash.
+
+### Notes
+- This phase focuses on real auth session behavior for the navbar and main page entry experience.
+- Broader auth-aware UI cleanup across the rest of the app is still deferred.
+- Mock-session-based developer tools may still exist separately and are not the source of truth for the production-facing auth flow.
+
+### Key Files
+- `apps/auth/src/auth/auth.controller.ts`
+- `apps/auth/src/auth/auth.service.ts`
+- `apps/web/src/services/auth.service.ts`
+- `apps/web/src/store/auth.store.ts`
+- `apps/web/src/providers/auth-session-provider.tsx`
+- `apps/web/src/features/auth/components/sign-in-form.tsx`
+- `apps/web/src/components/home/navbar.tsx`
+
+### Next Recommended Phase
+- Audit and clean up sign-up contract between frontend and backend.
+- Unify remaining auth-aware UI away from mock-session where appropriate.
