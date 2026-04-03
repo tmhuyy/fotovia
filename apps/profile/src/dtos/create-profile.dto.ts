@@ -12,15 +12,14 @@ import {
     ArrayMaxSize,
     ArrayUnique,
 } from 'class-validator';
-import { ProfileRole } from '../entities/profile.entity';
-
+import { UserRole } from '@repo/types';
 export class CreateProfileDto {
     @ApiProperty({
-        enum: ProfileRole,
-        example: ProfileRole.CLIENT,
+        enum: UserRole,
+        example: UserRole.CLIENT,
     })
-    @IsEnum(ProfileRole)
-    role: ProfileRole;
+    @IsEnum(UserRole)
+    role: UserRole;
 
     @ApiPropertyOptional({
         example: 'Huy Tran',

@@ -1,27 +1,24 @@
 import {
-    BadRequestException,
     ConflictException,
     Injectable,
-    InternalServerErrorException,
+    Logger,
     NotFoundException,
-    // UnauthorizedException,
 } from '@nestjs/common';
-import * as bcrypt from 'bcrypt';
 import { InjectRepository } from '@nestjs/typeorm';
-import { QueryFailedError, Repository } from 'typeorm';
-import { Logger } from '@nestjs/common';
+import { Repository } from 'typeorm';
+
 import { Profile } from 'src/entities/profile.entity';
 import { CreateProfileDto } from 'src/dtos/create-profile.dto';
 import { UpdateProfileDto } from 'src/dtos/update-profile.dto';
+import { CreateProfileFromAuthDto } from 'src/dtos/create-profile-from-auth.dto';
 
 @Injectable()
 export class ProfileRepository extends Repository<Profile> {
-    // constructor(private dataSource: DataSource) {
-    //   super(User, dataSource.createEntityManager());
-    // }
     private readonly logger = new Logger(ProfileRepository.name);
 
-    constructor(@InjectRepository(Profile) private repo: Repository<Profile>) {
+    constructor(
+        @InjectRepository(Profile) private readonly repo: Repository<Profile>,
+    ) {
         super(repo.target, repo.manager, repo.queryRunner);
     }
 
@@ -31,7 +28,7 @@ export class ProfileRepository extends Repository<Profile> {
         });
 
         if (!profile) {
-            throw new NotFoundException('Profile not found');
+            throw new NotFoundException('Profile does not exist');
         }
 
         return profile;
@@ -42,70 +39,45 @@ export class ProfileRepository extends Repository<Profile> {
         userId: string,
     ): Promise<Profile> {
         const existingProfile = await this.repo.findOne({
-            where: { userId: userId },
+            where: { userId },
         });
 
         if (existingProfile) {
-            throw new ConflictException('Profile already exists for this user');
+            throw new ConflictException('Profile already exists');
         }
 
         const profile = this.repo.create({
             ...createProfileDto,
             userId,
-            specialties: createProfileDto.specialties ?? [],
         });
 
-        try {
-            return await this.repo.save(profile);
-        } catch (error) {
-            this.logger.error(
-                'Failed to create profile',
-                error?.stack || error,
+        return this.repo.save(profile);
+    }
+
+    async createProfileFromSignup(
+        createProfileFromAuthDto: CreateProfileFromAuthDto,
+    ): Promise<Profile> {
+        const existingProfile = await this.repo.findOne({
+            where: { userId: createProfileFromAuthDto.userId },
+        });
+
+        if (existingProfile) {
+            this.logger.warn(
+                `Profile already exists for userId=${createProfileFromAuthDto.userId}`,
             );
-
-            if (error instanceof QueryFailedError) {
-                throw new InternalServerErrorException(
-                    'Database error while creating profile',
-                );
-            }
-
-            throw error;
+            throw new ConflictException('Profile already exists');
         }
+
+        const profile = this.repo.create(createProfileFromAuthDto);
+        return this.repo.save(profile);
     }
 
     async updateProfile(
         updateProfileDto: UpdateProfileDto,
         userId: string,
     ): Promise<Profile> {
-        const existingProfile = await this.repo.findOne({
-            where: { userId },
-        });
-
-        if (!existingProfile) {
-            throw new NotFoundException('Profile not found');
-        }
-
-        const mergedProfile = this.repo.merge(existingProfile, {
-            ...updateProfileDto,
-            specialties:
-                updateProfileDto.specialties ?? existingProfile.specialties,
-        });
-
-        try {
-            return await this.repo.save(mergedProfile);
-        } catch (error) {
-            this.logger.error(
-                'Failed to update profile',
-                error?.stack || error,
-            );
-
-            if (error instanceof QueryFailedError) {
-                throw new InternalServerErrorException(
-                    'Database error while updating profile',
-                );
-            }
-
-            throw error;
-        }
+        const profile = await this.getProfileByUserId(userId);
+        const updatedProfile = this.repo.merge(profile, updateProfileDto);
+        return this.repo.save(updatedProfile);
     }
 }

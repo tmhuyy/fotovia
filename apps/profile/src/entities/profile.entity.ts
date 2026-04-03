@@ -1,4 +1,4 @@
-// import { Moment } from 'moment';
+import { UserRole } from '@repo/types';
 import {
     Column,
     CreateDateColumn,
@@ -6,11 +6,6 @@ import {
     PrimaryGeneratedColumn,
     UpdateDateColumn,
 } from 'typeorm';
-
-export enum ProfileRole {
-    CLIENT = 'CLIENT',
-    PHOTOGRAPHER = 'PHOTOGRAPHER',
-}
 
 @Entity('profiles')
 export class Profile {
@@ -20,23 +15,23 @@ export class Profile {
     @Column({ name: 'user_id', type: 'uuid', unique: true })
     userId: string;
 
-    @Column({ type: 'varchar', length: 30, default: ProfileRole.CLIENT })
-    role: ProfileRole;
+    @Column({ type: 'varchar', length: 30, default: UserRole.CLIENT })
+    role: UserRole;
 
     @Column({ name: 'full_name', type: 'varchar', length: 255, nullable: true })
-    fullName: string;
+    fullName: string | null;
 
     @Column({ name: 'avatar_url', type: 'text', nullable: true })
-    avatarUrl: string;
+    avatarUrl: string | null;
 
     @Column({ type: 'varchar', length: 30, nullable: true })
-    phone: string;
+    phone: string | null;
 
     @Column({ type: 'varchar', length: 255, nullable: true })
-    location: string;
+    location: string | null;
 
     @Column({ type: 'text', nullable: true })
-    bio: string;
+    bio: string | null;
 
     @Column('text', {
         array: true,
@@ -52,10 +47,10 @@ export class Profile {
         scale: 2,
         nullable: true,
     })
-    pricePerHour: number;
+    pricePerHour: number | null;
 
     @Column({ name: 'experience_years', type: 'int', nullable: true })
-    experienceYears: number;
+    experienceYears: number | null;
 
     @CreateDateColumn({ name: 'created_at' })
     createdAt: Date;

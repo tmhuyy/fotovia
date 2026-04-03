@@ -11,16 +11,16 @@ import {
     MaxLength,
     Min,
 } from 'class-validator';
-import { ProfileRole } from '../entities/profile.entity';
+import { UserRole } from '@repo/types';
 
 export class UpdateProfileDto {
     @ApiPropertyOptional({
-        enum: ProfileRole,
-        example: ProfileRole.PHOTOGRAPHER,
+        enum: UserRole,
+        example: UserRole.PHOTOGRAPHER,
     })
     @IsOptional()
-    @IsEnum(ProfileRole)
-    role?: ProfileRole;
+    @IsEnum(UserRole)
+    role?: UserRole;
 
     @ApiPropertyOptional({ example: 'Huy Tran' })
     @IsOptional()

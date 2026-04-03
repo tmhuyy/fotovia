@@ -1,4 +1,6 @@
 import { Moment } from 'moment';
+import { IUser } from '@repo/common';
+import { UserRole } from '@repo/types';
 import {
     Column,
     CreateDateColumn,
@@ -6,15 +8,25 @@ import {
     PrimaryGeneratedColumn,
     UpdateDateColumn,
 } from 'typeorm';
-import { IUser } from '@repo/common';
+
 @Entity()
 export class User implements IUser {
     @PrimaryGeneratedColumn('uuid')
     id: string;
+
     @Column({ unique: true })
     email: string;
+
     @Column()
     password: string;
+
+    @Column({
+        type: 'varchar',
+        length: 30,
+        default: UserRole.CLIENT,
+    })
+    role: UserRole;
+
     @Column({ nullable: true })
     hashedRefreshToken: string | null;
 

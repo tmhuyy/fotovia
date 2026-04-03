@@ -1,36 +1,46 @@
 import { ExpiredTimeType } from './enum/expired_time_type.enum';
 import {
+    BadRequestException,
     Inject,
     Injectable,
-    NotFoundException,
     UnauthorizedException,
 } from '@nestjs/common';
-
+import { ClientProxy } from '@nestjs/microservices';
 import { JwtService } from '@nestjs/jwt';
 import { RefreshTokenConfig } from './strategies/config/refresh-token.config';
 import { ConfigService, ConfigType } from '@nestjs/config';
+import { firstValueFrom } from 'rxjs';
 import * as moment from 'moment';
 import * as ms from 'ms';
 import * as bcrypt from 'bcrypt';
-import { CheckUserTypeEnum, CreateUserDto, SignInUserDto } from '@repo/types';
+
+import { PROFILE_SERVICE } from '@repo/common';
+import { CreateUserDto } from '@repo/types';
+
 import { UserService } from 'src/user/user.service';
-import { UserRepository } from 'src/user/repositories/user.repository';
 import { User } from 'src/user/entities/user.entity';
 import { RefreshTokenPayload } from './interface/refresh-token.payload.interface';
 import { AccessTokenPayload } from './interface/access-token.payload.interface';
 import { Request, Response } from 'express';
 
+type CreateProfileFromSignupPayload = {
+    userId: string;
+    role: User['role'];
+    fullName: string;
+};
+
 @Injectable()
 export class AuthService {
     constructor(
         private readonly userService: UserService,
-        private readonly userRepository: UserRepository,
         private readonly jwtService: JwtService,
         @Inject(RefreshTokenConfig.KEY)
         private readonly refreshTokenConfig: ConfigType<
             typeof RefreshTokenConfig
         >,
         private readonly configService: ConfigService,
+        @Inject(PROFILE_SERVICE)
+        private readonly profileClient: ClientProxy,
     ) {}
 
     private cookieType = {
@@ -40,18 +50,37 @@ export class AuthService {
 
     async hashToken(value: string) {
         const salt = await bcrypt.genSalt();
-        const result = await bcrypt.hash(value, salt);
-        return result;
+        return bcrypt.hash(value, salt);
     }
 
-    signUp(createUserDto: CreateUserDto) {
-        return this.userService.createUser(createUserDto);
+    async signUp(createUserDto: CreateUserDto) {
+        const createdUser = await this.userService.createUser(createUserDto);
+
+        try {
+            await firstValueFrom(
+                this.profileClient.send('profile.create_from_signup', {
+                    userId: createdUser.id,
+                    role: createdUser.role,
+                    fullName: createUserDto.fullName,
+                } satisfies CreateProfileFromSignupPayload),
+            );
+        } catch {
+            await this.userService.deleteById(createdUser.id);
+            throw new BadRequestException(
+                'Sign up failed while creating the user profile.',
+            );
+        }
+
+        return {
+            user: {
+                id: createdUser.id,
+                email: createdUser.email,
+                role: createdUser.role,
+            },
+        };
     }
 
     async signIn(user: User, response: Response) {
-        ///
-        // const signedInUser = await this.userService.signIn(signInUserDto);
-        ///
         const payload: AccessTokenPayload = {
             userId: user.id,
         };
@@ -69,20 +98,11 @@ export class AuthService {
             loggedInAt: moment(Date.now()),
         });
 
-        /*
-            Store access token to cookie
-        */
-
-        // console.log(accessTokenExpiredTimeSecond);
         this.storeTokenToCookie(
             response,
             accessToken,
             ExpiredTimeType.JWT_EXPIRE_IN,
         );
-
-        /*
-            Store refresh token to cookie
-        */
         this.storeTokenToCookie(
             response,
             refreshToken,
@@ -102,15 +122,6 @@ export class AuthService {
         const now = moment.utc();
         const elapsedMs = now.diff(moment.utc(loggedInAt), 'milliseconds');
 
-        console.log(
-            `---DEBUG---refreshTokenExpiredTimeMs: ${refreshTokenExpiredTimeMs}`,
-        );
-        console.log(`---DEBUG---now:${now}`);
-        console.log(`---DEBUG---loggedInAtUtc:${moment.utc(loggedInAt)}`);
-        console.log(
-            `---DEBUG---duration between loggedInAt and now : ${now.diff(moment.utc(loggedInAt), 'minute')} mins`,
-        );
-
         if (elapsedMs > refreshTokenExpiredTimeMs) {
             throw new UnauthorizedException('Expired Refresh Token');
         }
@@ -123,14 +134,14 @@ export class AuthService {
             throw new UnauthorizedException(err);
         }
 
-        console.log(request.cookies.RefreshToken);
-
         const compared: boolean = await bcrypt.compare(
             request?.cookies?.RefreshToken,
             user.hashedRefreshToken,
         );
 
-        if (!compared) throw new UnauthorizedException('Invalid Refresh Token');
+        if (!compared) {
+            throw new UnauthorizedException('Invalid Refresh Token');
+        }
 
         const payload: RefreshTokenPayload = {
             userId: user.id,
@@ -141,18 +152,11 @@ export class AuthService {
             this.jwtService.signAsync(payload, this.refreshTokenConfig),
         ]);
 
-        /*
-            Store access token to cookie
-        */
         this.storeTokenToCookie(
             response,
             accessToken,
             ExpiredTimeType.JWT_EXPIRE_IN,
         );
-
-        /*
-            Store refresh token to cookie
-        */
         this.storeTokenToCookie(
             response,
             refreshToken,
@@ -161,19 +165,13 @@ export class AuthService {
 
         const hashedRefreshToken = await this.hashToken(refreshToken);
 
-        await this.userService.save({ ...user, hashedRefreshToken });
+        await this.userService.save({
+            ...user,
+            hashedRefreshToken,
+        });
 
         return { accessToken, refreshToken };
     }
-
-    // async findUser(userId: string) {
-    //     const foundUser = await this.userRepository.findOne({
-    //         where: { id: userId },
-    //     });
-    //     if (!foundUser) throw new NotFoundException('User is not exist');
-
-    //     return foundUser;
-    // }
 
     async signOut(user: User, response: Response) {
         await this.userService.save({
@@ -199,8 +197,6 @@ export class AuthService {
                     expiredTimeType,
                 ) as unknown as ms.StringValue,
             ) / 1000;
-
-        console.log(tokenExpiredTimeSecond);
 
         const expires = new Date();
         expires.setSeconds(expires.getSeconds() + tokenExpiredTimeSecond);

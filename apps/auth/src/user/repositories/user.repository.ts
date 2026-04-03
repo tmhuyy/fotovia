@@ -1,33 +1,28 @@
-import { DataSource, Repository } from 'typeorm';
-import { User } from '../entities/user.entity';
+import { QueryFailedError, Repository } from 'typeorm';
 import {
     BadRequestException,
     ConflictException,
     Injectable,
+    Logger,
     NotFoundException,
-    UnauthorizedException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
-import { CreateUserDto, SignInUserDto } from '@repo/types';
+import { CheckUserTypeEnum, CreateUserDto } from '@repo/types';
 import { InjectRepository } from '@nestjs/typeorm';
-import { CheckUserTypeEnum } from '@repo/types';
-import { QueryFailedError } from 'typeorm';
-import { Logger } from '@nestjs/common';
+import { User } from '../entities/user.entity';
 
 @Injectable()
 export class UserRepository extends Repository<User> {
-    // constructor(private dataSource: DataSource) {
-    //   super(User, dataSource.createEntityManager());
-    // }
     private readonly logger = new Logger(UserRepository.name);
 
-    constructor(@InjectRepository(User) private repo: Repository<User>) {
+    constructor(
+        @InjectRepository(User) private readonly repo: Repository<User>,
+    ) {
         super(repo.target, repo.manager, repo.queryRunner);
     }
 
-    async createUser(createUserDto: CreateUserDto) {
-        const { email, password } = createUserDto;
-
+    async createUser(createUserDto: CreateUserDto): Promise<User> {
+        const { email, password, role } = createUserDto;
         const salt = await bcrypt.genSalt();
         const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -35,53 +30,36 @@ export class UserRepository extends Repository<User> {
             const user = this.repo.create({
                 email,
                 password: hashedPassword,
+                role,
             });
 
-            await this.repo.save(user);
+            return await this.repo.save(user);
         } catch (err) {
-            if (err instanceof QueryFailedError) {
-                // Postgres error codes: https://www.postgresql.org/docs/current/errcodes-appendix.html
-                if ((err as any).code === '23505') {
-                    this.logger.error('Duplicate email error', err.stack);
-
-                    throw new ConflictException('Username already exists');
-                }
+            if (
+                err instanceof QueryFailedError &&
+                (err as any).code === '23505'
+            ) {
+                this.logger.error('Duplicate email error', err.stack);
+                throw new ConflictException('Email already exists');
             }
-            throw new BadRequestException(`Sign up failed`);
+
+            throw new BadRequestException('Sign up failed');
         }
     }
 
-    async checkUser(value: string, type: CheckUserTypeEnum) {
+    async checkUser(value: string, type: CheckUserTypeEnum): Promise<User> {
         const foundUser = await this.repo.findOne({
-            where: {
-                [type]: value,
-            },
+            where: { [type]: value },
         });
 
-        if (!foundUser) throw new NotFoundException('User is not exist');
+        if (!foundUser) {
+            throw new NotFoundException('User does not exist');
+        }
+
         return foundUser;
     }
 
-    // async signIn(signInUserDto: SignInUserDto) {
-    //     const { email, password } = signInUserDto;
-
-    //     const foundUser = await this.checkUser(
-    //         email,
-    //         CheckUserTypeEnum.USERNAME,
-    //     );
-
-    //     const result: boolean = await bcrypt.compare(
-    //         password,
-    //         foundUser.password,
-    //     );
-
-    //     if (!result)
-    //         throw new UnauthorizedException('Username or Password is wrong');
-
-    //     // const payload = {
-    //     //     email,
-    //     //     userId: foundUser.id
-    //     // };
-    //     return foundUser;
-    // }
+    async deleteUserById(userId: string): Promise<void> {
+        await this.repo.delete({ id: userId });
+    }
 }

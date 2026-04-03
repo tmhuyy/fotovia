@@ -1,18 +1,28 @@
 import { Injectable } from '@nestjs/common';
+
+import { CreateProfileDto } from './dtos/create-profile.dto';
+import { CreateProfileFromAuthDto } from './dtos/create-profile-from-auth.dto';
+import { UpdateProfileDto } from './dtos/update-profile.dto';
 import { Profile } from './entities/profile.entity';
 import { ProfileRepository } from './repositories/profile.repository';
-import { CreateProfileDto } from './dtos/create-profile.dto';
-import { UpdateProfileDto } from './dtos/update-profile.dto';
 
 @Injectable()
 export class ProfileService {
     constructor(private readonly profileRepository: ProfileRepository) {}
-    //TODO check about pass role value from request body
+
     async createProfile(
         createProfileDto: CreateProfileDto,
         userId: string,
     ): Promise<Profile> {
         return this.profileRepository.createProfile(createProfileDto, userId);
+    }
+
+    async createProfileFromSignup(
+        createProfileFromAuthDto: CreateProfileFromAuthDto,
+    ): Promise<Profile> {
+        return this.profileRepository.createProfileFromSignup(
+            createProfileFromAuthDto,
+        );
     }
 
     async updateProfile(
