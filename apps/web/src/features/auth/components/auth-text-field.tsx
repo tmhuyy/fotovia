@@ -6,47 +6,57 @@ import { Label } from "../../../components/ui/label";
 import { FieldError } from "./field-error";
 
 interface AuthTextFieldProps {
-  name: string;
-  label: string;
-  type?: string;
-  placeholder?: string;
-  autoComplete?: string;
-  helperText?: string;
+    name: "email";
+    label: string;
+    type?: string;
+    placeholder?: string;
+    autoComplete?: string;
+    helperText?: string;
 }
 
 export const AuthTextField = ({
-  name,
-  label,
-  type = "text",
-  placeholder,
-  autoComplete,
-  helperText,
+    name,
+    label,
+    type = "text",
+    placeholder,
+    autoComplete,
+    helperText,
 }: AuthTextFieldProps) => {
-  const {
-    register,
-    formState: { errors },
-  } = useFormContext();
+    const {
+        register,
+        formState: { errors },
+    } = useFormContext();
 
-  const fieldError = (errors as Record<string, { message?: string }>)[name];
-  const message = fieldError?.message;
+    const message =
+        typeof errors[name]?.message === "string"
+            ? errors[name]?.message
+            : undefined;
 
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <Label htmlFor={name}>{label}</Label>
-        {helperText ? (
-          <span className="text-xs text-muted">{helperText}</span>
-        ) : null}
-      </div>
-      <Input
-        id={name}
-        type={type}
-        placeholder={placeholder}
-        autoComplete={autoComplete}
-        aria-invalid={!!message}
-        {...register(name)}
-      />
-      <FieldError message={message} />
-    </div>
-  );
+    return (
+        <div className="space-y-2">
+            <div className="flex items-center justify-between gap-3">
+                <Label
+                    htmlFor={name}
+                    className="text-sm font-medium text-foreground"
+                >
+                    {label}
+                </Label>
+
+                {helperText ? (
+                    <p className="text-xs text-muted">{helperText}</p>
+                ) : null}
+            </div>
+
+            <Input
+                id={name}
+                type={type}
+                placeholder={placeholder}
+                autoComplete={autoComplete}
+                aria-invalid={message ? "true" : "false"}
+                {...register(name)}
+            />
+
+            <FieldError message={message} />
+        </div>
+    );
 };

@@ -190,3 +190,16 @@ The frontend is expected to support these main modules:
 Move fast, but keep the structure clean enough for future expansion.
 
 Always build the simplest clean version first.
+
+## Auth form validation rules
+
+When working on auth forms such as sign-in or sign-up:
+
+- Keep validation inside `react-hook-form` with `zodResolver(...)`
+- Do not allow normal invalid input flow to throw runtime Zod overlays
+- Show validation messages directly under the related field
+- Use destructive field styling for invalid states
+- Keep field validation errors separate from API submission errors
+- Invalid forms must not submit API requests
+- Invalid forms must not leave submit buttons stuck in loading state
+- If validation suddenly starts throwing runtime errors again, check `zod` and `@hookform/resolvers` compatibility first

@@ -576,7 +576,7 @@ This file tracks the progress of frontend tasks for Fotovia.
 ### Key Files
 - `apps/web/src/features/booking/components/booking-brief-page.tsx`
 
-## Phase X: Sign In API Connection (Reusable Service Pattern)
+## Phase 16: Sign In API Connection (Reusable Service Pattern)
 **Status:** Completed
 
 ### Scope
@@ -617,3 +617,44 @@ This file tracks the progress of frontend tasks for Fotovia.
 - Connect sign-up to real backend response shape.
 - Add `/auth/me` hydration once user payloads are returned.
 - Implement refresh-token handling and route protection.
+
+
+## Phase: 17 Sign-In Zod Validation Runtime Fix + Error UX Cleanup
+**Status:** Completed
+
+### Scope
+- Fix the runtime Zod overlay issue on the sign-in page
+- Keep invalid input errors inside the form instead of throwing a runtime error
+- Prevent invalid form states from triggering fake loading behavior
+- Improve sign-in validation UX to feel closer to production-ready marketplace patterns
+
+### Delivered
+- Fixed the sign-in validation flow so invalid inputs now stay inside React Hook Form error state
+- Password and email validation errors now render inline under the correct field
+- Invalid form submissions no longer trigger the runtime Zod overlay
+- Invalid form submissions no longer leave the submit button stuck in a loading state
+- Sign-in auth failures remain separated from field validation failures through a form-level auth alert
+
+### Decisions
+- Sign-in validation should stay lightweight and appropriate for login UX
+- Field validation errors and API auth errors must remain visually separate
+- Zod validation for normal user input must never surface as a runtime overlay in the expected flow
+
+### Notes
+- A compatibility issue between `zod` and `@hookform/resolvers` was part of the problem
+- Resolver compatibility should be checked first if similar runtime validation behavior appears again
+- The desired UX pattern is inline field error messaging, similar to standard React Hook Form + Zod form behavior
+
+### Key Files
+- `apps/web/package.json`
+- `apps/web/src/features/auth/schemas/sign-in.schema.ts`
+- `apps/web/src/features/auth/components/sign-in-form.tsx`
+
+### Outcome
+- Successful login still redirects to `/`
+- Access token and refresh token continue to be stored after successful login
+- Invalid input now behaves like normal form validation instead of a runtime crash
+
+### Next Recommended Phase
+- Review `/auth/me` contract and improve frontend session hydration
+- Start reducing mock-session dependence in auth-aware UI
