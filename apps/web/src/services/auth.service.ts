@@ -1,4 +1,9 @@
-import type { AuthResponse, AuthRole, AuthUser } from "../types/auth.types";
+import type {
+    AuthResponse,
+    AuthRole,
+    AuthUser,
+    SignUpResponse,
+} from "../types/auth.types";
 import { authClient } from "./api/axios";
 import { unwrapResponse } from "./api/response";
 import type { ApiResponse } from "./api/types";
@@ -81,6 +86,19 @@ const normalizeSignInResponse = (
     };
 };
 
+const normalizeSignUpResponse = (
+    data: ApiResponse<AnyRecord> | AnyRecord,
+): SignUpResponse => {
+    const payload = unwrapResponse(data);
+    const user = normalizeUser(
+        (payload.user as AnyRecord | undefined) ?? (payload as AnyRecord),
+    );
+
+    return {
+        user,
+    };
+};
+
 export const authService = {
     signIn: async (payload: SignInPayload): Promise<AuthResponse> => {
         const response = await authClient.post<
@@ -90,19 +108,17 @@ export const authService = {
         return normalizeSignInResponse(response.data);
     },
 
-    signUp: async (payload: SignUpPayload): Promise<AuthResponse> => {
-        const response = await authClient.post<ApiResponse<AnyRecord>>(
-            AUTH_ENDPOINTS.signUp,
-            {
-                email: payload.email,
-                password: payload.password,
-                role: payload.role,
-                fullName: payload.fullName,
-                name: payload.fullName,
-            },
-        );
+    signUp: async (payload: SignUpPayload): Promise<SignUpResponse> => {
+        const response = await authClient.post<
+            ApiResponse<AnyRecord> | AnyRecord
+        >(AUTH_ENDPOINTS.signUp, {
+            email: payload.email,
+            password: payload.password,
+            role: payload.role,
+            fullName: payload.fullName,
+        });
 
-        return normalizeAuthResponse(response.data);
+        return normalizeSignUpResponse(response.data);
     },
 
     getCurrentUser: async (): Promise<AuthUser> => {

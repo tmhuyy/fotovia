@@ -6,7 +6,7 @@ import { Label } from "../../../components/ui/label";
 import { FieldError } from "./field-error";
 
 interface AuthTextFieldProps {
-    name: "email";
+    name: "email" | "fullName";
     label: string;
     type?: string;
     placeholder?: string;

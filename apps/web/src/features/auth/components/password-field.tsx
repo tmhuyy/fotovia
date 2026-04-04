@@ -7,7 +7,7 @@ import { Label } from "../../../components/ui/label";
 import { FieldError } from "./field-error";
 
 interface PasswordFieldProps {
-    name: "password";
+    name: "password" | "confirmPassword";
     label: string;
     placeholder?: string;
     autoComplete?: string;

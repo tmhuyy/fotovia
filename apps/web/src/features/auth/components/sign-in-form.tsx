@@ -1,7 +1,7 @@
 "use client";
-
+import { useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
     FormProvider,
@@ -27,7 +27,11 @@ type FormAlertState = {
 
 export const SignInForm = () => {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [formError, setFormError] = useState<FormAlertState>(null);
+
+    const registered = searchParams.get("registered") === "1";
+    const registeredEmail = searchParams.get("email");
 
     const { setAuth, setUser, clearAuth } = useAuthStore();
 
@@ -42,6 +46,16 @@ export const SignInForm = () => {
         shouldFocusError: true,
         criteriaMode: "firstError",
     });
+
+    useEffect(() => {
+        if (!registeredEmail) return;
+
+        if (!form.getValues("email")) {
+            form.setValue("email", registeredEmail, {
+                shouldValidate: true,
+            });
+        }
+    }, [form, registeredEmail]);
 
     const onSubmit = async (values: SignInFormValues) => {
         setFormError(null);
@@ -128,6 +142,17 @@ export const SignInForm = () => {
                         placeholder="Enter your password"
                     />
                 </div>
+
+                {registered ? (
+                    <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+                        <p className="text-sm font-medium text-emerald-700">
+                            Your account has been created.
+                        </p>
+                        <p className="mt-1 text-sm text-emerald-600">
+                            Sign in to continue to Fotovia.
+                        </p>
+                    </div>
+                ) : null}
 
                 {formError ? (
                     <AuthFormAlert

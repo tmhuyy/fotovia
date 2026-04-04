@@ -204,7 +204,6 @@ When working on auth forms such as sign-in or sign-up:
 - Invalid forms must not leave submit buttons stuck in loading state
 - If validation suddenly starts throwing runtime errors again, check `zod` and `@hookform/resolvers` compatibility first
 
-
 ## Auth session hydration rules
 
 - Use `/auth/me` as the frontend source of truth for current signed-in user data.
@@ -212,3 +211,11 @@ When working on auth forms such as sign-in or sign-up:
 - Do not show signed-out navbar actions while session hydration is still in progress.
 - Prefer a neutral loading or skeleton state during auth hydration.
 - Production-facing auth-aware UI should prefer the real auth store over mock-session state.
+
+## Sign-up integration rules
+
+- Treat sign-up and sign-in as separate backend contracts.
+- Do not assume sign-up returns auth tokens unless the backend contract explicitly changes.
+- Frontend sign-up should submit `email`, `password`, `role`, and `fullName`.
+- After successful sign-up, prefer redirecting users to sign-in unless a later phase explicitly introduces auto-login.
+- Keep sign-up validation and API error UX consistent with sign-in patterns.

@@ -32,6 +32,22 @@ Behavior:
 - Current user is hydrated into the auth store
 - Successful sign-in redirects to `/`
 
+## Current sign-up status
+
+Status: **working**
+
+Behavior:
+
+- Sign-up submits to `POST /auth/signup`
+- Frontend sends:
+    - `email`
+    - `password`
+    - `role`
+    - `fullName`
+- Frontend does not assume sign-up returns auth tokens
+- Successful sign-up redirects to `/sign-in`
+- Sign-in page can show a post-registration success state and prefill email from query params
+
 ## Current session hydration status
 
 Status: **working for navbar/main page**
@@ -54,24 +70,35 @@ Behavior:
 - Reload no longer shows a signed-out flash before hydration completes
 - Sign-out clears frontend auth state cleanly
 
+## Validation and error UX rules
+
+Current auth forms follow these rules:
+
+- keep validation inside `react-hook-form` with `zodResolver(...)`
+- show validation messages directly under the related field
+- keep field validation errors separate from API submission errors
+- use a form-level auth alert for API failures
+- invalid forms must not submit requests
+- invalid forms must not leave submit buttons stuck in loading state
+
 ## Current known limitation
 
-The real auth session is now usable for sign-in and navbar behavior, but auth-aware UI is not fully unified across the entire app yet.
+The real auth flow is now usable for sign-in, sign-up, and navbar behavior, but auth-aware UI is not fully unified across the entire app yet.
 
 Still deferred:
 
+- guest-only route protection for `/sign-in` and `/sign-up`
 - broader auth-aware UI cleanup outside navbar/main-page flow
-- sign-up contract cleanup
-- route protection rules
-- full removal of mock-session usage from development-only tools or older placeholder paths
+- route protection for future authenticated pages
+- post-sign-up onboarding
+- full removal of older mock-session dependencies from development-only paths
 
 ## Recommended next phase
 
-### Sign-up Contract Cleanup
+### Auth Route Rules + Post-Sign-Up Direction
 
 Goals:
 
-- verify frontend sign-up payload matches backend `CreateUserDto`
-- confirm support for role and full-name fields
-- align frontend validation and backend validation
-- decide post-sign-up behavior clearly
+- prevent signed-in users from lingering on guest-only auth pages
+- define the next destination after sign-up more intentionally
+- prepare for protected routes and role-aware onboarding
