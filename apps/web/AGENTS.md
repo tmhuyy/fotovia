@@ -235,3 +235,4 @@ When working on auth forms such as sign-in or sign-up:
 - Successful sign-in should respect `next` when it points to a safe internal route.
 - If sign-up is entered from a protected-route flow, preserve safe `next` intent through sign-up and sign-in.
 - Protected-route behavior must rely on the real auth store and hydration state, not mock-session state.
+- Treat core booking entry routes such as `/bookings/new` and `/photographers/[slug]/book` as authenticated-only unless a later product decision explicitly changes that rule.

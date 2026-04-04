@@ -1073,3 +1073,47 @@ This file tracks the progress of frontend tasks for Fotovia.
 - Extend authenticated-only route behavior to booking entry and future protected flows.
 - Decide how booking request entry should behave for signed-out vs signed-in users.
 - Continue aligning route rules with core marketplace flows instead of keeping protection only on profile.
+
+## Phase 24: Protected Booking Entry and Auth-Aware Homepage Cleanup
+
+**Status:** Completed
+
+### Scope
+
+- Extend authenticated-only route behavior from `/profile` into core booking-entry flows.
+- Protect guided booking at `/bookings/new`.
+- Protect direct booking at `/photographers/[slug]/book`.
+- Remove remaining homepage hero dependence on mock session state for production-facing CTA behavior.
+
+### Delivered
+
+- Protected `/bookings/new` with the reusable authenticated-route wrapper.
+- Protected `/photographers/[slug]/book` with the same authenticated-route pattern.
+- Signed-out users entering either booking path are now redirected to `/sign-in?next=...`.
+- Booking-entry intent is preserved through the existing sign-in redirect flow.
+- Homepage hero CTA behavior now relies on the real auth store instead of the mock session store.
+- Hero CTA area now waits for auth hydration with a neutral skeleton instead of flashing the wrong signed-in or signed-out actions.
+
+### Decisions
+
+- Booking entry is treated as a core authenticated product flow, not a public-only marketing path.
+- Route protection continues to live in reusable wrappers at the route level instead of leaking into booking-page business logic.
+- Public homepage sections may stay visible to everyone, but auth-aware CTA decisions must use the real auth store.
+
+### Notes
+
+- Booking forms remain frontend-only and are still not connected to a real booking backend.
+- This phase focuses on route policy and auth-aware UI consistency only.
+- Navbar and homepage booking CTAs can continue to point to booking routes because those routes now enforce auth consistently.
+
+### Key Files
+
+- `apps/web/src/app/bookings/new/page.tsx`
+- `apps/web/src/app/photographers/[slug]/book/page.tsx`
+- `apps/web/src/components/home/hero-section.tsx`
+
+### Next Recommended Phase
+
+- Define the post-auth product direction more clearly: profile completion guidance, role-aware entry, or booking continuation UX.
+- Decide whether photographers need a protected dashboard/workspace route before deeper marketplace flows.
+- Prepare the guided or direct booking flows for real backend integration in a later phase.

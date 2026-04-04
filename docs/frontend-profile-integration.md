@@ -80,10 +80,10 @@ Still pending:
 
 ## Recommended next phase
 
-### Protected Booking Entry + Profile Completion Direction
+### Profile Completion Direction + Role-Aware Product Entry
 
 Goals:
 
-- keep extending authenticated route rules to core product flows
+- build on top of the protected `/profile` and protected booking-entry foundation
 - decide how profile completion should connect to later booking or onboarding paths
-- build on top of the protected `/profile` foundation
+- clarify what clients and photographers should see next after authentication

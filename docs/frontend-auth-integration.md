@@ -84,11 +84,11 @@ Behavior:
 
 ## Current authenticated-only route status
 
-Status: **working for `/profile`**
+Status: **working for `/profile`, `/bookings/new`, and `/photographers/[slug]/book`**
 
 Behavior:
 
-- signed-out users cannot remain on `/profile`
+- signed-out users cannot remain on `/profile`, `/bookings/new`, or `/photographers/[slug]/book`
 - protected routes wait for auth hydration before deciding whether to render or redirect
 - signed-out users are redirected to `/sign-in?next=...`
 - successful sign-in can return users to the original protected page
@@ -110,24 +110,22 @@ Rule:
 - keep field validation errors inline
 - use snackbar for backend mutation feedback when a full-page error state is unnecessary
 
-## Current known limitation
-
-The real auth flow is now usable for sign-in, sign-up, navbar behavior, guest-only auth routes, authenticated-only profile routing, and mutation feedback patterns, but protected-route rollout is still incomplete.
+The real auth flow is now usable for sign-in, sign-up, navbar behavior, guest-only auth routes, authenticated-only profile and booking-entry routing, and mutation feedback patterns, but broader auth-aware product direction is still incomplete.
 
 Still deferred:
 
-- authenticated-only route protection for booking and future protected pages
+- broader authenticated-only route protection for future protected pages such as dashboards or request management
 - broader cleanup of older mock-only developer paths
 - post-sign-up onboarding direction
 - role-aware entry beyond the current auth and profile flow
 
 ## Recommended next phase
 
-### Protected Booking Entry + Route Expansion
+### Profile Completion Direction + Role-Aware Entry
 
 Goals:
 
-- extend authenticated-only route rules to booking entry where appropriate
-- define what happens when signed-out users try to start a booking request
-- preserve booking intent across auth redirects
-- align route rules with the core marketplace flow, not only profile
+- decide what signed-in clients and photographers should see as their next meaningful product step
+- connect protected profile access with clearer completion or onboarding guidance
+- define whether future protected routes should expand into dashboard, booking management, or role-based workspace flows
+- keep auth-aware homepage and entry-point behavior consistent with the real auth store
