@@ -20,6 +20,7 @@ import { AuthFormAlert } from "./auth-form-alert";
 import { AuthTextField } from "./auth-text-field";
 import { PasswordField } from "./password-field";
 import { RoleSelector } from "./role-selector";
+import { toast } from "sonner";
 
 type FormAlertState = {
     title: string;
@@ -96,6 +97,10 @@ export const SignUpForm = () => {
             });
 
             router.push(`/sign-in?${params.toString()}`);
+
+            toast.success("You have been signed up successfully.", {
+                description: "Sign in to continue to Fotovia.",
+            });
         } catch (error) {
             const { status } = normalizeApiError(
                 error,
@@ -103,32 +108,48 @@ export const SignUpForm = () => {
             );
 
             if (status === 409) {
-                setFormError({
-                    title: "This email is already in use.",
-                    description:
-                        "Try signing in instead, or use another email address.",
+                // setFormError({
+                //     title: "This email is already in use.",
+                //     description:
+                //         "Try signing in instead, or use another email address.",
+                // });
+
+                toast.error("This email is already in use.", {
+                    description: "Try signing in instead, or use another email address.",
                 });
                 return;
             }
 
             if (status === 400) {
-                setFormError({
-                    title: "We couldn’t create your account.",
+                // setFormError({
+                //     title: "We couldn’t create your account.",
+                //     description: "Please review your details and try again.",
+                // });
+
+                toast.error("We couldn’t create your account.", {
                     description: "Please review your details and try again.",
                 });
                 return;
             }
 
             if (status && status >= 500) {
-                setFormError({
-                    title: "Something went wrong on our side.",
+                // setFormError({
+                //     title: "Something went wrong on our side.",
+                //     description: "Please try again in a moment.",
+                // });
+
+                toast.error("Something went wrong on our side.", {
                     description: "Please try again in a moment.",
                 });
                 return;
             }
 
-            setFormError({
-                title: "We couldn’t create your account.",
+            // setFormError({
+            //     title: "We couldn’t create your account.",
+            //     description: "Please check your connection and try again.",
+            // });
+
+            toast.error("We couldn’t create your account.", {
                 description: "Please check your connection and try again.",
             });
         }

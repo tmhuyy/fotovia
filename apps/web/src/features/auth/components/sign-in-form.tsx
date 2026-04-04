@@ -19,6 +19,7 @@ import { signInSchema, type SignInFormValues } from "../schemas/sign-in.schema";
 import { AuthFormAlert } from "./auth-form-alert";
 import { AuthTextField } from "./auth-text-field";
 import { PasswordField } from "./password-field";
+import { toast } from "sonner";
 
 type FormAlertState = {
     title: string;
@@ -73,6 +74,9 @@ export const SignInForm = () => {
 
             router.push("/");
             router.refresh();
+            toast.success("Sign In", {
+                description: "You have been signed in successfully.",
+            });
         } catch (error) {
             clearAuth();
 
@@ -87,27 +91,44 @@ export const SignInForm = () => {
                     description:
                         "Check your email and password, then try again.",
                 });
+
+                toast.error("We couldn’t sign you in with those details.", {
+                    description:
+                        "Check your email and password, then try again.",
+                });
+
                 return;
             }
 
             if (status === 429) {
-                setFormError({
-                    title: "Too many attempts.",
+                // setFormError({
+                //     title: "Too many attempts.",
+                //     description: "Please wait a moment and try again.",
+                // });
+
+                toast.error("Too many attempts.", {
                     description: "Please wait a moment and try again.",
                 });
                 return;
             }
 
             if (status && status >= 500) {
-                setFormError({
-                    title: "Something went wrong on our side.",
+                // setFormError({
+                //     title: "Something went wrong on our side.",
+                //     description: "Please try again in a moment.",
+                // });
+                toast.error("Something went wrong on our side.", {
                     description: "Please try again in a moment.",
                 });
                 return;
             }
 
-            setFormError({
-                title: "We couldn’t complete your sign in.",
+            // setFormError({
+            //     title: "We couldn’t complete your sign in.",
+            //     description: "Please check your connection and try again.",
+            // });
+
+            toast.error("We couldn’t complete your sign in.", {
                 description: "Please check your connection and try again.",
             });
         }

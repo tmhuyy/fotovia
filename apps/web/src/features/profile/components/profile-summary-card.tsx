@@ -35,11 +35,11 @@ export const ProfileSummaryCard = ({ profile }: ProfileSummaryCardProps) => {
         <Card className="rounded-[2rem] border-border bg-surface shadow-sm">
             <CardContent className="space-y-6 p-8">
                 <div className="flex items-start gap-4">
-                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-background text-lg font-semibold text-foreground">
+                    <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-background text-lg font-semibold text-foreground">
                         {getInitials(profile.fullName || "Fotovia User")}
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="min-w-0 space-y-2">
                         <div className="flex flex-wrap items-center gap-2">
                             <h2 className="font-serif text-2xl text-foreground">
                                 {profile.fullName || "Unnamed profile"}
@@ -47,18 +47,18 @@ export const ProfileSummaryCard = ({ profile }: ProfileSummaryCardProps) => {
                             <Badge variant={badgeVariant}>{badgeLabel}</Badge>
                         </div>
 
-                        <p className="text-sm text-muted">
+                        <p className="break-all text-sm text-muted">
                             {profile.email || "No email"}
                         </p>
                     </div>
                 </div>
 
-                <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-3">
                     <div className="rounded-2xl border border-border bg-background px-4 py-3">
                         <p className="text-xs uppercase tracking-[0.22em] text-muted">
                             Location
                         </p>
-                        <p className="mt-2 text-sm text-foreground">
+                        <p className="mt-2 break-words text-sm text-foreground">
                             {profile.location || "Not set"}
                         </p>
                     </div>
@@ -67,7 +67,7 @@ export const ProfileSummaryCard = ({ profile }: ProfileSummaryCardProps) => {
                         <p className="text-xs uppercase tracking-[0.22em] text-muted">
                             Phone
                         </p>
-                        <p className="mt-2 text-sm text-foreground">
+                        <p className="mt-2 break-all text-sm text-foreground">
                             {profile.phone || "Not set"}
                         </p>
                     </div>

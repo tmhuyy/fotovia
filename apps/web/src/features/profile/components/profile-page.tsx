@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-
+import { toast } from "sonner";
 import { Section } from "../../../components/common/section";
 import { Footer } from "../../../components/home/footer";
 import { Navbar } from "../../../components/home/navbar";
@@ -73,6 +73,16 @@ export const ProfilePage = () => {
             ),
         onSuccess: (profile) => {
             queryClient.setQueryData(queryKey, profile);
+
+            toast.success("Profile foundation created", {
+                description:
+                    "You can now continue editing your profile details.",
+            });
+        },
+        onError: () => {
+            toast.error("We couldn’t create your profile", {
+                description: "Please try again in a moment.",
+            });
         },
     });
 

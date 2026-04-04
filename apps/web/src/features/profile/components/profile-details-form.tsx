@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { toast } from "sonner";
 
 import { Button } from "../../../components/ui/button";
 import type { AuthRole } from "../../../types/auth.types";
@@ -17,21 +18,14 @@ import { ProfileTextField, ProfileTextareaField } from "./profile-form-fields";
 interface ProfileDetailsFormProps {
     role: AuthRole;
     profile: ProfileData;
-    onSave: (payload: ProfileUpdatePayload) => Promise<void>;
+    onSave: (payload: ProfileUpdatePayload) => Promise<unknown>;
 }
-
-type FormNotice = {
-    variant: "success" | "error";
-    message: string;
-} | null;
 
 export const ProfileDetailsForm = ({
     role,
     profile,
     onSave,
 }: ProfileDetailsFormProps) => {
-    const [notice, setNotice] = useState<FormNotice>(null);
-
     const defaultValues = useMemo<ProfileFormValues>(
         () => ({
             fullName: profile.fullName ?? "",
@@ -65,8 +59,6 @@ export const ProfileDetailsForm = ({
     }, [defaultValues, form]);
 
     const handleSubmit = async (values: ProfileFormValues) => {
-        setNotice(null);
-
         const payload: ProfileUpdatePayload = {
             fullName: values.fullName.trim(),
             phone: values.phone.trim(),
@@ -86,14 +78,14 @@ export const ProfileDetailsForm = ({
 
         try {
             await onSave(payload);
-            setNotice({
-                variant: "success",
-                message: "Profile updated successfully.",
+
+            toast.success("Profile updated", {
+                description:
+                    "Your latest changes have been saved successfully.",
             });
         } catch {
-            setNotice({
-                variant: "error",
-                message: "We couldn’t save your profile right now.",
+            toast.error("We couldn’t save your profile", {
+                description: "Please try again in a moment.",
             });
         }
     };
@@ -109,93 +101,80 @@ export const ProfileDetailsForm = ({
             >
                 <ProfileSection
                     title="Edit profile"
-                    description="This form now saves to the real profile service instead of local mock state."
+                    description="Update your profile foundation without leaving this page."
                 >
                     <div className="grid gap-5 md:grid-cols-2">
-                        <AuthFieldWrapper>
+                        <FieldWrapper>
                             <ProfileTextField
                                 name="fullName"
                                 label="Full name"
                                 placeholder="Enter your full name"
                                 autoComplete="name"
                             />
-                        </AuthFieldWrapper>
+                        </FieldWrapper>
 
-                        <AuthFieldWrapper>
+                        <FieldWrapper>
                             <ProfileTextField
                                 name="phone"
                                 label="Phone"
                                 placeholder="Add your phone number"
                                 autoComplete="tel"
                             />
-                        </AuthFieldWrapper>
+                        </FieldWrapper>
 
-                        <AuthFieldWrapper className="md:col-span-2">
+                        <FieldWrapper className="md:col-span-2">
                             <ProfileTextField
                                 name="location"
                                 label="Location"
                                 placeholder="City, region, or studio base"
                                 autoComplete="address-level2"
                             />
-                        </AuthFieldWrapper>
+                        </FieldWrapper>
 
-                        <AuthFieldWrapper className="md:col-span-2">
+                        <FieldWrapper className="md:col-span-2">
                             <ProfileTextareaField
                                 name="bio"
                                 label="Bio"
                                 placeholder="Write a short introduction"
                                 helper="Keep this concise and clear."
                             />
-                        </AuthFieldWrapper>
+                        </FieldWrapper>
 
                         {role === "photographer" ? (
                             <>
-                                <AuthFieldWrapper className="md:col-span-2">
+                                <FieldWrapper className="md:col-span-2">
                                     <ProfileTextareaField
                                         name="specialtiesText"
                                         label="Specialties"
                                         placeholder="Editorial, Wedding, Portrait"
                                         helper="Separate specialties with commas."
                                     />
-                                </AuthFieldWrapper>
+                                </FieldWrapper>
 
-                                <AuthFieldWrapper>
+                                <FieldWrapper>
                                     <ProfileTextField
                                         name="pricePerHour"
                                         label="Price per hour"
                                         placeholder="e.g. 250"
                                         helper="Enter a number only."
                                     />
-                                </AuthFieldWrapper>
+                                </FieldWrapper>
 
-                                <AuthFieldWrapper>
+                                <FieldWrapper>
                                     <ProfileTextField
                                         name="experienceYears"
                                         label="Experience years"
                                         placeholder="e.g. 4"
                                         helper="Enter a whole number."
                                     />
-                                </AuthFieldWrapper>
+                                </FieldWrapper>
                             </>
                         ) : null}
                     </div>
 
-                    {notice ? (
-                        <div
-                            className={
-                                notice.variant === "success"
-                                    ? "rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
-                                    : "rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-                            }
-                        >
-                            {notice.message}
-                        </div>
-                    ) : (
-                        <p className="text-sm text-muted">
-                            Changes here will update your real profile
-                            foundation.
-                        </p>
-                    )}
+                    <p className="text-sm text-muted">
+                        Save changes to update your real profile foundation.
+                    </p>
 
                     <Button
                         type="submit"
@@ -210,11 +189,11 @@ export const ProfileDetailsForm = ({
     );
 };
 
-interface AuthFieldWrapperProps {
+interface FieldWrapperProps {
     children: React.ReactNode;
     className?: string;
 }
 
-const AuthFieldWrapper = ({ children, className }: AuthFieldWrapperProps) => {
+const FieldWrapper = ({ children, className }: FieldWrapperProps) => {
     return <div className={className}>{children}</div>;
 };

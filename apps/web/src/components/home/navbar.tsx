@@ -3,11 +3,14 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { toast } from "sonner";
 
 import { authService } from "../../services/auth.service";
 import { useAuthStore } from "../../store/auth.store";
 import { Container } from "../layout/container";
 import { Button } from "../ui/button";
+import { AccountMenu } from "./account-menu";
+import { MobileNav } from "./mobile-nav";
 
 const navLinks = [
     { label: "Photographers", href: "/photographers" },
@@ -22,13 +25,21 @@ export const Navbar = () => {
 
     const { user, isAuthenticated, isHydrating, hasHydrated, clearAuth } =
         useAuthStore();
+
     const handleSignOut = async () => {
         setIsSigningOut(true);
 
         try {
             await authService.signOut();
+
+            toast.success("Signed out", {
+                description: "You have been signed out successfully.",
+            });
         } catch {
-            // keep UI flow resilient even if sign-out request fails
+            toast.error("We couldn’t sign you out cleanly", {
+                description:
+                    "We cleared your local session. Please try again if needed.",
+            });
         } finally {
             clearAuth();
             router.push("/");
@@ -39,8 +50,8 @@ export const Navbar = () => {
 
     return (
         <header className="sticky top-0 z-40 border-b border-border/70 bg-background/90 backdrop-blur">
-            <Container className="flex h-20 items-center justify-between gap-6">
-                <div className="flex items-center gap-10">
+            <Container className="flex h-20 items-center justify-between gap-4">
+                <div className="flex min-w-0 items-center gap-8">
                     <Link href="/" className="flex items-center gap-4">
                         <span className="font-serif text-2xl tracking-tight text-foreground">
                             Fotovia
@@ -63,15 +74,7 @@ export const Navbar = () => {
                     </nav>
                 </div>
 
-                <div className="flex items-center gap-3">
-                    <Button
-                        variant="secondary"
-                        size="md"
-                        onClick={() => router.push("/photographers")}
-                    >
-                        Explore
-                    </Button>
-
+                <div className="hidden items-center gap-3 lg:flex">
                     <Button
                         size="md"
                         onClick={() => router.push("/bookings/new")}
@@ -80,33 +83,13 @@ export const Navbar = () => {
                     </Button>
 
                     {!hasHydrated || isHydrating ? (
-                        <div className="flex items-center gap-3">
-                            <div className="h-10 w-36 animate-pulse rounded-full border border-border bg-surface/60" />
-                            <div className="h-10 w-28 animate-pulse rounded-full border border-border bg-surface/60" />
-                        </div>
+                        <div className="h-11 w-48 animate-pulse rounded-full border border-border bg-surface/60" />
                     ) : isAuthenticated ? (
-                        <>
-                            <Button
-                                variant="secondary"
-                                size="md"
-                                onClick={() => router.push("/profile")}
-                            >
-                                Profile
-                            </Button>
-
-                            <div className="hidden rounded-full border border-border bg-surface px-4 py-2 text-sm text-muted xl:block">
-                                {user?.email ?? "Signed in"}
-                            </div>
-
-                            <Button
-                                variant="secondary"
-                                size="md"
-                                onClick={handleSignOut}
-                                disabled={isSigningOut}
-                            >
-                                {isSigningOut ? "Signing out..." : "Sign out"}
-                            </Button>
-                        </>
+                        <AccountMenu
+                            email={user?.email}
+                            isSigningOut={isSigningOut}
+                            onSignOut={handleSignOut}
+                        />
                     ) : (
                         <>
                             <Button
@@ -126,6 +109,16 @@ export const Navbar = () => {
                         </>
                     )}
                 </div>
+
+                <MobileNav
+                    navLinks={navLinks}
+                    isAuthenticated={isAuthenticated}
+                    isHydrating={isHydrating}
+                    hasHydrated={hasHydrated}
+                    userEmail={user?.email}
+                    isSigningOut={isSigningOut}
+                    onSignOut={handleSignOut}
+                />
             </Container>
         </header>
     );
