@@ -2,23 +2,35 @@
 
 ## Purpose
 
-This document tracks the current real-auth integration state for `apps/web` so future ChatGPT or Codex sessions can continue with the correct auth assumptions.
+This document tracks the current real-auth integration state for `apps/web` so future development sessions can continue with the correct assumptions.
 
-## Current auth endpoints
+## Current frontend API clients
 
-Local development:
+The frontend currently uses separate API clients for different backend services.
 
-- Frontend: `http://localhost:8888`
-- Auth HTTP service: `http://localhost:3000`
-- Auth TCP service: `localhost:3001`
+### Auth client
 
-Relevant auth endpoints:
+- base URL: `NEXT_PUBLIC_AUTH_API_URL`
+- credentials: enabled
 
-- `GET /auth/me`
+Used for:
+
 - `POST /auth/signup`
 - `POST /auth/login`
+- `GET /auth/me`
 - `POST /auth/refresh-token`
 - `POST /auth/signout`
+
+### Profile client
+
+- base URL: `NEXT_PUBLIC_PROFILE_API_URL`
+- credentials: enabled
+
+Used for:
+
+- `GET /profiles/me`
+- `POST /profiles/me`
+- `PATCH /profiles/me`
 
 ## Current sign-in status
 
@@ -70,35 +82,54 @@ Behavior:
 - Auth pages wait for hydration before deciding whether to render or redirect
 - Auth pages use a neutral loading skeleton during hydration or redirect
 
+## Current profile integration status
+
+Status: **working**
+
+Behavior:
+
+- `/profile` now uses the real profile backend flow
+- frontend profile requests go through the dedicated profile client
+- signed-in users can fetch real profile data from `/profiles/me`
+- profile foundation can be created when missing
+- profile edits save to the real backend instead of mock-only local state
+
+## Current backend compatibility notes
+
+For the frontend profile client to work correctly:
+
+- the profile service must allow the Next app origin
+- credentials must be enabled for cross-origin requests
+
 ## Validation and error UX rules
 
-Current auth forms follow these rules:
+Current auth and profile forms follow these rules:
 
 - keep validation inside `react-hook-form` with `zodResolver(...)`
 - show validation messages directly under the related field
 - keep field validation errors separate from API submission errors
-- use a form-level auth alert for API failures
+- use a form-level alert or clear inline feedback for API failures
 - invalid forms must not submit requests
 - invalid forms must not leave submit buttons stuck in loading state
 
 ## Current known limitation
 
-The real auth flow is now usable for sign-in, sign-up, navbar behavior, and guest-only auth routes, but auth-aware UI is not fully unified across the entire app yet.
+The real auth and profile flow is now usable for sign-in, sign-up, navbar behavior, guest-only auth routes, and profile foundation flows, but protected-route behavior is still incomplete.
 
 Still deferred:
 
 - authenticated-only route protection for future protected pages
-- broader auth-aware UI cleanup outside navbar/main-page flow
-- post-sign-up onboarding
-- full removal of older mock-session dependencies from development-only paths
+- broader cleanup of older mock-only developer paths
+- post-sign-up onboarding direction
+- role-aware entry beyond the current auth and profile flow
 
 ## Recommended next phase
 
-### Authenticated Route Rules + Onboarding Direction
+### Authenticated Route Rules + Profile Completion Direction
 
 Goals:
 
 - define which pages require an authenticated session
 - redirect signed-out users away from protected pages
-- clarify post-sign-up destination and onboarding path
-- prepare for role-aware app entry beyond auth pages
+- clarify how profile completion should connect to later onboarding or workspace flows
+- continue removing overlap between real flows and older mock-only paths

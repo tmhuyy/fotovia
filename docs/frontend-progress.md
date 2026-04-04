@@ -923,3 +923,57 @@ This file tracks the progress of frontend tasks for Fotovia.
 - Introduce authenticated-only route rules for future protected pages.
 - Define post-sign-up onboarding direction more clearly.
 - Continue reducing older mock-session dependency in non-production-facing tools where needed.
+
+## Phase 21: Frontend Profile Bootstrap with Real Profile Service
+
+**Status:** Completed
+
+### Scope
+
+- Replace mock profile usage in the production-facing `/profile` flow.
+- Connect frontend profile UI to the real profile backend.
+- Use a dedicated profile API client instead of routing profile requests through the auth client.
+- Support real profile read, create-foundation fallback, and update flows.
+- Keep profile UI aligned with the current backend-supported profile fields.
+
+### Delivered
+
+- Added a dedicated `profileClient` using `NEXT_PUBLIC_PROFILE_API_URL`.
+- Frontend profile service now uses the profile client instead of the auth client.
+- `/profile` now reads profile data from the real backend through `/profiles/me`.
+- Added real profile bootstrap behavior for accounts that do not yet have a profile foundation.
+- Profile update flow now uses the real backend instead of mock-only local state.
+- Navbar now has a clearer production-facing entry into the profile page.
+- Backend profile service was configured to allow CORS from the Next app with credentials.
+
+### Decisions
+
+- Auth API client and profile API client should stay separate because they target different backend services.
+- `/auth/me` remains the identity summary source.
+- `/profiles/me` is now the source of truth for editable profile data.
+- Production-facing profile UI should no longer depend on mock profile builders.
+
+### Notes
+
+- This phase focuses on profile foundation fields already supported by the backend.
+- Older mock profile fields that do not map to real backend data are intentionally deferred or removed from the real flow.
+- The profile backend must allow the frontend origin and credentials for the dedicated profile client to work correctly.
+
+### Key Files
+
+- `apps/web/src/services/api/axios.ts`
+- `apps/web/src/services/profile.service.ts`
+- `apps/web/src/features/profile/components/profile-page.tsx`
+- `apps/web/src/features/profile/components/profile-details-form.tsx`
+- `apps/web/src/features/profile/components/profile-summary-card.tsx`
+- `apps/web/src/features/profile/components/profile-role-highlights.tsx`
+- `apps/web/src/features/profile/components/profile-empty-state.tsx`
+- `apps/web/src/features/profile/types/profile.types.ts`
+- `apps/web/src/features/profile/schemas/profile.schema.ts`
+- `apps/profile/src/main.ts`
+
+### Next Recommended Phase
+
+- Add authenticated-only route rules for profile and future protected pages.
+- Decide how profile completion should connect to later onboarding or workspace flows.
+- Continue cleaning up any remaining mock-only developer paths that overlap with real profile behavior.
