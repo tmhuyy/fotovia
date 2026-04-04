@@ -51,7 +51,7 @@ export const Navbar = () => {
     return (
         <header className="sticky top-0 z-40 border-b border-border/70 bg-background/90 backdrop-blur">
             <Container className="flex h-20 items-center justify-between gap-4">
-                <div className="flex min-w-0 items-center gap-8">
+                <div className="flex min-w-0 items-center gap-4 md:gap-8">
                     <Link href="/" className="flex items-center gap-4">
                         <span className="font-serif text-2xl tracking-tight text-foreground">
                             Fotovia
@@ -110,15 +110,17 @@ export const Navbar = () => {
                     )}
                 </div>
 
-                <MobileNav
-                    navLinks={navLinks}
-                    isAuthenticated={isAuthenticated}
-                    isHydrating={isHydrating}
-                    hasHydrated={hasHydrated}
-                    userEmail={user?.email}
-                    isSigningOut={isSigningOut}
-                    onSignOut={handleSignOut}
-                />
+                <div className="lg:hidden">
+                    <MobileNav
+                        navLinks={navLinks}
+                        isAuthenticated={isAuthenticated}
+                        isHydrating={isHydrating}
+                        hasHydrated={hasHydrated}
+                        userEmail={user?.email}
+                        isSigningOut={isSigningOut}
+                        onSignOut={handleSignOut}
+                    />
+                </div>
             </Container>
         </header>
     );

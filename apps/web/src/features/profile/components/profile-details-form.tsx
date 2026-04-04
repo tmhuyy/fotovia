@@ -136,7 +136,7 @@ export const ProfileDetailsForm = ({
                                 name="bio"
                                 label="Bio"
                                 placeholder="Write a short introduction"
-                                helper="Keep this concise and clear."
+                                // helper="Keep this concise and clear."
                             />
                         </FieldWrapper>
 
@@ -172,9 +172,6 @@ export const ProfileDetailsForm = ({
                         ) : null}
                     </div>
 
-                    <p className="text-sm text-muted">
-                        Save changes to update your real profile foundation.
-                    </p>
 
                     <Button
                         type="submit"

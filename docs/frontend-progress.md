@@ -977,3 +977,54 @@ This file tracks the progress of frontend tasks for Fotovia.
 - Add authenticated-only route rules for profile and future protected pages.
 - Decide how profile completion should connect to later onboarding or workspace flows.
 - Continue cleaning up any remaining mock-only developer paths that overlap with real profile behavior.
+
+## Phase 22: Navbar Polish, Mobile Menu Cleanup, and Snackbar Feedback
+
+**Status:** Completed
+
+### Scope
+
+- Refactor the signed-in navbar so account actions no longer clutter the top bar.
+- Improve the mobile navigation experience with a clearer full-screen menu pattern.
+- Introduce snackbar feedback for backend-driven actions.
+- Fix profile summary layout issues such as long phone or email content breaking the card.
+
+### Delivered
+
+- Added a dedicated desktop account menu for signed-in users.
+- Reworked mobile navigation into a clearer full-screen mobile menu flow.
+- Added `sonner` and mounted a global toaster at the app-provider level.
+- Switched profile save feedback from inline success messaging to snackbar feedback.
+- Added snackbar feedback for profile foundation creation and sign-out flow.
+- Improved profile summary card handling for long email and phone values.
+- Kept one primary booking CTA in the navbar while moving account actions into the account area.
+
+### Decisions
+
+- Signed-in account actions should live inside an account menu instead of sitting directly beside primary product CTAs.
+- Mobile navigation should behave like a dedicated mobile menu surface, not a cramped partial drawer.
+- Backend action feedback should prefer snackbar or toast patterns when the action does not require a full-page state change.
+- Field-level validation should remain inline; snackbar is for mutation results, not input validation.
+
+### Notes
+
+- This phase focused on navbar and profile UX polish, not route protection.
+- Toast feedback is now a shared UI pattern available for future backend-driven actions.
+- Profile save success and error states no longer expand the form vertically.
+
+### Key Files
+
+- `apps/web/package.json`
+- `apps/web/src/providers/app-provider.tsx`
+- `apps/web/src/components/home/account-menu.tsx`
+- `apps/web/src/components/home/mobile-nav.tsx`
+- `apps/web/src/components/home/navbar.tsx`
+- `apps/web/src/features/profile/components/profile-summary-card.tsx`
+- `apps/web/src/features/profile/components/profile-details-form.tsx`
+- `apps/web/src/features/profile/components/profile-page.tsx`
+
+### Next Recommended Phase
+
+- Add authenticated-only route rules for profile and future protected pages.
+- Clarify which routes remain public, guest-only, or authenticated-only.
+- Define the next product step after sign-in: protected profile flow, booking flow, or onboarding entry.

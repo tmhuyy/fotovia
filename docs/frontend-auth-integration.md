@@ -2,11 +2,9 @@
 
 ## Purpose
 
-This document tracks the current real-auth integration state for `apps/web` so future development sessions can continue with the correct assumptions.
+This document tracks the current real-auth integration state for `apps/web` so future development sessions can continue with the correct auth assumptions.
 
 ## Current frontend API clients
-
-The frontend currently uses separate API clients for different backend services.
 
 ### Auth client
 
@@ -38,11 +36,11 @@ Status: **working**
 
 Behavior:
 
-- Sign-in submits to `POST /auth/login`
-- Frontend stores returned tokens
-- Frontend then requests `/auth/me`
-- Current user is hydrated into the auth store
-- Successful sign-in redirects to `/`
+- sign-in submits to `POST /auth/login`
+- frontend stores returned tokens
+- frontend then requests `/auth/me`
+- current user is hydrated into the auth store
+- successful sign-in redirects to `/`
 
 ## Current sign-up status
 
@@ -50,26 +48,26 @@ Status: **working**
 
 Behavior:
 
-- Sign-up submits to `POST /auth/signup`
-- Frontend sends:
+- sign-up submits to `POST /auth/signup`
+- frontend sends:
     - `email`
     - `password`
     - `role`
     - `fullName`
-- Frontend does not assume sign-up returns auth tokens
-- Successful sign-up redirects to `/sign-in`
-- Sign-in page can show a post-registration success state and prefill email from query params
+- frontend does not assume sign-up returns auth tokens
+- successful sign-up redirects to `/sign-in`
+- sign-in page can show a post-registration success state and prefill email from query params
 
 ## Current session hydration status
 
-Status: **working for navbar/main page**
+Status: **working for navbar and main-page entry**
 
 Behavior:
 
-- On app load, frontend checks stored token
-- If a token exists, frontend requests `/auth/me`
-- Auth store is hydrated from `/auth/me`
-- Navbar waits for hydration before deciding whether to render signed-in or signed-out controls
+- on app load, frontend checks stored token
+- if a token exists, frontend requests `/auth/me`
+- auth store is hydrated from `/auth/me`
+- navbar waits for hydration before deciding whether to render signed-in or signed-out controls
 
 ## Current guest-only auth route status
 
@@ -77,59 +75,44 @@ Status: **working**
 
 Behavior:
 
-- Signed-out users can access `/sign-in` and `/sign-up`
-- Signed-in users are redirected away from guest-only auth pages
-- Auth pages wait for hydration before deciding whether to render or redirect
-- Auth pages use a neutral loading skeleton during hydration or redirect
+- signed-out users can access `/sign-in` and `/sign-up`
+- signed-in users are redirected away from guest-only auth pages
+- auth pages wait for hydration before deciding whether to render or redirect
+- auth pages use a neutral loading skeleton during hydration or redirect
 
-## Current profile integration status
+## Current feedback behavior
 
 Status: **working**
 
 Behavior:
 
-- `/profile` now uses the real profile backend flow
-- frontend profile requests go through the dedicated profile client
-- signed-in users can fetch real profile data from `/profiles/me`
-- profile foundation can be created when missing
-- profile edits save to the real backend instead of mock-only local state
+- mutation-like backend actions can use snackbar feedback
+- sign-out uses snackbar feedback
+- profile save uses snackbar feedback
+- profile foundation creation uses snackbar feedback
 
-## Current backend compatibility notes
+Rule:
 
-For the frontend profile client to work correctly:
-
-- the profile service must allow the Next app origin
-- credentials must be enabled for cross-origin requests
-
-## Validation and error UX rules
-
-Current auth and profile forms follow these rules:
-
-- keep validation inside `react-hook-form` with `zodResolver(...)`
-- show validation messages directly under the related field
-- keep field validation errors separate from API submission errors
-- use a form-level alert or clear inline feedback for API failures
-- invalid forms must not submit requests
-- invalid forms must not leave submit buttons stuck in loading state
+- keep field validation errors inline
+- use snackbar for backend mutation feedback when a full-page error state is unnecessary
 
 ## Current known limitation
 
-The real auth and profile flow is now usable for sign-in, sign-up, navbar behavior, guest-only auth routes, and profile foundation flows, but protected-route behavior is still incomplete.
+The real auth flow is now usable for sign-in, sign-up, navbar behavior, guest-only auth routes, and mutation feedback patterns, but authenticated-only route protection is still incomplete.
 
 Still deferred:
 
-- authenticated-only route protection for future protected pages
+- authenticated-only route protection for pages like `/profile`
 - broader cleanup of older mock-only developer paths
 - post-sign-up onboarding direction
 - role-aware entry beyond the current auth and profile flow
 
 ## Recommended next phase
 
-### Authenticated Route Rules + Profile Completion Direction
+### Authenticated Route Rules
 
 Goals:
 
-- define which pages require an authenticated session
+- define which routes require an authenticated session
 - redirect signed-out users away from protected pages
-- clarify how profile completion should connect to later onboarding or workspace flows
-- continue removing overlap between real flows and older mock-only paths
+- keep auth route behavior aligned with the real auth store and hydration state
