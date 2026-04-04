@@ -1,5 +1,5 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -29,6 +29,13 @@ type FormAlertState = {
 export const SignInForm = () => {
     const router = useRouter();
     const searchParams = useSearchParams();
+
+    const nextPath = searchParams.get("next");
+
+    const redirectAfterSignIn = useMemo(() => {
+        if (!nextPath) return "/";
+        return nextPath.startsWith("/") ? nextPath : "/";
+    }, [nextPath]);
     const [formError, setFormError] = useState<FormAlertState>(null);
 
     const registered = searchParams.get("registered") === "1";
@@ -72,7 +79,7 @@ export const SignInForm = () => {
             const currentUser = await authService.getCurrentUser();
             setUser(currentUser);
 
-            router.push("/");
+            router.push(redirectAfterSignIn);
             router.refresh();
             toast.success("Sign In", {
                 description: "You have been signed in successfully.",

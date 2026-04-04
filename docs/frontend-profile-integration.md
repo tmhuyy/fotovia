@@ -48,7 +48,9 @@ Status: **working**
 
 Behavior:
 
+- `/profile` is now treated as an authenticated-only page
 - signed-in users can load real profile data
+- signed-out users are redirected away through the protected-route flow
 - if no profile exists yet, the UI can create a profile foundation
 - users can update real profile fields through the profile service
 - profile UI no longer depends on mock profile builders in the main production-facing flow
@@ -61,7 +63,7 @@ Behavior:
 
 - profile save uses snackbar feedback instead of inline success boxes
 - profile foundation creation uses snackbar feedback
-- summary card now handles long email and phone values more safely
+- summary card handles long email and phone values more safely
 - profile access is available from the signed-in account area instead of cluttering the main navbar
 
 ## Current known limitation
@@ -70,7 +72,6 @@ This phase focuses on the profile foundation only.
 
 Still pending:
 
-- authenticated-only route protection for `/profile`
 - richer photographer profile fields
 - avatar upload
 - portfolio integration
@@ -79,10 +80,10 @@ Still pending:
 
 ## Recommended next phase
 
-### Protected Profile and Authenticated Page Rules
+### Protected Booking Entry + Profile Completion Direction
 
 Goals:
 
-- protect `/profile` and future authenticated pages
-- align auth-required routes with the real session state
-- guide signed-in users more intentionally into profile completion or next actions
+- keep extending authenticated route rules to core product flows
+- decide how profile completion should connect to later booking or onboarding paths
+- build on top of the protected `/profile` foundation

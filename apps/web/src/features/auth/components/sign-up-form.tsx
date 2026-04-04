@@ -48,7 +48,8 @@ export const SignUpForm = () => {
         shouldFocusError: true,
         criteriaMode: "firstError",
     });
-
+    const nextPath = searchParams.get("next");
+    const safeNextPath = nextPath && nextPath.startsWith("/") ? nextPath : null;
     const roleParam = searchParams.get("role");
     const searchString = useMemo(() => searchParams.toString(), [searchParams]);
     const normalizedRole: AuthRole =
@@ -96,6 +97,10 @@ export const SignUpForm = () => {
                 email: values.email,
             });
 
+            if (safeNextPath) {
+                params.set("next", safeNextPath);
+            }
+
             router.push(`/sign-in?${params.toString()}`);
 
             toast.success("You have been signed up successfully.", {
@@ -115,7 +120,8 @@ export const SignUpForm = () => {
                 // });
 
                 toast.error("This email is already in use.", {
-                    description: "Try signing in instead, or use another email address.",
+                    description:
+                        "Try signing in instead, or use another email address.",
                 });
                 return;
             }
@@ -219,7 +225,11 @@ export const SignUpForm = () => {
                 <p className="text-center text-sm text-muted">
                     Already have an account?{" "}
                     <Link
-                        href="/sign-in"
+                        href={
+                            safeNextPath
+                                ? `/sign-in?next=${encodeURIComponent(safeNextPath)}`
+                                : "/sign-in"
+                        }
                         className="font-medium text-foreground transition hover:text-accent"
                     >
                         Sign in

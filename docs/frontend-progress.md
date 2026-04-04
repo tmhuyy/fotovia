@@ -1028,3 +1028,48 @@ This file tracks the progress of frontend tasks for Fotovia.
 - Add authenticated-only route rules for profile and future protected pages.
 - Clarify which routes remain public, guest-only, or authenticated-only.
 - Define the next product step after sign-in: protected profile flow, booking flow, or onboarding entry.
+
+## Phase 23: Authenticated-Only Route Rules
+
+**Status:** Completed
+
+### Scope
+
+- Introduce a reusable authenticated-only route guard for protected frontend pages.
+- Protect `/profile` as the first authenticated-only route.
+- Preserve redirect intent so signed-out users can return to the original protected page after sign-in.
+- Keep sign-in and sign-up flows aligned with protected-route redirects.
+
+### Delivered
+
+- Added a reusable authenticated route wrapper for protected pages.
+- Protected `/profile` behind real auth hydration and authenticated state.
+- Signed-out users accessing `/profile` are now redirected to `/sign-in?next=/profile`.
+- Successful sign-in now respects `next` query param and returns users to the intended protected route.
+- Sign-up now preserves `next` intent so protected-route flows remain consistent across sign-up and sign-in.
+- Protected routes now use a neutral skeleton while auth hydration or redirect is in progress.
+
+### Decisions
+
+- Authenticated-only route logic should live in reusable route-level wrappers, not inside page business logic.
+- Protected route redirects should preserve the original destination through a safe `next` query param.
+- Auth route continuity matters across guest → sign-up → sign-in → protected page.
+
+### Notes
+
+- This phase starts authenticated-only routing with `/profile` as the first protected page.
+- The broader protected-route rollout for future pages is still not finished.
+- Guest-only auth route rules remain in place and now work alongside authenticated-only route rules.
+
+### Key Files
+
+- `apps/web/src/features/auth/components/authenticated-route.tsx`
+- `apps/web/src/app/profile/page.tsx`
+- `apps/web/src/features/auth/components/sign-in-form.tsx`
+- `apps/web/src/features/auth/components/sign-up-form.tsx`
+
+### Next Recommended Phase
+
+- Extend authenticated-only route behavior to booking entry and future protected flows.
+- Decide how booking request entry should behave for signed-out vs signed-in users.
+- Continue aligning route rules with core marketplace flows instead of keeping protection only on profile.

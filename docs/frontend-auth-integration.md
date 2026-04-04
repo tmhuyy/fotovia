@@ -41,6 +41,7 @@ Behavior:
 - frontend then requests `/auth/me`
 - current user is hydrated into the auth store
 - successful sign-in redirects to `/`
+- if a protected-route `next` param exists, sign-in redirects there instead
 
 ## Current sign-up status
 
@@ -57,6 +58,7 @@ Behavior:
 - frontend does not assume sign-up returns auth tokens
 - successful sign-up redirects to `/sign-in`
 - sign-in page can show a post-registration success state and prefill email from query params
+- sign-up preserves safe `next` route intent when it is part of a protected-route flow
 
 ## Current session hydration status
 
@@ -80,6 +82,18 @@ Behavior:
 - auth pages wait for hydration before deciding whether to render or redirect
 - auth pages use a neutral loading skeleton during hydration or redirect
 
+## Current authenticated-only route status
+
+Status: **working for `/profile`**
+
+Behavior:
+
+- signed-out users cannot remain on `/profile`
+- protected routes wait for auth hydration before deciding whether to render or redirect
+- signed-out users are redirected to `/sign-in?next=...`
+- successful sign-in can return users to the original protected page
+- the current protected-route pattern is reusable for future authenticated pages
+
 ## Current feedback behavior
 
 Status: **working**
@@ -98,21 +112,22 @@ Rule:
 
 ## Current known limitation
 
-The real auth flow is now usable for sign-in, sign-up, navbar behavior, guest-only auth routes, and mutation feedback patterns, but authenticated-only route protection is still incomplete.
+The real auth flow is now usable for sign-in, sign-up, navbar behavior, guest-only auth routes, authenticated-only profile routing, and mutation feedback patterns, but protected-route rollout is still incomplete.
 
 Still deferred:
 
-- authenticated-only route protection for pages like `/profile`
+- authenticated-only route protection for booking and future protected pages
 - broader cleanup of older mock-only developer paths
 - post-sign-up onboarding direction
 - role-aware entry beyond the current auth and profile flow
 
 ## Recommended next phase
 
-### Authenticated Route Rules
+### Protected Booking Entry + Route Expansion
 
 Goals:
 
-- define which routes require an authenticated session
-- redirect signed-out users away from protected pages
-- keep auth route behavior aligned with the real auth store and hydration state
+- extend authenticated-only route rules to booking entry where appropriate
+- define what happens when signed-out users try to start a booking request
+- preserve booking intent across auth redirects
+- align route rules with the core marketplace flow, not only profile

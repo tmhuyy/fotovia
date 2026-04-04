@@ -226,3 +226,12 @@ When working on auth forms such as sign-in or sign-up:
 - Prefer enforcing guest-only behavior at the `(auth)` layout level instead of duplicating redirect logic in each page.
 - During auth hydration, use a neutral loading or skeleton state instead of flashing full auth forms.
 - Guest-only route behavior should rely on the real auth store and hydration state, not mock-session state.
+
+## Authenticated-only route rules
+
+- Use reusable authenticated-route wrappers for protected pages instead of duplicating route protection logic inside page components.
+- Protected routes must wait for auth hydration before deciding whether to render or redirect.
+- Signed-out users accessing protected pages should be redirected to `/sign-in` with a safe `next` query param.
+- Successful sign-in should respect `next` when it points to a safe internal route.
+- If sign-up is entered from a protected-route flow, preserve safe `next` intent through sign-up and sign-in.
+- Protected-route behavior must rely on the real auth store and hydration state, not mock-session state.
