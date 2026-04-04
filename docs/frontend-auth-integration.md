@@ -59,16 +59,16 @@ Behavior:
 - Auth store is hydrated from `/auth/me`
 - Navbar waits for hydration before deciding whether to render signed-in or signed-out controls
 
-## Current navbar status
+## Current guest-only auth route status
 
 Status: **working**
 
 Behavior:
 
-- Signed-out users see public auth CTA actions
-- Signed-in users see signed-in navbar state
-- Reload no longer shows a signed-out flash before hydration completes
-- Sign-out clears frontend auth state cleanly
+- Signed-out users can access `/sign-in` and `/sign-up`
+- Signed-in users are redirected away from guest-only auth pages
+- Auth pages wait for hydration before deciding whether to render or redirect
+- Auth pages use a neutral loading skeleton during hydration or redirect
 
 ## Validation and error UX rules
 
@@ -83,22 +83,22 @@ Current auth forms follow these rules:
 
 ## Current known limitation
 
-The real auth flow is now usable for sign-in, sign-up, and navbar behavior, but auth-aware UI is not fully unified across the entire app yet.
+The real auth flow is now usable for sign-in, sign-up, navbar behavior, and guest-only auth routes, but auth-aware UI is not fully unified across the entire app yet.
 
 Still deferred:
 
-- guest-only route protection for `/sign-in` and `/sign-up`
+- authenticated-only route protection for future protected pages
 - broader auth-aware UI cleanup outside navbar/main-page flow
-- route protection for future authenticated pages
 - post-sign-up onboarding
 - full removal of older mock-session dependencies from development-only paths
 
 ## Recommended next phase
 
-### Auth Route Rules + Post-Sign-Up Direction
+### Authenticated Route Rules + Onboarding Direction
 
 Goals:
 
-- prevent signed-in users from lingering on guest-only auth pages
-- define the next destination after sign-up more intentionally
-- prepare for protected routes and role-aware onboarding
+- define which pages require an authenticated session
+- redirect signed-out users away from protected pages
+- clarify post-sign-up destination and onboarding path
+- prepare for role-aware app entry beyond auth pages

@@ -219,3 +219,10 @@ When working on auth forms such as sign-in or sign-up:
 - Frontend sign-up should submit `email`, `password`, `role`, and `fullName`.
 - After successful sign-up, prefer redirecting users to sign-in unless a later phase explicitly introduces auto-login.
 - Keep sign-up validation and API error UX consistent with sign-in patterns.
+
+## Guest-only auth route rules
+
+- Signed-in users should not remain on guest-only auth pages such as `/sign-in` and `/sign-up`.
+- Prefer enforcing guest-only behavior at the `(auth)` layout level instead of duplicating redirect logic in each page.
+- During auth hydration, use a neutral loading or skeleton state instead of flashing full auth forms.
+- Guest-only route behavior should rely on the real auth store and hydration state, not mock-session state.

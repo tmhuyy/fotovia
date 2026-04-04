@@ -881,3 +881,45 @@ This file tracks the progress of frontend tasks for Fotovia.
 - Add guest-only route behavior for `/sign-in` and `/sign-up`.
 - Decide and implement post-sign-up onboarding direction.
 - Continue unifying remaining auth-aware UI away from old mock-session paths where needed.
+
+## Phase 20: Auth Route Rules and Guest-Only Page Behavior
+
+**Status:** Completed
+
+### Scope
+
+- Prevent signed-in users from accessing guest-only auth pages.
+- Apply guest-only route behavior at the auth route-group level.
+- Avoid flashing auth forms while session hydration is still in progress.
+- Keep auth route behavior aligned with the real auth store and `/auth/me` hydration flow.
+
+### Delivered
+
+- Added a reusable guest-only route guard for auth pages.
+- Auth route group now blocks signed-in users from lingering on `/sign-in` and `/sign-up`.
+- Auth pages now wait for auth hydration before deciding whether to render auth forms or redirect.
+- During hydration or redirect, auth pages render a neutral loading skeleton instead of flashing the full form UI.
+- Guest users can still access auth pages normally.
+
+### Decisions
+
+- Guest-only logic should live at the `(auth)` layout level instead of being duplicated inside each auth page.
+- A neutral loading state is preferred over rendering signed-out auth forms before hydration completes.
+- Real auth store state remains the source of truth for guest-only route behavior.
+
+### Notes
+
+- This phase focuses on guest-only auth routes only.
+- Full protected-route behavior for authenticated-only pages is still deferred.
+- Post-sign-up onboarding direction is still deferred.
+
+### Key Files
+
+- `apps/web/src/features/auth/components/guest-only-route.tsx`
+- `apps/web/src/app/(auth)/layout.tsx`
+
+### Next Recommended Phase
+
+- Introduce authenticated-only route rules for future protected pages.
+- Define post-sign-up onboarding direction more clearly.
+- Continue reducing older mock-session dependency in non-production-facing tools where needed.
