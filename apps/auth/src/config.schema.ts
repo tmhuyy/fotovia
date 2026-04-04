@@ -18,4 +18,6 @@ export const ConfigSchemaValidation = Joi.object({
     JWT_EXPIRE_IN: Joi.string().required(),
     REFRESH_JWT_SECRET: Joi.string().required(),
     REFRESH_JWT_EXPIRE_IN: Joi.string().required(),
+
+    NEXT_APP_URL: Joi.string().required()
 });

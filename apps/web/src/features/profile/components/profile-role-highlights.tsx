@@ -2,81 +2,82 @@ import type { ProfileData } from "../types/profile.types";
 import { ProfileSection } from "./profile-section";
 
 interface ProfileRoleHighlightsProps {
-  profile: ProfileData;
+    profile: ProfileData;
 }
 
-export const ProfileRoleHighlights = ({ profile }: ProfileRoleHighlightsProps) => {
-  if (profile.role === "client") {
-    const savedList = profile.savedPhotographers
-      .split(",")
-      .map((item) => item.trim())
-      .filter(Boolean);
+export const ProfileRoleHighlights = ({
+    profile,
+}: ProfileRoleHighlightsProps) => {
+    if (profile.role === "client") {
+        return (
+            <ProfileSection
+                title="Client profile notes"
+                description="This phase focuses on the real profile foundation. Saved photographers and booking preferences can be layered in later."
+            >
+                <div className="grid gap-4 md:grid-cols-2">
+                    <div className="rounded-2xl border border-border bg-background px-4 py-4">
+                        <p className="text-sm font-medium text-foreground">
+                            Bio
+                        </p>
+                        <p className="mt-2 text-sm leading-6 text-muted">
+                            {profile.bio ||
+                                "Add a short note about your photography style or preferences."}
+                        </p>
+                    </div>
+
+                    <div className="rounded-2xl border border-border bg-background px-4 py-4">
+                        <p className="text-sm font-medium text-foreground">
+                            Location
+                        </p>
+                        <p className="mt-2 text-sm leading-6 text-muted">
+                            {profile.location ||
+                                "Set your location to improve future booking flows."}
+                        </p>
+                    </div>
+                </div>
+            </ProfileSection>
+        );
+    }
 
     return (
-      <div className="space-y-6">
         <ProfileSection
-          title="Saved photographers"
-          description="Quick access to photographers you love."
+            title="Photographer profile highlights"
+            description="This section now reflects real photographer-oriented fields already supported by the backend profile foundation."
         >
-          <div className="space-y-2 text-sm">
-            {savedList.length ? (
-              savedList.map((item) => (
-                <div
-                  key={item}
-                  className="flex items-center justify-between rounded-xl border border-border bg-background px-3 py-2"
-                >
-                  <span className="text-foreground">{item}</span>
-                  <span className="text-xs text-muted">Saved</span>
+            <div className="grid gap-4 md:grid-cols-3">
+                <div className="rounded-2xl border border-border bg-background px-4 py-4">
+                    <p className="text-sm font-medium text-foreground">
+                        Specialties
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-muted">
+                        {profile.specialties.length
+                            ? profile.specialties.join(", ")
+                            : "Add specialties to help clients understand your niche."}
+                    </p>
                 </div>
-              ))
-            ) : (
-              <p className="text-sm text-muted">
-                No saved photographers yet. Start exploring to build your list.
-              </p>
-            )}
-          </div>
-        </ProfileSection>
-        <ProfileSection
-          title="Booking preferences"
-          description="Your preferred session style and timing."
-        >
-          <p className="text-sm text-muted">
-            {profile.bookingPreferences ||
-              "Add your booking preferences to guide recommendations."}
-          </p>
-        </ProfileSection>
-      </div>
-    );
-  }
 
-  return (
-    <div className="space-y-6">
-      <ProfileSection
-        title="Portfolio preview"
-        description="A glimpse of your featured work for clients."
-      >
-        <div className="grid grid-cols-2 gap-3">
-          {Array.from({ length: 4 }).map((_, index) => (
-            <div
-              key={`portfolio-${index}`}
-              className="aspect-[4/3] rounded-2xl border border-border bg-background"
-            />
-          ))}
-        </div>
-      </ProfileSection>
-      <ProfileSection
-        title="Availability snapshot"
-        description="How clients see your booking cadence."
-      >
-        <div className="space-y-2 text-sm">
-          <p className="text-foreground">
-            {profile.availability || "Add availability details for clients."}
-          </p>
-          <p className="text-muted">
-            {profile.pricingTier || "Add a pricing teaser for your profile."}
-          </p>
-        </div>
-      </ProfileSection>
-    </div>
-  );
+                <div className="rounded-2xl border border-border bg-background px-4 py-4">
+                    <p className="text-sm font-medium text-foreground">
+                        Experience
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-muted">
+                        {profile.experienceYears !== null
+                            ? `${profile.experienceYears} year(s) listed`
+                            : "Add experience years to build trust."}
+                    </p>
+                </div>
+
+                <div className="rounded-2xl border border-border bg-background px-4 py-4">
+                    <p className="text-sm font-medium text-foreground">
+                        Rate foundation
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-muted">
+                        {profile.pricePerHour !== null
+                            ? `Current listed rate: ${profile.pricePerHour}`
+                            : "Add a base hourly rate to support future booking and discovery flows."}
+                    </p>
+                </div>
+            </div>
+        </ProfileSection>
+    );
 };

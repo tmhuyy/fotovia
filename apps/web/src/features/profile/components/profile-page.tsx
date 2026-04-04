@@ -1,92 +1,240 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { Navbar } from "../../../components/home/navbar";
-import { Footer } from "../../../components/home/footer";
-import { Container } from "../../../components/layout/container";
+import { useMemo } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+
 import { Section } from "../../../components/common/section";
-import { useMockSessionStore } from "../../../store/mock-session.store";
-import { buildMockProfile } from "../data/mock-profile";
-import type { ProfileData } from "../types/profile.types";
-import { ProfileHeader } from "./profile-header";
-import { ProfileSummaryCard } from "./profile-summary-card";
+import { Footer } from "../../../components/home/footer";
+import { Navbar } from "../../../components/home/navbar";
+import { Container } from "../../../components/layout/container";
+import { Button } from "../../../components/ui/button";
+import { Card, CardContent } from "../../../components/ui/card";
+import { normalizeApiError } from "../../../services/api/error";
+import { profileService } from "../../../services/profile.service";
+import { useAuthStore } from "../../../store/auth.store";
+import type { ProfileUpdatePayload } from "../types/profile.types";
 import { ProfileDetailsForm } from "./profile-details-form";
+import { ProfileEmptyState } from "./profile-empty-state";
+import { ProfileHeader } from "./profile-header";
 import { ProfileRoleHighlights } from "./profile-role-highlights";
 import { ProfileSignedOut } from "./profile-signed-out";
+import { ProfileSummaryCard } from "./profile-summary-card";
+
+const ProfilePageSkeleton = () => {
+    return (
+        <>
+            <Navbar />
+
+            <main className="pb-16 pt-10">
+                <Container className="space-y-8">
+                    <div className="space-y-4">
+                        <div className="h-5 w-28 animate-pulse rounded bg-border/60" />
+                        <div className="h-12 w-80 animate-pulse rounded bg-border/60" />
+                        <div className="h-6 w-[32rem] max-w-full animate-pulse rounded bg-border/50" />
+                    </div>
+
+                    <div className="grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
+                        <div className="h-80 animate-pulse rounded-[2rem] border border-border bg-surface/60" />
+                        <div className="space-y-6">
+                            <div className="h-[28rem] animate-pulse rounded-[2rem] border border-border bg-surface/60" />
+                            <div className="h-64 animate-pulse rounded-[2rem] border border-border bg-surface/60" />
+                        </div>
+                    </div>
+                </Container>
+            </main>
+
+            <Footer />
+        </>
+    );
+};
 
 export const ProfilePage = () => {
-  const { isAuthenticated, role, user } = useMockSessionStore();
-  const [profile, setProfile] = useState<ProfileData | null>(null);
+    const queryClient = useQueryClient();
+    const { user, isAuthenticated, isHydrating, hasHydrated } = useAuthStore();
 
-  const resolvedRole = useMemo(() => {
-    if (!isAuthenticated) return null;
-    return role ?? "client";
-  }, [isAuthenticated, role]);
+    const authEmail = user?.email ?? "";
+    const authRole = user?.role ?? "client";
+    const queryKey = ["my-profile", user?.id ?? "anonymous"];
 
-  useEffect(() => {
-    if (!isAuthenticated || !resolvedRole) {
-      setProfile(null);
-      return;
+    const profileQuery = useQuery({
+        queryKey,
+        queryFn: () => profileService.getMyProfile(authEmail),
+        enabled: hasHydrated && !isHydrating && isAuthenticated,
+        retry: false,
+    });
+
+    const createProfileMutation = useMutation({
+        mutationFn: () =>
+            profileService.createMyProfile(
+                {
+                    role: authRole,
+                },
+                authEmail,
+            ),
+        onSuccess: (profile) => {
+            queryClient.setQueryData(queryKey, profile);
+        },
+    });
+
+    const updateProfileMutation = useMutation({
+        mutationFn: (payload: ProfileUpdatePayload) =>
+            profileService.updateMyProfile(payload, authEmail),
+        onSuccess: (profile) => {
+            queryClient.setQueryData(queryKey, profile);
+        },
+    });
+
+    const profileError = profileQuery.error
+        ? normalizeApiError(
+              profileQuery.error,
+              "We couldn’t load your profile right now.",
+          )
+        : null;
+
+    const isProfileMissing = profileError?.status === 404;
+    const resolvedRole = profileQuery.data?.role ?? authRole;
+
+    const headerCopy = useMemo(() => {
+        if (resolvedRole === "photographer") {
+            return {
+                title: "Your photographer profile",
+                subtitle:
+                    "Manage the real profile foundation that clients will build trust around later.",
+                roleLabel: "Photographer account",
+                roleVariant: "accent" as const,
+            };
+        }
+
+        return {
+            title: "Your client profile",
+            subtitle:
+                "Keep your core profile details ready for future booking and recommendation flows.",
+            roleLabel: "Client account",
+            roleVariant: "neutral" as const,
+        };
+    }, [resolvedRole]);
+
+    if (!hasHydrated || isHydrating) {
+        return <ProfilePageSkeleton />;
     }
 
-    setProfile(buildMockProfile({ role: resolvedRole, user }));
-  }, [isAuthenticated, resolvedRole, user]);
-
-  const headerCopy = useMemo(() => {
-    if (resolvedRole === "photographer") {
-      return {
-        title: "Your photographer profile",
-        subtitle:
-          "Present your studio, specialties, and availability with a premium touch.",
-        label: "Photographer account",
-        variant: "accent" as const,
-      };
+    if (!isAuthenticated) {
+        return (
+            <>
+                <Navbar />
+                <ProfileSignedOut />
+                <Footer />
+            </>
+        );
     }
 
-    return {
-      title: "Your client profile",
-      subtitle:
-        "Manage your booking preferences and keep your details up to date.",
-      label: "Client account",
-      variant: "neutral" as const,
-    };
-  }, [resolvedRole]);
+    if (profileQuery.isLoading) {
+        return <ProfilePageSkeleton />;
+    }
 
-  return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      <main>
-        <Section className="pt-10">
-          <Container className="space-y-8">
-            {profile && resolvedRole ? (
-              <>
-                <ProfileHeader
-                  title={headerCopy.title}
-                  subtitle={headerCopy.subtitle}
-                  roleLabel={headerCopy.label}
-                  roleVariant={headerCopy.variant}
-                />
-                <div className="grid gap-6 lg:grid-cols-[1fr_2fr]">
-                  <div className="space-y-6">
-                    <ProfileSummaryCard profile={profile} />
-                    <ProfileRoleHighlights profile={profile} />
-                  </div>
-                  <div className="space-y-6">
-                    <ProfileDetailsForm
-                      role={resolvedRole}
-                      profile={profile}
-                      onSave={setProfile}
-                    />
-                  </div>
-                </div>
-              </>
-            ) : (
-              <ProfileSignedOut />
-            )}
-          </Container>
-        </Section>
-      </main>
-      <Footer />
-    </div>
-  );
+    if (isProfileMissing) {
+        return (
+            <>
+                <Navbar />
+
+                <main className="pb-16 pt-10">
+                    <Container className="space-y-8">
+                        <Section className="space-y-8">
+                            <ProfileHeader
+                                title={headerCopy.title}
+                                subtitle={headerCopy.subtitle}
+                                roleLabel={headerCopy.roleLabel}
+                                roleVariant={headerCopy.roleVariant}
+                            />
+
+                            <ProfileEmptyState
+                                role={authRole}
+                                isCreating={createProfileMutation.isPending}
+                                onCreate={() => createProfileMutation.mutate()}
+                            />
+                        </Section>
+                    </Container>
+                </main>
+
+                <Footer />
+            </>
+        );
+    }
+
+    if (profileQuery.isError || !profileQuery.data) {
+        return (
+            <>
+                <Navbar />
+
+                <main className="pb-16 pt-10">
+                    <Container>
+                        <Card className="rounded-[2rem] border-border bg-surface shadow-sm">
+                            <CardContent className="space-y-4 p-8">
+                                <div className="space-y-2">
+                                    <h1 className="font-serif text-3xl text-foreground">
+                                        We couldn’t load your profile
+                                    </h1>
+                                    <p className="text-sm leading-6 text-muted">
+                                        {profileError?.message ??
+                                            "Please try again in a moment."}
+                                    </p>
+                                </div>
+
+                                <Button
+                                    type="button"
+                                    className="rounded-full"
+                                    onClick={() => profileQuery.refetch()}
+                                >
+                                    Try again
+                                </Button>
+                            </CardContent>
+                        </Card>
+                    </Container>
+                </main>
+
+                <Footer />
+            </>
+        );
+    }
+
+    const profile = profileQuery.data;
+
+    return (
+        <>
+            <Navbar />
+
+            <main className="pb-16 pt-10">
+                <Container className="space-y-8">
+                    <Section className="space-y-8">
+                        <ProfileHeader
+                            title={headerCopy.title}
+                            subtitle={headerCopy.subtitle}
+                            roleLabel={headerCopy.roleLabel}
+                            roleVariant={headerCopy.roleVariant}
+                        />
+
+                        <div className="grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
+                            <ProfileSummaryCard profile={profile} />
+
+                            <div className="space-y-6">
+                                <ProfileDetailsForm
+                                    role={profile.role}
+                                    profile={profile}
+                                    onSave={async (payload) =>
+                                        updateProfileMutation.mutateAsync(
+                                            payload,
+                                        )
+                                    }
+                                />
+
+                                <ProfileRoleHighlights profile={profile} />
+                            </div>
+                        </div>
+                    </Section>
+                </Container>
+            </main>
+
+            <Footer />
+        </>
+    );
 };

@@ -11,16 +11,16 @@ import { Transport } from '@nestjs/microservices';
 async function bootstrap() {
     // const logger = new Logger();
     const app = await NestFactory.create(AppModule);
-    const configService = app.get(ConfigService)
+    const configService = app.get(ConfigService);
     app.enableCors({
-        origin: ['http://localhost:8888'],
+        origin: [configService.getOrThrow('NEXT_APP_URL')],
         credentials: true,
     });
     app.connectMicroservice({
         transport: Transport.TCP,
         options: {
             host: '0.0.0.0',
-            port: configService.getOrThrow('TCP_PORT')
+            port: configService.getOrThrow('TCP_PORT'),
         },
     });
     app.use(cookieParser());

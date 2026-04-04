@@ -10,20 +10,20 @@ import { CtaSection } from "./cta-section";
 import { Footer } from "./footer";
 
 export const HomePage = () => {
-  return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      <main>
-        <HeroSection />
-        <BookingEntrySection />
-        <RoleIntro />
-        <FeaturedPhotographers />
-        <AiFeatureIntro />
-        <HowItWorks />
-        <PortfolioShowcase />
-        <CtaSection />
-      </main>
-      <Footer />
-    </div>
-  );
+    return (
+        <div className="min-h-screen bg-background">
+            <Navbar />
+            <main>
+                <HeroSection />
+                <CtaSection />
+                <BookingEntrySection />
+                <RoleIntro />
+                <FeaturedPhotographers />
+                <AiFeatureIntro />
+                <HowItWorks />
+                <PortfolioShowcase />
+            </main>
+            <Footer />
+        </div>
+    );
 };

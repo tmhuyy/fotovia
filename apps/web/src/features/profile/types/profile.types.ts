@@ -1,18 +1,33 @@
 import type { AuthRole } from "../../../types/auth.types";
 
 export interface ProfileData {
-  role: AuthRole;
-  fullName: string;
-  email: string;
-  phone: string;
-  location: string;
-  bio: string;
-  preferredStyles: string;
-  bookingPreferences: string;
-  savedPhotographers: string;
-  studioName: string;
-  specialties: string;
-  serviceLocation: string;
-  pricingTier: string;
-  availability: string;
+    id: string;
+    userId: string;
+    role: AuthRole;
+    fullName: string;
+    email: string;
+    avatarUrl: string | null;
+    phone: string;
+    location: string;
+    bio: string;
+    specialties: string[];
+    pricePerHour: number | null;
+    experienceYears: number | null;
+    createdAt?: string;
+    updatedAt?: string;
+}
+
+export interface ProfileCreatePayload {
+    role: AuthRole;
+    fullName?: string;
+}
+
+export interface ProfileUpdatePayload {
+    fullName: string;
+    phone: string;
+    location: string;
+    bio: string;
+    specialties: string[];
+    pricePerHour?: number;
+    experienceYears?: number;
 }

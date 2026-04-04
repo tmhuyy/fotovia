@@ -11,7 +11,10 @@ import { ProfileModule } from './profile.module';
 async function bootstrap() {
     const app = await NestFactory.create(ProfileModule);
     const configService = app.get(ConfigService);
-
+    app.enableCors({
+        origin: [configService.getOrThrow('NEXT_APP_URL')],
+        credentials: true,
+    });
     app.use(cookieParser());
 
     app.connectMicroservice({

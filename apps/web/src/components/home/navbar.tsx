@@ -86,6 +86,14 @@ export const Navbar = () => {
                         </div>
                     ) : isAuthenticated ? (
                         <>
+                            <Button
+                                variant="secondary"
+                                size="md"
+                                onClick={() => router.push("/profile")}
+                            >
+                                Profile
+                            </Button>
+
                             <div className="hidden rounded-full border border-border bg-surface px-4 py-2 text-sm text-muted xl:block">
                                 {user?.email ?? "Signed in"}
                             </div>
