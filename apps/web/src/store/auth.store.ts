@@ -1,4 +1,5 @@
 import { create } from "zustand";
+
 import { authToken } from "../lib/auth-token";
 import type { AuthUser } from "../types/auth.types";
 
@@ -28,14 +29,18 @@ export const useAuthStore = create<AuthState>((set) => ({
         set({
             accessToken,
             user,
-            isAuthenticated: true,
+            isAuthenticated: Boolean(accessToken),
+            isHydrating: false,
+            hasHydrated: true,
         });
     },
 
     setUser: (user) =>
         set((state) => ({
             user,
-            isAuthenticated: Boolean(state.accessToken && user),
+            isAuthenticated: Boolean(state.accessToken),
+            isHydrating: false,
+            hasHydrated: true,
         })),
 
     startHydration: () =>
@@ -57,6 +62,8 @@ export const useAuthStore = create<AuthState>((set) => ({
             accessToken: null,
             user: null,
             isAuthenticated: false,
+            isHydrating: false,
+            hasHydrated: true,
         });
     },
 }));

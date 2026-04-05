@@ -236,3 +236,11 @@ When working on auth forms such as sign-in or sign-up:
 - If sign-up is entered from a protected-route flow, preserve safe `next` intent through sign-up and sign-in.
 - Protected-route behavior must rely on the real auth store and hydration state, not mock-session state.
 - Treat core booking entry routes such as `/bookings/new` and `/photographers/[slug]/book` as authenticated-only unless a later product decision explicitly changes that rule.
+
+## Auth and route rules
+
+- Prefer route-level auth wrappers for protected pages instead of pushing auth checks deep into business components.
+- Preserve safe internal `next` route intent through sign-in and sign-up auth flows when applicable.
+- If no safe `next` route exists after authentication, fall back by role instead of always hardcoding `/`.
+- Treat `/photographer/dashboard` as the protected workspace foundation for photographer accounts unless a later phase explicitly replaces that route.
+- When role-aware product UI needs more than auth identity currently provides, hydrate a merged session user from the appropriate backend sources before making navigation decisions.

@@ -1,9 +1,12 @@
+import type { AxiosRequestConfig } from "axios";
+
 import type {
     AuthResponse,
     AuthRole,
     AuthUser,
     SignUpResponse,
 } from "../types/auth.types";
+
 import { authClient } from "./api/axios";
 import { unwrapResponse } from "./api/response";
 import type { ApiResponse } from "./api/types";
@@ -41,37 +44,15 @@ const normalizeUser = (user: AnyRecord | undefined): AuthUser | null => {
     return {
         id: (user.id as string | undefined) ?? (user._id as string | undefined),
         email: user.email as string | undefined,
-        role: user.role as AuthUser["role"] | undefined,
+        role: user.role as AuthRole | undefined,
         fullName:
             (user.fullName as string | undefined) ??
             (user.name as string | undefined),
     };
 };
 
-const normalizeAuthResponse = (
-    data: ApiResponse<AnyRecord> | AnyRecord,
-): AuthResponse => {
-    const payload = unwrapResponse(data);
-    const token =
-        (payload.accessToken as string | undefined) ??
-        (payload.token as string | undefined) ??
-        (payload.access_token as string | undefined);
-
-    const user = normalizeUser(payload.user as AnyRecord | undefined);
-
-    if (!token) {
-        throw new Error("Missing access token in auth response.");
-    }
-
-    return {
-        accessToken: token,
-        refreshToken: payload.refreshToken as string | undefined,
-        user,
-    };
-};
-
 const normalizeSignInResponse = (
-    data: ApiResponse<AuthTokenPayload> | AuthTokenPayload,
+    data: ApiResponse | AuthTokenPayload,
 ): AuthResponse => {
     const payload = unwrapResponse(data);
 
@@ -87,9 +68,10 @@ const normalizeSignInResponse = (
 };
 
 const normalizeSignUpResponse = (
-    data: ApiResponse<AnyRecord> | AnyRecord,
+    data: ApiResponse | AnyRecord,
 ): SignUpResponse => {
     const payload = unwrapResponse(data);
+
     const user = normalizeUser(
         (payload.user as AnyRecord | undefined) ?? (payload as AnyRecord),
     );
@@ -101,30 +83,41 @@ const normalizeSignUpResponse = (
 
 export const authService = {
     signIn: async (payload: SignInPayload): Promise<AuthResponse> => {
-        const response = await authClient.post<
-            ApiResponse<AuthTokenPayload> | AuthTokenPayload
-        >(AUTH_ENDPOINTS.signIn, payload);
+        const response = await authClient.post<ApiResponse | AuthTokenPayload>(
+            AUTH_ENDPOINTS.signIn,
+            payload,
+        );
 
         return normalizeSignInResponse(response.data);
     },
 
     signUp: async (payload: SignUpPayload): Promise<SignUpResponse> => {
-        const response = await authClient.post<
-            ApiResponse<AnyRecord> | AnyRecord
-        >(AUTH_ENDPOINTS.signUp, {
-            email: payload.email,
-            password: payload.password,
-            role: payload.role,
-            fullName: payload.fullName,
-        });
+        const response = await authClient.post<ApiResponse | AnyRecord>(
+            AUTH_ENDPOINTS.signUp,
+            {
+                email: payload.email,
+                password: payload.password,
+                role: payload.role,
+                fullName: payload.fullName,
+            },
+        );
 
         return normalizeSignUpResponse(response.data);
     },
 
-    getCurrentUser: async (): Promise<AuthUser> => {
-        const response = await authClient.get<
-            ApiResponse<AnyRecord> | AnyRecord
-        >(AUTH_ENDPOINTS.currentUser);
+    getCurrentUser: async (accessToken?: string): Promise<AuthUser> => {
+        const config: AxiosRequestConfig | undefined = accessToken
+            ? {
+                  headers: {
+                      Authorization: `Bearer ${accessToken}`,
+                  },
+              }
+            : undefined;
+
+        const response = await authClient.get<ApiResponse | AnyRecord>(
+            AUTH_ENDPOINTS.currentUser,
+            config,
+        );
 
         const payload = unwrapResponse(response.data) as AnyRecord;
         const user = normalizeUser(

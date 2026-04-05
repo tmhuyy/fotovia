@@ -1,5 +1,6 @@
 "use client";
-import { useEffect, useMemo } from "react";
+
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -8,18 +9,22 @@ import {
     type SubmitErrorHandler,
     useForm,
 } from "react-hook-form";
-import { useState } from "react";
+import { toast } from "sonner";
 
 import { Button } from "../../../components/ui/button";
 import { normalizeApiError } from "../../../services/api/error";
 import { authService } from "../../../services/auth.service";
+import { sessionUserService } from "../../../services/session-user.service";
 import { useAuthStore } from "../../../store/auth.store";
 
 import { signInSchema, type SignInFormValues } from "../schemas/sign-in.schema";
+import {
+    getSafeInternalRoute,
+    resolvePostAuthRoute,
+} from "../lib/get-default-post-auth-route";
 import { AuthFormAlert } from "./auth-form-alert";
 import { AuthTextField } from "./auth-text-field";
 import { PasswordField } from "./password-field";
-import { toast } from "sonner";
 
 type FormAlertState = {
     title: string;
@@ -31,17 +36,22 @@ export const SignInForm = () => {
     const searchParams = useSearchParams();
 
     const nextPath = searchParams.get("next");
+    const safeNextPath = useMemo(
+        () => getSafeInternalRoute(nextPath),
+        [nextPath],
+    );
 
-    const redirectAfterSignIn = useMemo(() => {
-        if (!nextPath) return "/";
-        return nextPath.startsWith("/") ? nextPath : "/";
-    }, [nextPath]);
+    const signUpHref = useMemo(() => {
+        if (!safeNextPath) return "/sign-up";
+        return `/sign-up?next=${encodeURIComponent(safeNextPath)}`;
+    }, [safeNextPath]);
+
     const [formError, setFormError] = useState<FormAlertState>(null);
 
     const registered = searchParams.get("registered") === "1";
     const registeredEmail = searchParams.get("email");
 
-    const { setAuth, setUser, clearAuth } = useAuthStore();
+    const { setAuth, clearAuth } = useAuthStore();
 
     const form = useForm<SignInFormValues>({
         resolver: zodResolver(signInSchema),
@@ -71,16 +81,23 @@ export const SignInForm = () => {
         try {
             const response = await authService.signIn(values);
 
+            const sessionUser = await sessionUserService.getSessionUser(
+                response.accessToken,
+            );
+
             setAuth({
                 accessToken: response.accessToken,
-                user: null,
+                user: sessionUser,
             });
 
-            const currentUser = await authService.getCurrentUser();
-            setUser(currentUser);
+            const redirectAfterSignIn = resolvePostAuthRoute({
+                nextPath,
+                role: sessionUser?.role,
+            });
 
             router.push(redirectAfterSignIn);
             router.refresh();
+
             toast.success("Sign In", {
                 description: "You have been signed in successfully.",
             });
@@ -108,11 +125,6 @@ export const SignInForm = () => {
             }
 
             if (status === 429) {
-                // setFormError({
-                //     title: "Too many attempts.",
-                //     description: "Please wait a moment and try again.",
-                // });
-
                 toast.error("Too many attempts.", {
                     description: "Please wait a moment and try again.",
                 });
@@ -120,20 +132,11 @@ export const SignInForm = () => {
             }
 
             if (status && status >= 500) {
-                // setFormError({
-                //     title: "Something went wrong on our side.",
-                //     description: "Please try again in a moment.",
-                // });
                 toast.error("Something went wrong on our side.", {
                     description: "Please try again in a moment.",
                 });
                 return;
             }
-
-            // setFormError({
-            //     title: "We couldn’t complete your sign in.",
-            //     description: "Please check your connection and try again.",
-            // });
 
             toast.error("We couldn’t complete your sign in.", {
                 description: "Please check your connection and try again.",
@@ -200,7 +203,7 @@ export const SignInForm = () => {
                 <p className="text-center text-sm text-muted">
                     New to Fotovia?{" "}
                     <Link
-                        href="/sign-up"
+                        href={signUpHref}
                         className="font-medium text-foreground transition hover:text-accent"
                     >
                         Create an account

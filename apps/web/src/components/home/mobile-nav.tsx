@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { createPortal } from "react-dom";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
+import type { AuthRole } from "../../types/auth.types";
 import { Button } from "../ui/button";
 
 interface NavLinkItem {
@@ -18,6 +19,7 @@ interface MobileNavProps {
     isHydrating: boolean;
     hasHydrated: boolean;
     userEmail?: string;
+    userRole?: AuthRole;
     isSigningOut: boolean;
     onSignOut: () => void;
 }
@@ -28,6 +30,7 @@ export const MobileNav = ({
     isHydrating,
     hasHydrated,
     userEmail,
+    userRole,
     isSigningOut,
     onSignOut,
 }: MobileNavProps) => {
@@ -35,6 +38,27 @@ export const MobileNav = ({
     const router = useRouter();
     const [isMounted, setIsMounted] = useState(false);
     const [isOpen, setIsOpen] = useState(false);
+
+    const primaryAction = useMemo(() => {
+        if (
+            hasHydrated &&
+            !isHydrating &&
+            isAuthenticated &&
+            userRole === "photographer"
+        ) {
+            return {
+                label: "Open workspace",
+                href: "/photographer/dashboard",
+            };
+        }
+
+        return {
+            label: "Book a Photographer",
+            href: "/bookings/new",
+        };
+    }, [hasHydrated, isAuthenticated, isHydrating, userRole]);
+
+    const isPhotographer = userRole === "photographer";
 
     useEffect(() => {
         setIsMounted(true);
@@ -101,10 +125,10 @@ export const MobileNav = ({
                             className="w-full rounded-full"
                             onClick={() => {
                                 handleClose();
-                                router.push("/bookings/new");
+                                router.push(primaryAction.href);
                             }}
                         >
-                            Book a Photographer
+                            {primaryAction.label}
                         </Button>
                     </div>
 
@@ -127,6 +151,24 @@ export const MobileNav = ({
                                 </div>
 
                                 <div className="space-y-2">
+                                    {isPhotographer ? (
+                                        <button
+                                            type="button"
+                                            className="flex w-full items-center justify-between rounded-2xl px-4 py-4 text-sm text-foreground transition hover:bg-background"
+                                            onClick={() => {
+                                                handleClose();
+                                                router.push(
+                                                    "/photographer/dashboard",
+                                                );
+                                            }}
+                                        >
+                                            <span>Workspace</span>
+                                            <span className="text-muted">
+                                                →
+                                            </span>
+                                        </button>
+                                    ) : null}
+
                                     <button
                                         type="button"
                                         className="flex w-full items-center justify-between rounded-2xl px-4 py-4 text-sm text-foreground transition hover:bg-background"

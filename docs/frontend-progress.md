@@ -1117,3 +1117,59 @@ This file tracks the progress of frontend tasks for Fotovia.
 - Define the post-auth product direction more clearly: profile completion guidance, role-aware entry, or booking continuation UX.
 - Decide whether photographers need a protected dashboard/workspace route before deeper marketplace flows.
 - Prepare the guided or direct booking flows for real backend integration in a later phase.
+
+## Phase 25: Role-Aware Post-Auth Entry and Photographer Workspace Foundation
+
+**Status:** Completed
+
+### Scope
+
+- Add a real protected workspace route for photographer accounts.
+- Make post-auth redirect behavior role-aware when no safe `next` route exists.
+- Align signed-in photographer CTA entry points with the new workspace destination.
+- Fix login/session hydration so successful sign-in no longer depends on a manual refresh.
+- Hydrate session user data in a way that preserves role-aware UI behavior across navbar, account menu, and mobile nav.
+
+### Delivered
+
+- Added `/photographer/dashboard` as an authenticated-only route.
+- Added a lightweight photographer workspace foundation page.
+- Sign-in redirect now prefers a safe internal `next` route, then falls back by role.
+- Photographer accounts now default to `/photographer/dashboard` when no safe `next` path exists.
+- Client accounts still default to `/` when no stronger destination exists.
+- Sign-in now preserves safe `next` intent when the user chooses to continue to sign-up.
+- Session hydration now merges auth identity with profile role data so role-aware UI can render correctly.
+- Fixed the login flow issue where the UI could remain in a loading state until a manual refresh.
+- Navbar, mobile nav, and account menu now expose workspace entry points for signed-in photographer accounts.
+
+### Decisions
+
+- Role-aware redirect is treated as auth policy, not page-specific ad hoc logic.
+- Photographer workspace remains lightweight in this phase.
+- Session user hydration may combine auth and profile sources when auth identity alone is not enough for product UI behavior.
+
+### Notes
+
+- Workspace content is still placeholder-level and does not yet include real portfolio or booking management data.
+- This phase focuses on route direction, session correctness, and entry-point consistency, not dashboard business logic.
+- Workspace routing must use `/photographer/dashboard`.
+
+### Key Files
+
+- `apps/web/src/features/auth/lib/get-default-post-auth-route.ts`
+- `apps/web/src/services/session-user.service.ts`
+- `apps/web/src/store/auth.store.ts`
+- `apps/web/src/services/auth.service.ts`
+- `apps/web/src/providers/auth-session-provider.tsx`
+- `apps/web/src/features/auth/components/sign-in-form.tsx`
+- `apps/web/src/components/home/navbar.tsx`
+- `apps/web/src/components/home/account-menu.tsx`
+- `apps/web/src/components/home/mobile-nav.tsx`
+- `apps/web/src/app/photographer/dashboard/page.tsx`
+- `apps/web/src/features/photographer/components/photographer-dashboard-page.tsx`
+
+### Next Recommended Phase
+
+- Add profile completion guidance for photographer accounts.
+- Show completion status based on real profile fields.
+- Connect workspace actions to meaningful next steps instead of placeholder-only navigation.

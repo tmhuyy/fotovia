@@ -1,8 +1,9 @@
 "use client";
 
 import { ReactNode, useEffect } from "react";
+
 import { authToken } from "../lib/auth-token";
-import { authService } from "../services/auth.service";
+import { sessionUserService } from "../services/session-user.service";
 import { useAuthStore } from "../store/auth.store";
 
 interface AuthSessionProviderProps {
@@ -19,27 +20,40 @@ export const AuthSessionProvider = ({ children }: AuthSessionProviderProps) => {
         const initializeSession = async () => {
             startHydration();
 
-            const token = authToken.get();
+            const tokenAtStart = authToken.get();
 
-            if (!token) {
+            if (!tokenAtStart) {
                 if (isMounted) {
                     clearAuth();
                     finishHydration();
                 }
+
                 return;
             }
 
             try {
-                const user = await authService.getCurrentUser();
+                const user =
+                    await sessionUserService.getSessionUser(tokenAtStart);
 
-                if (isMounted) {
-                    setAuth({
-                        accessToken: token,
-                        user,
-                    });
+                if (!isMounted) return;
+
+                const latestToken = authToken.get();
+
+                if (latestToken && latestToken !== tokenAtStart) {
+                    finishHydration();
+                    return;
                 }
+
+                setAuth({
+                    accessToken: tokenAtStart,
+                    user,
+                });
             } catch {
-                if (isMounted) {
+                if (!isMounted) return;
+
+                const latestToken = authToken.get();
+
+                if (!latestToken || latestToken === tokenAtStart) {
                     clearAuth();
                 }
             } finally {

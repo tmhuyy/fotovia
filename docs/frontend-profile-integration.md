@@ -77,13 +77,23 @@ Still pending:
 - portfolio integration
 - public photographer-profile read flow from real backend data
 - profile completion guidance after sign-in or sign-up
+## Relationship to workspace direction
+
+- `/profile` remains the editable profile source page for signed-in users
+- photographer accounts can now reach `/profile` from a protected workspace foundation
+- the workspace route does not replace `/profile`; it gives post-auth product direction a clearer home
+- profile role data now helps drive authenticated UI direction where auth identity alone was not sufficient
+
+## Current known limitation
+
+This phase still keeps profile editing separate from richer onboarding, portfolio tooling, and booking management.
 
 ## Recommended next phase
 
-### Profile Completion Direction + Role-Aware Product Entry
+### Profile Completion Direction + Role-Aware Product Guidance
 
 Goals:
-
-- build on top of the protected `/profile` and protected booking-entry foundation
-- decide how profile completion should connect to later booking or onboarding paths
-- clarify what clients and photographers should see next after authentication
+- connect profile completeness more clearly to the photographer workspace
+- decide whether incomplete profile state should drive stronger prompts or gated actions
+- prepare later portfolio and booking-management flows without overloading the current profile page
+```

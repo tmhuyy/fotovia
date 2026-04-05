@@ -4,16 +4,19 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import type { AuthRole } from "../../types/auth.types";
 import { Button } from "../ui/button";
 
 interface AccountMenuProps {
     email?: string;
+    userRole?: AuthRole;
     isSigningOut: boolean;
     onSignOut: () => void;
 }
 
 export const AccountMenu = ({
     email,
+    userRole,
     isSigningOut,
     onSignOut,
 }: AccountMenuProps) => {
@@ -25,6 +28,8 @@ export const AccountMenu = ({
         if (!email) return "FV";
         return email.slice(0, 2).toUpperCase();
     }, [email]);
+
+    const isPhotographer = userRole === "photographer";
 
     useEffect(() => {
         setIsOpen(false);
@@ -84,6 +89,16 @@ export const AccountMenu = ({
                     </div>
 
                     <div className="mt-3 space-y-2">
+                        {isPhotographer ? (
+                            <Link
+                                href="/photographer/dashboard"
+                                className="flex w-full items-center justify-between rounded-2xl px-4 py-3 text-sm text-foreground transition hover:bg-background"
+                            >
+                                <span>Workspace</span>
+                                <span className="text-muted">→</span>
+                            </Link>
+                        ) : null}
+
                         <Link
                             href="/profile"
                             className="flex w-full items-center justify-between rounded-2xl px-4 py-3 text-sm text-foreground transition hover:bg-background"

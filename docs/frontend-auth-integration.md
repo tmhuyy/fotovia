@@ -36,12 +36,14 @@ Status: **working**
 
 Behavior:
 
-- sign-in submits to `POST /auth/login`
-- frontend stores returned tokens
-- frontend then requests `/auth/me`
-- current user is hydrated into the auth store
-- successful sign-in redirects to `/`
-- if a protected-route `next` param exists, sign-in redirects there instead
+- sign-in submits to the auth service
+- frontend stores the returned access token
+- frontend resolves a merged session user after sign-in
+- successful sign-in redirects to a safe internal `next` route when it exists
+- if no safe `next` route exists, sign-in falls back by role:
+    - `client` -> `/`
+    - `photographer` -> `/photographer/dashboard`
+- sign-in no longer depends on a manual refresh to complete the user-visible session flow
 
 ## Current sign-up status
 
@@ -84,15 +86,27 @@ Behavior:
 
 ## Current authenticated-only route status
 
-Status: **working for `/profile`, `/bookings/new`, and `/photographers/[slug]/book`**
+Status: **working for `/profile`, `/bookings/new`, `/photographers/[slug]/book`, and `/photographer/dashboard`**
 
 Behavior:
 
-- signed-out users cannot remain on `/profile`, `/bookings/new`, or `/photographers/[slug]/book`
+- signed-out users cannot remain on `/profile`, `/bookings/new`, `/photographers/[slug]/book`, or `/photographer/dashboard`
 - protected routes wait for auth hydration before deciding whether to render or redirect
 - signed-out users are redirected to `/sign-in?next=...`
 - successful sign-in can return users to the original protected page
+- if no safe `next` route exists, post-auth fallback can depend on user role
 - the current protected-route pattern is reusable for future authenticated pages
+
+## Current post-auth entry direction
+
+Status: **working**
+
+Behavior:
+
+- protected-route continuity is preserved through sign-in and sign-up entry
+- photographer accounts now have a real protected workspace destination
+- role-aware post-auth fallback now reduces unnecessary returns to the homepage
+- role-aware navbar and account UI now depend on the merged session user, not auth identity alone
 
 ## Current feedback behavior
 

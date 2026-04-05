@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { authService } from "../../services/auth.service";
@@ -25,6 +25,25 @@ export const Navbar = () => {
 
     const { user, isAuthenticated, isHydrating, hasHydrated, clearAuth } =
         useAuthStore();
+
+    const primaryAction = useMemo(() => {
+        if (
+            hasHydrated &&
+            !isHydrating &&
+            isAuthenticated &&
+            user?.role === "photographer"
+        ) {
+            return {
+                label: "Open workspace",
+                href: "/photographer/dashboard",
+            };
+        }
+
+        return {
+            label: "Book a Photographer",
+            href: "/bookings/new",
+        };
+    }, [hasHydrated, isAuthenticated, isHydrating, user?.role]);
 
     const handleSignOut = async () => {
         setIsSigningOut(true);
@@ -77,9 +96,9 @@ export const Navbar = () => {
                 <div className="hidden items-center gap-3 lg:flex">
                     <Button
                         size="md"
-                        onClick={() => router.push("/bookings/new")}
+                        onClick={() => router.push(primaryAction.href)}
                     >
-                        Book a Photographer
+                        {primaryAction.label}
                     </Button>
 
                     {!hasHydrated || isHydrating ? (
@@ -87,6 +106,7 @@ export const Navbar = () => {
                     ) : isAuthenticated ? (
                         <AccountMenu
                             email={user?.email}
+                            userRole={user?.role}
                             isSigningOut={isSigningOut}
                             onSignOut={handleSignOut}
                         />
@@ -117,6 +137,7 @@ export const Navbar = () => {
                         isHydrating={isHydrating}
                         hasHydrated={hasHydrated}
                         userEmail={user?.email}
+                        userRole={user?.role}
                         isSigningOut={isSigningOut}
                         onSignOut={handleSignOut}
                     />
