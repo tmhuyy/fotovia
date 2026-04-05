@@ -1,4 +1,14 @@
-import { Body, Controller, Get, Patch, Post, UseGuards } from '@nestjs/common';
+import {
+    Body,
+    Controller,
+    Delete,
+    Get,
+    Param,
+    ParseUUIDPipe,
+    Patch,
+    Post,
+    UseGuards,
+} from '@nestjs/common';
 import {
     ApiCreatedResponse,
     ApiOkResponse,
@@ -10,8 +20,11 @@ import { GetUser, IUser, JwtAuthGuard } from '@repo/common';
 
 import { CreateProfileFromAuthDto } from './dtos/create-profile-from-auth.dto';
 import { CreateProfileDto } from './dtos/create-profile.dto';
+import { CreateProfilePortfolioItemDto } from './dtos/create-profile-portfolio-item.dto';
 import { UpdateProfileAvatarDto } from './dtos/update-profile-avatar.dto';
 import { UpdateProfileDto } from './dtos/update-profile.dto';
+import { UpdateProfilePortfolioItemDto } from './dtos/update-profile-portfolio-item.dto';
+import { ProfilePortfolioItem } from './entities/profile-portfolio-item.entity';
 import { Profile } from './entities/profile.entity';
 import { ProfileService } from './profile.service';
 
@@ -74,6 +87,69 @@ export class ProfileController {
             updateProfileAvatarDto,
             user.id,
         );
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Get('/me/portfolio-items')
+    @ApiOperation({ summary: 'Get my photographer portfolio items' })
+    @ApiOkResponse({
+        description: 'Portfolio items fetched successfully',
+        type: ProfilePortfolioItem,
+        isArray: true,
+    })
+    async getMyPortfolioItems(
+        @GetUser() user: IUser,
+    ): Promise<ProfilePortfolioItem[]> {
+        return this.profileService.getMyPortfolioItems(user.id);
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Post('/me/portfolio-items')
+    @ApiOperation({ summary: 'Create a new photographer portfolio item' })
+    @ApiCreatedResponse({
+        description: 'Portfolio item created successfully',
+        type: ProfilePortfolioItem,
+    })
+    async createMyPortfolioItem(
+        @Body() createProfilePortfolioItemDto: CreateProfilePortfolioItemDto,
+        @GetUser() user: IUser,
+    ): Promise<ProfilePortfolioItem> {
+        return this.profileService.createMyPortfolioItem(
+            createProfilePortfolioItemDto,
+            user.id,
+        );
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Patch('/me/portfolio-items/:itemId')
+    @ApiOperation({ summary: 'Update a photographer portfolio item' })
+    @ApiOkResponse({
+        description: 'Portfolio item updated successfully',
+        type: ProfilePortfolioItem,
+    })
+    async updateMyPortfolioItem(
+        @Param('itemId', new ParseUUIDPipe()) itemId: string,
+        @Body() updateProfilePortfolioItemDto: UpdateProfilePortfolioItemDto,
+        @GetUser() user: IUser,
+    ): Promise<ProfilePortfolioItem> {
+        return this.profileService.updateMyPortfolioItem(
+            itemId,
+            updateProfilePortfolioItemDto,
+            user.id,
+        );
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Delete('/me/portfolio-items/:itemId')
+    @ApiOperation({ summary: 'Delete a photographer portfolio item' })
+    @ApiOkResponse({
+        description: 'Portfolio item deleted successfully',
+    })
+    async deleteMyPortfolioItem(
+        @Param('itemId', new ParseUUIDPipe()) itemId: string,
+        @GetUser() user: IUser,
+    ): Promise<{ deleted: true }> {
+        return this.profileService.deleteMyPortfolioItem(itemId, user.id);
     }
 
     @MessagePattern('profile.create_from_signup')

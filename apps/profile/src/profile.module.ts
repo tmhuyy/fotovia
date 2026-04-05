@@ -7,7 +7,9 @@ import { ASSET_SERVICE, AUTH_SERVICE } from '@repo/common';
 import { ConfigSchemaValidation } from './config.schema';
 import { ProfileController } from './profile.controller';
 import { Profile } from './entities/profile.entity';
+import { ProfilePortfolioItem } from './entities/profile-portfolio-item.entity';
 import { ProfileService } from './profile.service';
+import { ProfilePortfolioItemRepository } from './repositories/profile-portfolio-item.repository';
 import { ProfileRepository } from './repositories/profile.repository';
 
 @Module({
@@ -37,7 +39,7 @@ import { ProfileRepository } from './repositories/profile.repository';
             },
         }),
 
-        TypeOrmModule.forFeature([Profile]),
+        TypeOrmModule.forFeature([Profile, ProfilePortfolioItem]),
 
         ClientsModule.registerAsync([
             {
@@ -70,7 +72,11 @@ import { ProfileRepository } from './repositories/profile.repository';
             },
         ]),
     ],
-    providers: [ProfileService, ProfileRepository],
+    providers: [
+        ProfileService,
+        ProfileRepository,
+        ProfilePortfolioItemRepository,
+    ],
     controllers: [ProfileController],
 })
 export class ProfileModule {}

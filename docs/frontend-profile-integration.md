@@ -96,19 +96,19 @@ The current frontend avatar flow is:
 
 - `/profile` remains the editable profile source page for signed-in users
 - `/photographer/dashboard` remains the photographer workspace / progress page
+- `/photographer/portfolio` now handles real photographer portfolio persistence separately
 - the workspace route does not replace `/profile`; it gives post-auth product direction a clearer home
 - profile role data continues to help drive authenticated UI direction where auth identity alone was not sufficient
 
 ## Current known limitations
 
-This phase now covers the real profile foundation and real avatar upload, but it still does not complete the full photographer media flow.
+This phase now covers the real profile foundation and real avatar upload, but it still does not complete the full public photographer experience.
 
 Still pending:
 
-- richer photographer profile fields
-- real backend persistence for photographer portfolio items
-- real backend persistence for portfolio media mappings
-- public photographer-profile read flow with real saved portfolio content
+- richer photographer profile fields for public presentation
+- public photographer-profile read flow from real backend data
+- public photographer detail integration with real saved portfolio content
 - broader profile completion guidance that reacts to avatar and portfolio readiness together
 
 ## Why this phase matters
@@ -128,41 +128,30 @@ This is the first production-facing profile/media loop in the web app that is no
 
 ## Recommended next phase
 
-## Phase FE-2 / BE-3: Real Portfolio Persistence + Portfolio Media Integration
+## Phase FE/BE Next: Public Photographer Detail Integration with Real Saved Data
 
 ### Why this should be next
 
-Avatar upload is now working end-to-end, but photographer portfolio data is still only persisted locally in the current browser.
+The signed-in profile and portfolio flows now persist real backend data, but the public marketplace still does not consume that saved data yet.
 
-That means the next biggest gap between the current frontend experience and a true marketplace-ready product is portfolio persistence.
+The next visible product milestone should be:
+
+- real public photographer detail data
+- real public portfolio rendering
+- real bridge from photographer workspace to marketplace-facing pages
 
 ### Suggested goals
 
-- replace browser-local portfolio persistence with real backend persistence
-- connect portfolio item media to the existing asset service
-- keep `/photographer/portfolio` as the signed-in source page for managing photographer works
-- preserve existing frontend UX where possible:
-    - create
-    - edit
-    - delete
-    - feature / unfeature
-    - newest-first ordering
-- prepare later public photographer detail pages to consume real saved portfolio items
-
-### Suggested frontend direction
-
-The fastest clean direction is:
-
-1. keep the current portfolio page structure
-2. replace local storage as the source of truth with real backend queries and mutations
-3. upload portfolio images through the same asset upload-session flow already proven by avatar upload
-4. save portfolio item records that reference real uploaded assets
-5. continue using snackbar feedback and thin pages with service-layer API calls
+- expose a public photographer read model from the backend
+- support a stable public route key such as slug
+- replace mock detail-page portfolio sections with real saved backend portfolio items
+- surface avatar, basic profile fields, and featured works from real saved data
+- keep the signed-in edit routes separate from the public read routes
 
 ## Notes for later
 
-After real portfolio persistence is stable, the next logical product step should likely be:
+After public photographer detail integration is stable, the next logical media/product step should likely be:
 
-- public photographer detail integration with real saved portfolio data
-- backend-driven discovery improvements
-- AI classification on uploaded photographer works
+- multi-image gallery support per portfolio item
+- image upload hardening and client-side compression
+- discovery/listing integration from real saved photographer data

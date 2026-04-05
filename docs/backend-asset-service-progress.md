@@ -18,8 +18,6 @@ This phase focuses on the core asset lifecycle only:
 - read asset metadata
 - generate read URL
 
----
-
 ## What was completed in BE-1
 
 ### 1. Asset service skeleton was corrected
@@ -89,8 +87,6 @@ The integration now supports the pattern:
 
 The current profile-avatar slot is designed around one active avatar per profile.
 
-That keeps the first real media integration simpler and gives the frontend a stable avatar source.
-
 ### 4. Local integration config was aligned for real web testing
 
 The local integration now aligns:
@@ -100,22 +96,78 @@ The local integration now aligns:
 - profile-to-asset TCP connection
 - asset-service CORS origin for the local web frontend
 
-This was needed to complete the first real end-to-end avatar flow from web to backend services.
+---
+
+## Phase BE-3: Portfolio Backend Persistence + Portfolio Media Mapping
+
+**Status:** Completed
+
+## Goal
+
+Use the existing asset service as the real media backend for photographer portfolio persistence.
+
+This phase keeps the first portfolio version intentionally simple:
+
+- one primary uploaded image per portfolio item
+- real CRUD in the profile domain
+- real asset usage attachment for saved items
+- real delete cleanup for current primary image usage
+
+## What was completed in BE-3
+
+### 1. Portfolio item persistence now exists in the profile domain
+
+The profile service now owns saved photographer portfolio records instead of leaving the portfolio as a browser-local frontend concern.
+
+### 2. Portfolio items now use real uploaded asset references
+
+The current portfolio item flow now supports:
+
+1. upload portfolio image through asset upload-session flow
+2. confirm uploaded asset
+3. create or update a saved portfolio item using a real `assetId`
+4. resolve a readable asset URL
+5. persist portfolio item data with real uploaded media metadata
+
+### 3. Asset usage mapping now supports saved portfolio items
+
+Portfolio items now attach their primary image into a usage slot shaped around:
+
+- service name
+- portfolio item entity
+- primary image field
+
+This keeps asset ownership and media-lifecycle concerns inside the asset service while the profile domain owns portfolio business logic.
+
+### 4. Delete flow now includes asset-usage cleanup
+
+The current backend shape now supports detaching the active usage for a saved portfolio item when that item is deleted.
+
+This keeps the portfolio/media relationship cleaner than a create-only integration.
 
 ---
 
-## Current verified end-to-end media flow
+## Current verified media flows
 
-The current verified avatar flow is now:
+The backend asset service is now part of two working product flows:
+
+### Avatar flow
 
 1. `POST /assets/upload-sessions`
-2. upload the file to Supabase using the returned signed upload data
+2. upload file to Supabase using signed upload data
 3. `POST /assets/upload-sessions/{sessionId}/confirm`
 4. `PATCH /profiles/me/avatar`
 5. `GET /profiles/me`
-6. frontend renders saved `avatarUrl`
 
-This means Fotovia now has its first real production-facing profile media loop working end-to-end.
+### Portfolio flow
+
+1. `POST /assets/upload-sessions`
+2. upload file to Supabase using signed upload data
+3. `POST /assets/upload-sessions/{sessionId}/confirm`
+4. `POST /profiles/me/portfolio-items`
+5. `GET /profiles/me/portfolio-items`
+6. `PATCH /profiles/me/portfolio-items/{itemId}`
+7. `DELETE /profiles/me/portfolio-items/{itemId}`
 
 ---
 
@@ -132,148 +184,68 @@ This means Fotovia now has its first real production-facing profile media loop w
 
 ### Asset service does not own
 
-- profile business logic outside media attachment
-- photographer portfolio item business logic
+- photographer portfolio business logic itself
+- public photographer detail presentation logic
 - AI style classification results as domain source of truth
 
----
+### Profile service owns
 
-## Current DB direction
-
-The current asset-service schema is built around 3 tables.
-
-### `assets`
-
-Stores core metadata about each uploaded file, including:
-
-- owner
-- provider
-- bucket
-- object key
-- original filename
-- mime type
-- size
-- resource type
-- purpose
-- visibility
-- status
-- optional dimensions / checksum / metadata
-
-### `asset_upload_sessions`
-
-Tracks upload intent and confirmation lifecycle, including:
-
-- asset link
-- requested user
-- expected mime type
-- max size
-- client filename
-- upload method
-- status
-- expiry time
-- uploaded / confirmed timestamps
-
-### `asset_usages`
-
-Tracks where an asset is used in business domains, including:
-
-- service name
-- entity type
-- entity id
-- field name
-- usage role
-- sort order
-- detached state
+- profile-facing media attachments
+- saved photographer portfolio item records
+- photographer-owned CRUD rules for portfolio items
 
 ---
 
-## Important implementation notes
+## Current implementation limits
 
-### Signed upload behavior
+The current system is intentionally still a first real persistence slice.
 
-Creating an upload session does **not** upload the file by itself.
+Still pending:
 
-It only creates:
-
-- the asset record
-- the upload session record
-- the signed upload data
-
-The real file upload still happens separately against Supabase Storage.
-
-### Current limitation
-
-Upload confirmation hardening is still not the final version.
-
-The service flow works for current integration, but stronger verification against real object existence in storage before marking an asset as ready is still a good hardening step for a later backend phase.
-
-### Current integration status
-
-Avatar integration is now complete enough for real frontend testing.
-
-Still not completed yet:
-
-- real portfolio backend persistence
-- public portfolio read integration
-- multi-item portfolio media mapping from real backend data
-- AI classification pipeline integration on saved photographer works
-
----
+- multi-image gallery support per portfolio item
+- stronger upload confirmation hardening against real storage object existence
+- public photographer detail integration using saved portfolio data
+- listing/discovery integration from real saved data
+- AI classification triggered from saved portfolio uploads
 
 ## Why this phase matters
 
-This phase turns the asset service from a standalone media foundation into a backend service that is now actively used by another real business flow.
+The asset service is no longer only infrastructure groundwork.
 
-Without BE-2:
+It now powers two real business flows:
 
-- the frontend could not complete avatar upload end-to-end
-- profile media would still depend on placeholder handling
-- the asset service would still be unproven in a real production-facing user flow
+- avatar uploads
+- photographer portfolio uploads
 
-With BE-2 complete, the asset service is no longer only infrastructure groundwork; it is now part of a working product slice.
-
----
+That means the asset backend has moved from “foundation only” to “actively supporting real product slices.”
 
 ## Recommended next phase
 
-## Phase BE-3: Portfolio Backend Persistence + Portfolio Media Mapping
+## Phase BE/FE Next: Public Photographer Detail Integration with Real Saved Data
 
 ### Why this should be next
 
-Now that avatar upload works end-to-end, the largest remaining media/product gap is photographer portfolio persistence.
+The system can now save real photographer profile media and real portfolio items, but the public marketplace still does not consume that saved data yet.
 
-The frontend portfolio experience already exists, but it still depends on browser-local persistence instead of a real backend source of truth.
+The next product milestone should expose:
+
+- public photographer read data
+- public saved portfolio rendering
+- real bridge from signed-in photographer setup to client-facing browsing
 
 ### Suggested goals
 
-- introduce real backend persistence for photographer portfolio items
-- let portfolio items reference real uploaded assets
-- keep asset service as the shared media/storage backend
-- support at least the first practical portfolio actions:
-    - create
-    - list
-    - update
-    - delete
-    - feature / unfeature
-- keep newest-first ordering unless a stronger business rule is introduced later
-- prepare later public photographer detail rendering from saved portfolio records
-
-### Suggested implementation shape
-
-The fastest clean direction is:
-
-1. keep asset upload-session flow as the shared upload path
-2. introduce a portfolio item record that references one primary uploaded asset first
-3. expose authenticated CRUD endpoints for the signed-in photographer
-4. connect frontend portfolio management to those endpoints
-5. defer multi-image gallery expansion until the single-item path is stable
-
----
+- expose a public photographer detail read model
+- support a stable public route key such as slug
+- render saved avatar + saved featured portfolio items publicly
+- keep edit/write flows private and read flows public
+- prepare discovery/listing integration for a later phase
 
 ## Notes for later
 
-After real portfolio persistence is stable, the next likely steps should be:
+After public detail integration is stable, the next media hardening step should likely be:
 
-- public photographer detail integration with saved portfolio items
-- discovery/search consumption of portfolio data
-- async AI classification on uploaded photographer works
+- cover image plus optional gallery images per portfolio item
+- client-side image compression before upload
+- thumbnail or derivative-image strategy
+- AI classification integration on saved works

@@ -37,12 +37,21 @@ export interface PhotographerPortfolioItem {
     isFeatured: boolean;
     sortOrder: number;
     createdAt: string;
+    updatedAt?: string;
 }
 
 export interface PortfolioItemDraft {
     title: string;
     description: string;
     asset: AssetPreview | null;
+    category: PortfolioCategory;
+    isFeatured: boolean;
+}
+
+export interface PortfolioItemMutationPayload {
+    title: string;
+    description: string;
+    assetId: string;
     category: PortfolioCategory;
     isFeatured: boolean;
 }

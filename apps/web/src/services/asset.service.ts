@@ -266,11 +266,13 @@ export const assetService = {
             id: generateAssetId(),
             source: "local-preview",
             status: "local-ready",
+            assetId: null,
             fileName: file.name,
             mimeType: file.type,
             sizeInBytes: file.size,
             previewUrl,
             createdAt: new Date().toISOString(),
+            file,
         };
     },
 
@@ -289,11 +291,42 @@ export const assetService = {
             id: generateAssetId(),
             source: "seeded-remote",
             status: "seeded",
+            assetId: null,
             fileName,
             mimeType,
             sizeInBytes,
             previewUrl,
             createdAt: new Date().toISOString(),
+            file: null,
+        };
+    },
+
+    createUploadedAssetPreview({
+        assetId,
+        previewUrl,
+        fileName,
+        mimeType = "image/jpeg",
+        sizeInBytes = 0,
+        createdAt,
+    }: {
+        assetId: string;
+        previewUrl: string;
+        fileName: string;
+        mimeType?: string;
+        sizeInBytes?: number;
+        createdAt?: string;
+    }): AssetPreview {
+        return {
+            id: assetId,
+            source: "uploaded-remote",
+            status: "uploaded",
+            assetId,
+            fileName,
+            mimeType,
+            sizeInBytes,
+            previewUrl,
+            createdAt: createdAt ?? new Date().toISOString(),
+            file: null,
         };
     },
 

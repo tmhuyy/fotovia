@@ -1,54 +1,61 @@
 import Link from "next/link";
 
 import { Badge } from "../../../components/ui/badge";
-import { Button, buttonVariants } from "../../../components/ui/button";
+import { buttonVariants } from "../../../components/ui/button";
 
-interface PortfolioEmptyStateProps {
-    onLoadSamples: () => void;
-}
-
-export const PortfolioEmptyState = ({
-    onLoadSamples,
-}: PortfolioEmptyStateProps) => {
+export const PortfolioEmptyState = () =>
+{
     return (
-        <div className="rounded-[1.75rem] border border-border bg-surface p-6 shadow-sm md:p-8">
-            <Badge variant="accent">Portfolio asset foundation</Badge>
+        <div className="rounded-[2rem] border border-border bg-surface p-8 shadow-sm">
+            <div className="space-y-6">
+                <div className="space-y-3">
+                    <Badge variant="neutral">Real portfolio persistence</Badge>
 
-            <h2 className="mt-4 text-2xl font-semibold text-foreground md:text-3xl">
-                Your portfolio is still empty.
-            </h2>
+                    <div className="space-y-2">
+                        <h2 className="font-serif text-3xl text-foreground">
+                            Your portfolio is still empty.
+                        </h2>
 
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-muted">
-                Upload your first work so later discovery, photographer detail,
-                and booking trust can build on real visual proof instead of
-                placeholder content.
-            </p>
+                        <p className="max-w-2xl text-sm leading-7 text-muted">
+                            Upload your first real work so your photographer workspace starts
+                            reflecting saved backend content instead of browser-local demo
+                            data.
+                        </p>
+                    </div>
+                </div>
 
-            <div className="mt-6 flex flex-wrap gap-3">
-                <Button size="lg" onClick={onLoadSamples}>
-                    Load sample works
-                </Button>
+                <div className="flex flex-wrap gap-3">
+                    <Link
+                        href="/profile"
+                        className={buttonVariants({
+                            variant: "secondary",
+                            size: "lg",
+                        })}
+                    >
+                        Review profile first
+                    </Link>
 
-                <Link
-                    href="/profile"
-                    className={buttonVariants({
-                        size: "lg",
-                        variant: "secondary",
-                    })}
-                >
-                    Review profile first
-                </Link>
-            </div>
+                    <Link
+                        href="/photographer/dashboard"
+                        className={buttonVariants({
+                            size: "lg",
+                        })}
+                    >
+                        Back to dashboard
+                    </Link>
+                </div>
 
-            <div className="mt-6 rounded-2xl border border-dashed border-border bg-background px-4 py-4">
-                <p className="text-xs uppercase tracking-[0.22em] text-muted">
-                    Suggested first portfolio mix
-                </p>
-                <p className="mt-2 text-sm leading-7 text-muted">
-                    Start with 3 to 6 works, upload at least one strong featured
-                    image, and use categories that match the type of jobs you
-                    want clients to trust you with.
-                </p>
+                <div className="rounded-2xl border border-dashed border-border bg-background px-4 py-4">
+                    <p className="text-xs uppercase tracking-[0.22em] text-muted">
+                        Suggested first portfolio mix
+                    </p>
+
+                    <p className="mt-2 text-sm leading-7 text-muted">
+                        Start with 3 to 6 real works, keep one strong featured image, and
+                        choose categories that match the jobs you want clients to book you
+                        for later.
+                    </p>
+                </div>
             </div>
         </div>
     );

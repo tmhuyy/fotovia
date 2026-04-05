@@ -33,6 +33,11 @@ type AssetRpcAttachUsagePayload = {
     dto: AttachAssetUsageDto;
 };
 
+type AssetRpcDetachUsagePayload = {
+    userId: string;
+    usageId: string;
+};
+
 @ApiTags('Assets')
 @ApiBearerAuth()
 @Controller('assets')
@@ -155,5 +160,18 @@ export class AssetController {
     @MessagePattern('asset.attach_usage')
     async attachUsageInternal(@Payload() payload: AssetRpcAttachUsagePayload) {
         return this.assetService.attachUsage(payload.dto, payload.userId);
+    }
+
+    @MessagePattern('asset.get_usages')
+    async getAssetUsagesInternal(@Payload() payload: AssetRpcByIdPayload) {
+        return this.assetService.getAssetUsages(
+            payload.assetId,
+            payload.userId,
+        );
+    }
+
+    @MessagePattern('asset.detach_usage')
+    async detachUsageInternal(@Payload() payload: AssetRpcDetachUsagePayload) {
+        return this.assetService.detachUsage(payload.usageId, payload.userId);
     }
 }
