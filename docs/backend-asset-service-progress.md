@@ -20,7 +20,7 @@ This phase focuses on the core asset lifecycle only:
 
 ---
 
-## What was completed
+## What was completed in BE-1
 
 ### 1. Asset service skeleton was corrected
 
@@ -60,6 +60,65 @@ The service can now return:
 
 ---
 
+## Phase BE-2: Avatar Integration with Profile Service
+
+**Status:** Completed
+
+## Goal
+
+Connect the profile avatar flow to the asset service so the frontend can use a real upload-and-attach media path instead of a mock or manual URL-only approach.
+
+## What was completed in BE-2
+
+### 1. Profile service now connects to asset service for avatar handling
+
+The profile domain now uses the asset service as the media source for avatar updates instead of treating avatar as a plain free-form field.
+
+### 2. Profile avatar now uses a real asset reference
+
+The integration now supports the pattern:
+
+1. upload avatar through asset upload-session flow
+2. confirm the uploaded asset
+3. send avatar asset id to profile service
+4. attach the asset to the profile avatar slot
+5. resolve a readable avatar URL
+6. store the active avatar reference in profile-facing data
+
+### 3. Single active avatar behavior is now part of the integration shape
+
+The current profile-avatar slot is designed around one active avatar per profile.
+
+That keeps the first real media integration simpler and gives the frontend a stable avatar source.
+
+### 4. Local integration config was aligned for real web testing
+
+The local integration now aligns:
+
+- asset HTTP port
+- asset TCP port
+- profile-to-asset TCP connection
+- asset-service CORS origin for the local web frontend
+
+This was needed to complete the first real end-to-end avatar flow from web to backend services.
+
+---
+
+## Current verified end-to-end media flow
+
+The current verified avatar flow is now:
+
+1. `POST /assets/upload-sessions`
+2. upload the file to Supabase using the returned signed upload data
+3. `POST /assets/upload-sessions/{sessionId}/confirm`
+4. `PATCH /profiles/me/avatar`
+5. `GET /profiles/me`
+6. frontend renders saved `avatarUrl`
+
+This means Fotovia now has its first real production-facing profile media loop working end-to-end.
+
+---
+
 ## Current domain boundaries
 
 ### Asset service owns
@@ -71,11 +130,10 @@ The service can now return:
 - asset usage attachment / detachment
 - read URL generation
 
-### Asset service does not own yet
+### Asset service does not own
 
-- profile business logic
-- avatar update logic inside profile service
-- portfolio item business logic
+- profile business logic outside media attachment
+- photographer portfolio item business logic
 - AI style classification results as domain source of truth
 
 ---
@@ -129,21 +187,6 @@ Tracks where an asset is used in business domains, including:
 
 ---
 
-## Current tested flow
-
-The intended manual test flow for this phase is:
-
-1. `POST /assets/upload-sessions`
-2. upload the file to Supabase using the returned signed upload data
-3. `POST /assets/upload-sessions/{sessionId}/confirm`
-4. `GET /assets/{assetId}`
-5. `GET /assets/{assetId}/read-url`
-6. `POST /assets/usages/attach`
-7. `GET /assets/{assetId}/usages`
-8. `PATCH /assets/usages/{usageId}/detach`
-
----
-
 ## Important implementation notes
 
 ### Signed upload behavior
@@ -156,84 +199,81 @@ It only creates:
 - the upload session record
 - the signed upload data
 
-The real file upload must still happen separately against Supabase Storage.
+The real file upload still happens separately against Supabase Storage.
 
 ### Current limitation
 
-This phase does not yet verify object existence in storage before confirming an upload session as `READY`.
+Upload confirmation hardening is still not the final version.
 
-That hardening step is intentionally deferred to the next phase if needed.
+The service flow works for current integration, but stronger verification against real object existence in storage before marking an asset as ready is still a good hardening step for a later backend phase.
 
 ### Current integration status
 
-The asset service is currently stable enough as a standalone media foundation, but it is still **not yet integrated** into:
+Avatar integration is now complete enough for real frontend testing.
 
-- profile avatar update flow
-- portfolio backend flow
-- AI style classification pipeline
+Still not completed yet:
 
-Because of that, full end-to-end product testing is still limited at this point.
+- real portfolio backend persistence
+- public portfolio read integration
+- multi-item portfolio media mapping from real backend data
+- AI classification pipeline integration on saved photographer works
 
 ---
 
 ## Why this phase matters
 
-This phase creates the backend storage foundation that later photographer-facing and profile-facing features will depend on.
+This phase turns the asset service from a standalone media foundation into a backend service that is now actively used by another real business flow.
 
-Without this phase:
+Without BE-2:
 
-- avatar upload would not have a reusable backend path
-- portfolio media persistence would not have a shared storage lifecycle
-- future AI media workflows would not have a clean asset source
+- the frontend could not complete avatar upload end-to-end
+- profile media would still depend on placeholder handling
+- the asset service would still be unproven in a real production-facing user flow
+
+With BE-2 complete, the asset service is no longer only infrastructure groundwork; it is now part of a working product slice.
 
 ---
 
 ## Recommended next phase
 
-## Phase BE-2: Avatar Integration with Profile Service
+## Phase BE-3: Portfolio Backend Persistence + Portfolio Media Mapping
 
 ### Why this should be next
 
-This is the fastest path toward real end-to-end testing and frontend integration.
+Now that avatar upload works end-to-end, the largest remaining media/product gap is photographer portfolio persistence.
 
-The profile domain already has `avatarUrl`, while the asset service already has the upload-session and usage foundation. Connecting these two services will unlock the first real media feature that the frontend can consume cleanly.
+The frontend portfolio experience already exists, but it still depends on browser-local persistence instead of a real backend source of truth.
 
 ### Suggested goals
 
-- connect profile avatar flow to asset service
-- let profile service store or reference the active avatar asset
-- attach avatar usage with:
-    - `serviceName = profile`
-    - `entityType = profile`
-    - `fieldName = avatar`
-- enforce one active avatar per profile
-- update profile read model so frontend can still consume avatar cleanly
-- optionally harden upload confirmation by checking real storage object existence before marking asset `READY`
+- introduce real backend persistence for photographer portfolio items
+- let portfolio items reference real uploaded assets
+- keep asset service as the shared media/storage backend
+- support at least the first practical portfolio actions:
+    - create
+    - list
+    - update
+    - delete
+    - feature / unfeature
+- keep newest-first ordering unless a stronger business rule is introduced later
+- prepare later public photographer detail rendering from saved portfolio records
 
-### Suggested backend shape
+### Suggested implementation shape
 
-The simplest backend direction for the next phase is:
+The fastest clean direction is:
 
-1. user uploads avatar through asset upload-session flow
-2. asset becomes `READY`
-3. profile service receives an avatar asset id
-4. profile service asks asset service to attach usage for the profile avatar slot
-5. profile service stores the active avatar reference and readable avatar URL
-6. `GET /profiles/me` returns avatar data the frontend can use directly
+1. keep asset upload-session flow as the shared upload path
+2. introduce a portfolio item record that references one primary uploaded asset first
+3. expose authenticated CRUD endpoints for the signed-in photographer
+4. connect frontend portfolio management to those endpoints
+5. defer multi-image gallery expansion until the single-item path is stable
 
 ---
 
 ## Notes for later
 
-After avatar integration is stable, the next backend step should likely be:
+After real portfolio persistence is stable, the next likely steps should be:
 
-- portfolio item backend
-- multiple asset attachment to portfolio items
-- async AI classification for uploaded portfolio images
-
-From a delivery perspective, the likely fastest path to visible end-to-end progress is:
-
-1. BE-2 avatar integration
-2. FE avatar upload / profile avatar integration
-3. backend portfolio media persistence
-4. FE portfolio persistence with real backend media
+- public photographer detail integration with saved portfolio items
+- discovery/search consumption of portfolio data
+- async AI classification on uploaded photographer works

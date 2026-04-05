@@ -29,249 +29,140 @@ This is used for auth and session hydration.
 - `specialties`
 - `pricePerHour`
 - `experienceYears`
+- `avatarUrl`
+- `avatarAssetId`
 
 This is used for the production-facing profile page.
 
 ## Frontend API client split
 
-The frontend uses a dedicated `profileClient`.
+The frontend now uses dedicated service clients for both profile and asset flows.
 
-Reason:
+### Current clients
+
+- `profileClient`
+- `assetClient`
+
+### Reason
 
 - auth service and profile service are separate backend services
-- profile requests should not be routed through the auth client
+- asset upload flow is a separate backend concern from profile field editing
 - service boundaries should stay visible in the frontend service layer too
 
 ## Current `/profile` behavior
 
-Status: **working**
+**Status:** Working end-to-end for profile foundation + avatar upload
 
-Behavior:
+### Behavior
 
-- `/profile` is now treated as an authenticated-only page
+- `/profile` is treated as an authenticated-only page
 - signed-in users can load real profile data
 - signed-out users are redirected away through the protected-route flow
 - if no profile exists yet, the UI can create a profile foundation
 - users can update real profile fields through the profile service
-- profile UI no longer depends on mock profile builders in the main production-facing flow
+- users can choose a local avatar image and preview it before upload
+- users can upload and replace avatar images through the real backend asset flow
+- the summary card updates from real backend avatar data after a successful upload
+- avatar state survives refresh because it is now backed by real backend profile data
+
+## Current avatar upload flow
+
+The current frontend avatar flow is:
+
+1. choose an image file on `/profile`
+2. validate file type and size in the frontend
+3. generate a local preview
+4. call `POST /assets/upload-sessions`
+5. upload the file to the signed upload URL
+6. call `POST /assets/upload-sessions/{sessionId}/confirm`
+7. call `PATCH /profiles/me/avatar`
+8. update or refetch `/profiles/me`
+9. render the real `avatarUrl` in the profile UI
 
 ## Current profile UX behavior
 
-Status: **improved**
+**Status:** Improved
 
-Behavior:
+### Behavior
 
 - profile save uses snackbar feedback instead of inline success boxes
 - profile foundation creation uses snackbar feedback
+- avatar upload uses snackbar feedback
 - summary card handles long email and phone values more safely
 - profile access is available from the signed-in account area instead of cluttering the main navbar
-
-## Current known limitation
-
-This phase focuses on the profile foundation only.
-
-Still pending:
-
-- richer photographer profile fields
-- avatar upload
-- portfolio integration
-- public photographer-profile read flow from real backend data
-- profile completion guidance after sign-in or sign-up
+- avatar upload keeps the page flow lightweight instead of moving users to a separate media page
 
 ## Relationship to workspace direction
 
 - `/profile` remains the editable profile source page for signed-in users
-- photographer accounts can now reach `/profile` from a protected workspace foundation
+- `/photographer/dashboard` remains the photographer workspace / progress page
 - the workspace route does not replace `/profile`; it gives post-auth product direction a clearer home
-- profile role data now helps drive authenticated UI direction where auth identity alone was not sufficient
+- profile role data continues to help drive authenticated UI direction where auth identity alone was not sufficient
 
-## Current known limitation
+## Current known limitations
 
-This phase still keeps profile editing separate from richer onboarding, portfolio tooling, and booking management.
-
-## Recommended next phase
-
-### Profile Completion Direction + Role-Aware Product Guidance
-
-Goals:
-
-- connect profile completeness more clearly to the photographer workspace
-- decide whether incomplete profile state should drive stronger prompts or gated actions
-- prepare later portfolio and booking-management flows without overloading the current profile page
-
-## Phase 26: Profile completion guidance
-
-This phase builds on top of the existing real `/profiles/me` integration and uses that data to guide photographer users inside the protected workspace.
-
-### What changed
-
-- profile completion is now computed from real profile data
-- the photographer workspace now shows completion percentage and missing profile areas
-- `/profile` remains the editable source page
-- the workspace acts as a guidance and progress layer rather than replacing profile editing
-
-### Current completion fields
-
-The current profile completion logic checks these fields:
-
-- full name
-- phone
-- location
-- bio
-- specialties
-- price per hour
-- experience years
-
-### Current states handled
-
-The workspace now handles these profile-related states:
-
-- loading profile progress
-- profile exists and is partially complete
-- profile exists and is fully complete
-- profile is missing
-- profile request fails for another reason
-
-### Relationship to workspace direction
-
-This phase makes the photographer workspace more meaningful without turning it into a heavy dashboard.
-
-Current rule:
-
-- `/profile` = edit real data
-- `/photographer/dashboard` = see progress, guidance, and next product direction
-
-## Recommended next phase
-
-### Photographer Portfolio Foundation
-
-Goals:
-
-- define the first real portfolio structure for photographer accounts
-- connect workspace direction to portfolio setup
-- prepare later public discovery and photographer detail improvements using more realistic portfolio data
-
-## Phase 27: Portfolio foundation relationship
-
-Phase 27 extends the photographer-side product flow beyond profile readiness and into portfolio setup.
-
-### What changed
-
-- photographer accounts now have a protected portfolio management route
-- the photographer workspace now points more clearly from profile readiness to portfolio foundation
-- the portfolio page acts as the first dedicated place to manage portfolio items
-- `/profile` still remains the real editable source for photographer profile fields
-
-### Current product direction
-
-The current photographer-side direction is now:
-
-- `/profile` = edit real profile data
-- `/photographer/dashboard` = see progress, guidance, and next-step direction
-- `/photographer/portfolio` = build and manage the first portfolio foundation
-
-### Why this matters
-
-Profile completion alone is not enough for a strong photographer marketplace experience.
-
-The portfolio phase starts to provide:
-
-- creative proof
-- future discovery value
-- a better bridge toward public photographer detail quality
-- a future foundation for real asset/media integration
-
-## Current limitation
-
-This phase still keeps portfolio data frontend-only.
+This phase now covers the real profile foundation and real avatar upload, but it still does not complete the full photographer media flow.
 
 Still pending:
 
-- real asset upload
-- portfolio persistence to backend
-- portfolio editing and deletion workflows
-- public photographer detail integration with real uploaded works
+- richer photographer profile fields
+- real backend persistence for photographer portfolio items
+- real backend persistence for portfolio media mappings
+- public photographer-profile read flow with real saved portfolio content
+- broader profile completion guidance that reacts to avatar and portfolio readiness together
+
+## Why this phase matters
+
+This phase gives the product its first real profile-media vertical slice.
+
+The current end-to-end flow now includes:
+
+- sign in
+- open `/profile`
+- load real profile data
+- upload a real avatar through the asset service
+- connect the uploaded asset to the profile
+- render the saved avatar again after refresh
+
+This is the first production-facing profile/media loop in the web app that is no longer frontend-only.
 
 ## Recommended next phase
 
-### Portfolio Asset Upload / Asset Integration Foundation
+## Phase FE-2 / BE-3: Real Portfolio Persistence + Portfolio Media Integration
 
-Goals:
+### Why this should be next
 
-- connect the portfolio page to a real upload flow
-- define how uploaded media maps into portfolio items
-- prepare later public portfolio rendering using real media assets
+Avatar upload is now working end-to-end, but photographer portfolio data is still only persisted locally in the current browser.
 
-## Phase 28: Asset-first portfolio direction
+That means the next biggest gap between the current frontend experience and a true marketplace-ready product is portfolio persistence.
 
-Phase 28 extends the photographer-side flow beyond portfolio foundation and into asset-first portfolio setup.
+### Suggested goals
 
-### What changed
+- replace browser-local portfolio persistence with real backend persistence
+- connect portfolio item media to the existing asset service
+- keep `/photographer/portfolio` as the signed-in source page for managing photographer works
+- preserve existing frontend UX where possible:
+    - create
+    - edit
+    - delete
+    - feature / unfeature
+    - newest-first ordering
+- prepare later public photographer detail pages to consume real saved portfolio items
 
-- portfolio items no longer rely only on a manual `imageUrl` input
-- the portfolio page now works with asset-style preview data
-- photographers can now choose a local image file and preview it inside the portfolio flow
-- the photographer workspace now points more clearly toward asset-first portfolio setup
+### Suggested frontend direction
 
-### Current photographer-side direction
+The fastest clean direction is:
 
-The current photographer-side product flow is now:
+1. keep the current portfolio page structure
+2. replace local storage as the source of truth with real backend queries and mutations
+3. upload portfolio images through the same asset upload-session flow already proven by avatar upload
+4. save portfolio item records that reference real uploaded assets
+5. continue using snackbar feedback and thin pages with service-layer API calls
 
-- `/profile` = edit real profile data
-- `/photographer/dashboard` = see readiness and next-step guidance
-- `/photographer/portfolio` = manage asset-first portfolio setup
+## Notes for later
 
-### Why this matters
+After real portfolio persistence is stable, the next logical product step should likely be:
 
-Moving from a plain image URL field to asset-style preview data makes the portfolio flow more realistic and prepares the frontend for a later real upload integration phase.
-
-This gives the product a better bridge toward:
-
-- real media storage
-- stronger portfolio management
-- more realistic public photographer detail rendering
-- future AI/media-related features
-
-## Current limitation
-
-This phase still keeps portfolio assets frontend-only.
-
-Still pending:
-
-- real file upload to storage
-- asset persistence in backend
-- portfolio edit/delete/reorder workflows
-- public use of real portfolio assets
-
-## Phase 29: Relationship to persistent portfolio management
-
-Phase 29 keeps the role-aware photographer workspace and profile completion direction in place, then strengthens the photographer-side portfolio flow with saved local management actions.
-
-### What changed
-
-- the portfolio page now supports persistent local save in the current browser
-- photographers can now edit existing portfolio items
-- photographers can now delete portfolio items
-- photographers can now mark items as featured or remove featured state
-- portfolio ordering is now simplified to newest-first instead of manual reordering
-
-### Why this matters
-
-The photographer-side experience is now more realistic than a create-only portfolio prototype.
-
-Current photographer-side direction is now:
-
-- `/profile` = edit real profile data
-- `/photographer/dashboard` = view progress and next-step direction
-- `/photographer/portfolio` = manage saved portfolio items in a persistent local workflow
-
-## Current limitation
-
-This phase still keeps portfolio persistence local to the current browser.
-
-Still pending:
-
-- real backend upload persistence
-- real asset/media records
-- public photographer detail integration with saved portfolio items
-- backend-driven edit/delete behavior
+- public photographer detail integration with real saved portfolio data
+- backend-driven discovery improvements
+- AI classification on uploaded photographer works
