@@ -1227,3 +1227,58 @@ This file tracks the progress of frontend tasks for Fotovia.
 - Build the photographer portfolio foundation.
 - Decide how photographers should add, preview, and manage portfolio items.
 - Prepare the workspace to connect profile readiness with future portfolio and discovery flows.
+
+## Phase 27: Photographer Portfolio Foundation
+
+**Status:** Completed
+
+### Scope
+
+- Add a protected portfolio management route for photographer accounts.
+- Create a frontend portfolio data model that can support later asset integration.
+- Build a portfolio management page with:
+    - empty state
+    - grid state
+    - add item flow
+- Connect the photographer workspace to the new portfolio route.
+
+### Delivered
+
+- Added a new authenticated-only route: `/photographer/portfolio`.
+- Added frontend portfolio types for photographer portfolio items and item drafts.
+- Added a frontend-only portfolio foundation page for photographer accounts.
+- Added a portfolio empty state with guidance and sample-loading action.
+- Added a reusable grid and portfolio item card UI.
+- Added a lightweight add-item form using frontend-only state.
+- Updated the photographer workspace so it now points to the portfolio route as the next creative step.
+
+### Decisions
+
+- This phase focuses on portfolio structure and management flow, not real upload integration yet.
+- Portfolio data is still frontend-only in this phase.
+- The new portfolio page is intended to become the bridge into a later asset-upload phase.
+- Route protection continues to stay at the route level through the reusable authenticated wrapper.
+
+### Notes
+
+- This phase does not include real asset upload, Supabase/media integration, or persistent backend storage.
+- Portfolio creation currently uses frontend-only state for fast structure validation.
+- Sample portfolio works are included only to validate the grid and preview states.
+
+### Key Files
+
+- `apps/web/src/app/photographer/portfolio/page.tsx`
+- `apps/web/src/features/photographer/types/portfolio.types.ts`
+- `apps/web/src/features/photographer/data/mock-portfolio-items.ts`
+- `apps/web/src/features/photographer/components/photographer-portfolio-page.tsx`
+- `apps/web/src/features/photographer/components/portfolio-empty-state.tsx`
+- `apps/web/src/features/photographer/components/portfolio-grid.tsx`
+- `apps/web/src/features/photographer/components/portfolio-item-card.tsx`
+- `apps/web/src/features/photographer/components/portfolio-item-form.tsx`
+- `apps/web/src/features/photographer/components/photographer-dashboard-page.tsx`
+
+### Next Recommended Phase
+
+- Connect the portfolio foundation to real asset upload flow.
+- Define how uploaded media should map into portfolio items.
+- Prepare later public photographer detail improvements to consume more realistic portfolio data.

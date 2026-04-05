@@ -24,10 +24,11 @@ const workspaceHighlights = [
         href: "/profile",
     },
     {
-        title: "Portfolio direction",
+        title: "Portfolio foundation",
         description:
-            "Portfolio tools will land in a later phase. A stronger profile foundation will make that next module feel more complete.",
-        ctaLabel: "Coming next",
+            "The portfolio workspace is now ready as the next product step. Start shaping the works that will later support discovery and booking trust.",
+        ctaLabel: "Open portfolio",
+        href: "/photographer/portfolio",
     },
     {
         title: "Booking readiness",
@@ -141,10 +142,10 @@ export const PhotographerDashboardPage = () => {
                         </h1>
 
                         <p className="mt-4 max-w-3xl text-base leading-relaxed text-muted md:text-lg">
-                            This workspace now points you toward the most
-                            important next step: making sure your photographer
-                            profile is complete enough for later portfolio,
-                            discovery, and booking phases.
+                            This workspace now points you toward the next
+                            meaningful creative step: keep your profile strong,
+                            then start shaping a portfolio foundation that
+                            future discovery and booking flows can build on.
                         </p>
 
                         <div className="mt-8 flex flex-wrap gap-3">
@@ -156,13 +157,13 @@ export const PhotographerDashboardPage = () => {
                             </Link>
 
                             <Link
-                                href="/photographers"
+                                href="/photographer/portfolio"
                                 className={buttonVariants({
                                     size: "lg",
                                     variant: "secondary",
                                 })}
                             >
-                                Preview the marketplace
+                                Open portfolio
                             </Link>
                         </div>
                     </section>
@@ -187,14 +188,14 @@ export const PhotographerDashboardPage = () => {
 
                                 <p className="mt-4 text-2xl font-semibold text-foreground">
                                     {completion.isComplete
-                                        ? "Foundation ready"
+                                        ? "Ready for portfolio setup"
                                         : `${completion.totalCount - completion.completedCount} items left`}
                                 </p>
 
                                 <p className="mt-3 text-sm leading-7 text-muted">
                                     {completion.isComplete
-                                        ? "Your core profile is ready for later portfolio and booking-management phases."
-                                        : "Finish the missing profile fields first, then future marketplace tools will have stronger data to build on."}
+                                        ? "Your core profile is ready enough to move into the first portfolio foundation phase."
+                                        : "Finish the missing profile fields first, then your portfolio foundation will feel more complete and trustworthy."}
                                 </p>
 
                                 <div className="mt-6 rounded-2xl bg-background px-4 py-4">
