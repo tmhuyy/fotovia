@@ -21,6 +21,9 @@ export class Profile {
     @Column({ name: 'full_name', type: 'varchar', length: 255, nullable: true })
     fullName: string | null;
 
+    @Column({ name: 'avatar_asset_id', type: 'uuid', nullable: true })
+    avatarAssetId: string | null;
+
     @Column({ name: 'avatar_url', type: 'text', nullable: true })
     avatarUrl: string | null;
 

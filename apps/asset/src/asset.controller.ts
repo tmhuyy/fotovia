@@ -8,6 +8,7 @@ import {
     Post,
     UseGuards,
 } from '@nestjs/common';
+import { MessagePattern, Payload } from '@nestjs/microservices';
 import {
     ApiBearerAuth,
     ApiCreatedResponse,
@@ -15,13 +16,22 @@ import {
     ApiOperation,
     ApiTags,
 } from '@nestjs/swagger';
-
 import { GetUser, IUser, JwtAuthGuard } from '@repo/common';
 
 import { AssetService } from './asset.service';
 import { AttachAssetUsageDto } from './dtos/attach-asset-usage.dto';
 import { ConfirmUploadSessionDto } from './dtos/confirm-upload-session.dto';
 import { CreateUploadSessionDto } from './dtos/create-upload-session.dto';
+
+type AssetRpcByIdPayload = {
+    assetId: string;
+    userId: string;
+};
+
+type AssetRpcAttachUsagePayload = {
+    userId: string;
+    dto: AttachAssetUsageDto;
+};
 
 @ApiTags('Assets')
 @ApiBearerAuth()
@@ -130,5 +140,20 @@ export class AssetController {
         @GetUser() user: IUser,
     ) {
         return this.assetService.getAsset(assetId, user.id);
+    }
+
+    @MessagePattern('asset.get_by_id')
+    async getAssetByIdInternal(@Payload() payload: AssetRpcByIdPayload) {
+        return this.assetService.getAsset(payload.assetId, payload.userId);
+    }
+
+    @MessagePattern('asset.get_read_url')
+    async getReadUrlInternal(@Payload() payload: AssetRpcByIdPayload) {
+        return this.assetService.getReadUrl(payload.assetId, payload.userId);
+    }
+
+    @MessagePattern('asset.attach_usage')
+    async attachUsageInternal(@Payload() payload: AssetRpcAttachUsagePayload) {
+        return this.assetService.attachUsage(payload.dto, payload.userId);
     }
 }

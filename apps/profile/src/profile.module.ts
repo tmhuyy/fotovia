@@ -1,22 +1,22 @@
 import { Module } from '@nestjs/common';
-import { ProfileService } from './profile.service';
-import { ProfileController } from './profile.controller';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { ConfigSchemaValidation } from './config.schema';
-import { LoggerModule } from 'nestjs-pino';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { ProfileRepository } from './repositories/profile.repository';
-import { Profile } from './entities/profile.entity';
 import { ClientsModule, Transport } from '@nestjs/microservices';
-import { AUTH_SERVICE } from '@repo/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { ASSET_SERVICE, AUTH_SERVICE } from '@repo/common';
+
+import { ConfigSchemaValidation } from './config.schema';
+import { ProfileController } from './profile.controller';
+import { Profile } from './entities/profile.entity';
+import { ProfileService } from './profile.service';
+import { ProfileRepository } from './repositories/profile.repository';
 
 @Module({
     imports: [
         ConfigModule.forRoot({
-            envFilePath: [`.env`],
+            envFilePath: ['.env'],
             validationSchema: ConfigSchemaValidation,
         }),
-        // LoggerModule,
+
         TypeOrmModule.forRootAsync({
             imports: [ConfigModule],
             inject: [ConfigService],
@@ -24,7 +24,7 @@ import { AUTH_SERVICE } from '@repo/common';
                 return {
                     type: 'postgres',
                     autoLoadEntities: true,
-                    synchronize: configService.get('ENV') === 'DEV', // for data migration,
+                    synchronize: configService.get('ENV') === 'DEV',
                     host: configService.get('DB_HOST'),
                     port: configService.get('DB_PORT'),
                     username: configService.get('DB_USERNAME'),
@@ -36,7 +36,9 @@ import { AUTH_SERVICE } from '@repo/common';
                 };
             },
         }),
+
         TypeOrmModule.forFeature([Profile]),
+
         ClientsModule.registerAsync([
             {
                 name: AUTH_SERVICE,
@@ -47,7 +49,21 @@ import { AUTH_SERVICE } from '@repo/common';
                         transport: Transport.TCP,
                         options: {
                             host: configService.get('AUTH_TCP_HOST'),
-                            port: configService.get('AUTH_TCP_PORT'),
+                            port: Number(configService.get('AUTH_TCP_PORT')),
+                        },
+                    };
+                },
+            },
+            {
+                name: ASSET_SERVICE,
+                imports: [ConfigModule],
+                inject: [ConfigService],
+                useFactory: async (configService: ConfigService) => {
+                    return {
+                        transport: Transport.TCP,
+                        options: {
+                            host: configService.get('ASSET_TCP_HOST'),
+                            port: Number(configService.get('ASSET_TCP_PORT')),
                         },
                     };
                 },

@@ -6,11 +6,11 @@ import {
     ApiTags,
 } from '@nestjs/swagger';
 import { MessagePattern, Payload } from '@nestjs/microservices';
+import { GetUser, IUser, JwtAuthGuard } from '@repo/common';
 
-import { JwtAuthGuard, GetUser, IUser } from '@repo/common';
-
-import { CreateProfileDto } from './dtos/create-profile.dto';
 import { CreateProfileFromAuthDto } from './dtos/create-profile-from-auth.dto';
+import { CreateProfileDto } from './dtos/create-profile.dto';
+import { UpdateProfileAvatarDto } from './dtos/update-profile-avatar.dto';
 import { UpdateProfileDto } from './dtos/update-profile.dto';
 import { Profile } from './entities/profile.entity';
 import { ProfileService } from './profile.service';
@@ -57,6 +57,23 @@ export class ProfileController {
         @GetUser() user: IUser,
     ): Promise<Profile> {
         return this.profileService.updateProfile(updateProfileDto, user.id);
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Patch('/me/avatar')
+    @ApiOperation({ summary: 'Set my avatar from an uploaded asset' })
+    @ApiOkResponse({
+        description: 'Profile avatar updated successfully',
+        type: Profile,
+    })
+    async updateMyAvatar(
+        @Body() updateProfileAvatarDto: UpdateProfileAvatarDto,
+        @GetUser() user: IUser,
+    ): Promise<Profile> {
+        return this.profileService.updateMyAvatar(
+            updateProfileAvatarDto,
+            user.id,
+        );
     }
 
     @MessagePattern('profile.create_from_signup')

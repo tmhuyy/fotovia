@@ -7,17 +7,18 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
-import { Profile } from 'src/entities/profile.entity';
+import { CreateProfileFromAuthDto } from 'src/dtos/create-profile-from-auth.dto';
 import { CreateProfileDto } from 'src/dtos/create-profile.dto';
 import { UpdateProfileDto } from 'src/dtos/update-profile.dto';
-import { CreateProfileFromAuthDto } from 'src/dtos/create-profile-from-auth.dto';
+import { Profile } from 'src/entities/profile.entity';
 
 @Injectable()
 export class ProfileRepository extends Repository<Profile> {
     private readonly logger = new Logger(ProfileRepository.name);
 
     constructor(
-        @InjectRepository(Profile) private readonly repo: Repository<Profile>,
+        @InjectRepository(Profile)
+        private readonly repo: Repository<Profile>,
     ) {
         super(repo.target, repo.manager, repo.queryRunner);
     }
@@ -78,6 +79,20 @@ export class ProfileRepository extends Repository<Profile> {
     ): Promise<Profile> {
         const profile = await this.getProfileByUserId(userId);
         const updatedProfile = this.repo.merge(profile, updateProfileDto);
+
         return this.repo.save(updatedProfile);
+    }
+
+    async updateAvatar(
+        userId: string,
+        avatarAssetId: string,
+        avatarUrl: string,
+    ): Promise<Profile> {
+        const profile = await this.getProfileByUserId(userId);
+
+        profile.avatarAssetId = avatarAssetId;
+        profile.avatarUrl = avatarUrl;
+
+        return this.repo.save(profile);
     }
 }
