@@ -6,6 +6,7 @@ export interface ProfileData {
     role: AuthRole;
     fullName: string;
     email: string;
+    avatarAssetId: string | null;
     avatarUrl: string | null;
     phone: string;
     location: string;
@@ -30,4 +31,8 @@ export interface ProfileUpdatePayload {
     specialties: string[];
     pricePerHour?: number;
     experienceYears?: number;
+}
+
+export interface ProfileAvatarUpdatePayload {
+    assetId: string;
 }

@@ -2,8 +2,8 @@ import * as Joi from 'joi';
 
 export const ConfigSchemaValidation = Joi.object({
     ENV: Joi.string().default('DEV').required(),
-    HTTP_PORT: Joi.number().default(4000).required(),
-    TCP_PORT: Joi.number().default(4001).required(),
+    HTTP_PORT: Joi.number().default(4444).required(),
+    TCP_PORT: Joi.number().default(4445).required(),
     DB_HOST: Joi.string().required(),
     DB_PORT: Joi.string().default('5432').required(),
     DB_USERNAME: Joi.string().required(),
@@ -27,4 +27,6 @@ export const ConfigSchemaValidation = Joi.object({
 
     ASSET_SIGNED_READ_URL_EXPIRES_IN: Joi.number().default(3600).required(),
     ASSET_SIGNED_UPLOAD_URL_EXPIRES_IN: Joi.number().default(7200).required(),
+
+    NEXT_APP_URL: Joi.string().required(),
 });

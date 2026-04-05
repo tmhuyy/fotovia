@@ -3,6 +3,7 @@ import { unwrapResponse } from "./api/response";
 import type { ApiResponse } from "./api/types";
 import type { AuthRole } from "../types/auth.types";
 import type {
+    ProfileAvatarUpdatePayload,
     ProfileCreatePayload,
     ProfileData,
     ProfileUpdatePayload,
@@ -12,6 +13,7 @@ type AnyRecord = Record<string, unknown>;
 
 const PROFILE_ENDPOINTS = {
     me: "/profiles/me",
+    avatar: "/profiles/me/avatar",
 };
 
 const normalizeRole = (value: unknown): AuthRole => {
@@ -24,6 +26,10 @@ const normalizeRole = (value: unknown): AuthRole => {
 
 const normalizeString = (value: unknown): string => {
     return typeof value === "string" ? value : "";
+};
+
+const normalizeNullableString = (value: unknown): string | null => {
+    return typeof value === "string" && value.trim().length > 0 ? value : null;
 };
 
 const normalizeNumber = (value: unknown): number | null => {
@@ -61,8 +67,8 @@ const normalizeProfile = (
         role: normalizeRole(payload.role),
         fullName: normalizeString(payload.fullName),
         email,
-        avatarUrl:
-            typeof payload.avatarUrl === "string" ? payload.avatarUrl : null,
+        avatarAssetId: normalizeNullableString(payload.avatarAssetId),
+        avatarUrl: normalizeNullableString(payload.avatarUrl),
         phone: normalizeString(payload.phone),
         location: normalizeString(payload.location),
         bio: normalizeString(payload.bio),
@@ -85,8 +91,8 @@ export const profileService = {
         const response = await profileClient.get<
             ApiResponse<AnyRecord> | AnyRecord
         >(PROFILE_ENDPOINTS.me);
+        const payload = unwrapResponse<AnyRecord>(response.data);
 
-        const payload = unwrapResponse(response.data) as AnyRecord;
         return normalizeProfile(payload, email);
     },
 
@@ -97,8 +103,8 @@ export const profileService = {
         const response = await profileClient.post<
             ApiResponse<AnyRecord> | AnyRecord
         >(PROFILE_ENDPOINTS.me, payload);
+        const data = unwrapResponse<AnyRecord>(response.data);
 
-        const data = unwrapResponse(response.data) as AnyRecord;
         return normalizeProfile(data, email);
     },
 
@@ -109,8 +115,20 @@ export const profileService = {
         const response = await profileClient.patch<
             ApiResponse<AnyRecord> | AnyRecord
         >(PROFILE_ENDPOINTS.me, payload);
+        const data = unwrapResponse<AnyRecord>(response.data);
 
-        const data = unwrapResponse(response.data) as AnyRecord;
+        return normalizeProfile(data, email);
+    },
+
+    async updateMyAvatar(
+        payload: ProfileAvatarUpdatePayload,
+        email: string = "",
+    ): Promise<ProfileData> {
+        const response = await profileClient.patch<
+            ApiResponse<AnyRecord> | AnyRecord
+        >(PROFILE_ENDPOINTS.avatar, payload);
+        const data = unwrapResponse<AnyRecord>(response.data);
+
         return normalizeProfile(data, email);
     },
 };

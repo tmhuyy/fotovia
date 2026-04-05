@@ -9,7 +9,7 @@ export const ConfigSchemaValidation = Joi.object({
     AUTH_TCP_PORT: Joi.number().default(3001).required(),
 
     ASSET_TCP_HOST: Joi.string().default('localhost').required(),
-    ASSET_TCP_PORT: Joi.number().default(4001).required(),
+    ASSET_TCP_PORT: Joi.number().default(4445).required(),
 
     DB_HOST: Joi.string().required(),
     DB_PORT: Joi.string().default('5432').required(),

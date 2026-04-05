@@ -2,8 +2,8 @@ import * as Joi from 'joi';
 
 export const ConfigSchemaValidation = Joi.object({
   ENV: Joi.string().default('DEV').required(),
-  HTTP_PORT: Joi.number().default(4000).required(),
-  TCP_PORT: Joi.number().default(4001).required(),
+  HTTP_PORT: Joi.number().default(1232).required(),
+  TCP_PORT: Joi.number().default(1233).required(),
   DB_HOST: Joi.string().required(),
   DB_PORT: Joi.string().default('5432').required(),
   DB_USERNAME: Joi.string().required(),
