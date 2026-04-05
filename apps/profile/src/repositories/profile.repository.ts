@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { UserRole } from '@repo/types';
 
 import { CreateProfileFromAuthDto } from 'src/dtos/create-profile-from-auth.dto';
 import { CreateProfileDto } from 'src/dtos/create-profile.dto';
@@ -26,6 +27,18 @@ export class ProfileRepository extends Repository<Profile> {
     async getProfileByUserId(userId: string): Promise<Profile> {
         const profile = await this.repo.findOne({
             where: { userId },
+        });
+
+        if (!profile) {
+            throw new NotFoundException('Profile does not exist');
+        }
+
+        return profile;
+    }
+
+    async getProfileById(profileId: string): Promise<Profile> {
+        const profile = await this.repo.findOne({
+            where: { id: profileId },
         });
 
         if (!profile) {
@@ -94,5 +107,57 @@ export class ProfileRepository extends Repository<Profile> {
         profile.avatarUrl = avatarUrl;
 
         return this.repo.save(profile);
+    }
+
+    async updateSlug(profileId: string, slug: string): Promise<Profile> {
+        const profile = await this.getProfileById(profileId);
+        profile.slug = slug;
+
+        return this.repo.save(profile);
+    }
+
+    async isSlugTaken(
+        slug: string,
+        excludeProfileId?: string,
+    ): Promise<boolean> {
+        const existing = await this.repo.findOne({
+            where: { slug },
+        });
+
+        if (!existing) {
+            return false;
+        }
+
+        if (excludeProfileId && existing.id === excludeProfileId) {
+            return false;
+        }
+
+        return true;
+    }
+
+    async listPublicPhotographerProfiles(): Promise<Profile[]> {
+        return this.repo.find({
+            where: {
+                role: UserRole.PHOTOGRAPHER,
+            },
+            order: {
+                createdAt: 'DESC',
+            },
+        });
+    }
+
+    async getPublicPhotographerBySlug(slug: string): Promise<Profile> {
+        const profile = await this.repo.findOne({
+            where: {
+                slug,
+                role: UserRole.PHOTOGRAPHER,
+            },
+        });
+
+        if (!profile) {
+            throw new NotFoundException('Photographer does not exist');
+        }
+
+        return profile;
     }
 }

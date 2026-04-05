@@ -4,7 +4,7 @@
 
 This document tracks the current photographer portfolio flow in `apps/web`.
 
-It explains how the portfolio experience moved from a browser-local foundation into a real backend-backed persistence flow.
+It explains how the portfolio experience moved from a browser-local foundation into a real backend-backed persistence flow, and then into a public-facing read flow.
 
 ## Previous foundation direction
 
@@ -24,28 +24,35 @@ That foundation was useful because it let the product lock the UX direction befo
 
 ## Current portfolio direction
 
-**Status:** Working end-to-end for signed-in photographer portfolio persistence
+**Status:** Working end-to-end for signed-in photographer portfolio persistence and public portfolio reading
 
 The current portfolio flow now uses:
 
 - real backend CRUD through profile service
 - real asset upload through asset service
 - real saved portfolio items instead of browser-local source of truth
+- real public rendering of saved photographer works on public detail pages
 
 ### Current signed-in route
 
 - `/photographer/portfolio`
 
+### Current public routes
+
+- `/photographers`
+- `/photographers/[slug]`
+
 ### Current source of truth
 
 - backend profile service for portfolio item records
 - backend asset service for uploaded portfolio images
+- public photographer pages now read saved portfolio data from the backend
 
 ## Current portfolio item shape
 
-The current implementation keeps one primary uploaded image per portfolio item.
+The current implementation still keeps one primary uploaded image per portfolio item.
 
-A saved portfolio item now contains:
+A saved portfolio item currently contains:
 
 - `id`
 - `title`
@@ -60,7 +67,7 @@ A saved portfolio item now contains:
 
 This keeps the first real persistence slice simple and avoids over-expanding the data model too early.
 
-## Current frontend flow
+## Current signed-in flow
 
 The current signed-in photographer portfolio flow is:
 
@@ -81,6 +88,17 @@ The same real backend flow now also supports:
 - delete saved portfolio item
 - refresh and still see saved portfolio data
 
+## Current public flow
+
+The current public photographer flow now also consumes saved portfolio data:
+
+1. open `/photographers`
+2. load public photographer summaries from the backend
+3. open `/photographers/[slug]`
+4. load public photographer detail by slug
+5. render saved portfolio items from real backend data
+6. refresh and still see the saved public state
+
 ## Current UX behavior
 
 ### Preserved behavior
@@ -97,28 +115,28 @@ The real backend phase intentionally keeps the UX behaviors that already felt co
 
 ### Improved behavior
 
-The backend phase improves the product by replacing browser-local persistence with:
+The backend and public-read phases improve the product by replacing browser-local and mock-only behavior with:
 
 - real query + mutation flows
 - saved backend data after refresh
 - shared asset upload flow aligned with avatar uploads
 - real uploaded asset references instead of plain manual image URLs
+- real public photographer portfolio rendering
 
 ## Current known limitations
 
-This phase is a strong signed-in persistence milestone, but it is still intentionally narrow.
+This phase is now a meaningful signed-in + public-read milestone, but it is still intentionally narrow.
 
 Still pending:
 
-- public photographer detail integration with real saved portfolio items
-- public photographer listing integration from real saved data
-- multi-image gallery support per portfolio item
+- one cover image plus optional gallery images per portfolio item
 - stronger upload hardening such as client-side compression and validation expansion
+- thumbnail or derivative-image strategy if storage pressure becomes important
 - AI classification triggered from saved portfolio uploads
 
 ## Why this phase matters
 
-This is the first real photographer-work persistence loop in the product.
+This is no longer only a signed-in persistence loop.
 
 The current end-to-end photographer content flow now includes:
 
@@ -128,32 +146,39 @@ The current end-to-end photographer content flow now includes:
 - upload through the real asset flow
 - save a real backend portfolio item
 - edit / feature / delete it
+- open `/photographers/[slug]`
+- view the saved work publicly
 - refresh and still see the saved state
 
-That turns the portfolio page from a UX prototype into a working product slice.
+That turns the portfolio area from a UX prototype into a real content pipeline that feeds the public marketplace.
 
 ## Recommended next phase
 
-## Phase FE/BE Next: Public Photographer Detail Integration
+## Phase FE/BE Next: Multi-image Portfolio Gallery + Client-side Compression
 
 ### Why this should be next
 
-The product can now save real photographer portfolio content, but clients still cannot consume that content through the public marketplace.
+The current public detail integration solved the “real data visibility” problem.
 
-The next visible gap is not more signed-in editing features; it is the public read side.
+The next portfolio/media limitation is now structural:
+
+- one image per portfolio item is too limited for real photography projects
+- large image uploads can waste storage and bandwidth
+- Supabase free-tier usage will benefit from smaller uploads and more predictable image sizes
 
 ### Suggested goals
 
-- replace mock photographer detail data with real backend-saved data
-- show avatar, basic photographer profile, and saved featured works publicly
-- keep signed-in edit routes and public read routes clearly separated
-- prepare the listing/discovery experience to consume real saved detail data later
+- keep one required cover image for each portfolio item
+- add optional gallery images per portfolio item
+- support gallery ordering
+- compress large images on the client before upload
+- preserve the current portfolio CRUD UX where possible
+- avoid overcomplicating the first gallery version
 
 ## Notes for later
 
-After public detail integration is stable, the next portfolio/media step should likely be:
+After gallery + compression is stable, the next portfolio/media step should likely be:
 
-- one cover image plus optional gallery images per portfolio item
-- client-side image compression before upload
-- thumbnail or derivative-image strategy if storage pressure becomes important
+- public photographer detail gallery polish
+- portfolio cover vs gallery layout refinement
 - AI classification flow attached to saved photographer works

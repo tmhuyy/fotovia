@@ -6,7 +6,7 @@ This document tracks the current production-facing profile integration state in 
 
 ## Current profile API direction
 
-The frontend now treats profile data as a separate backend concern from auth identity.
+The frontend treats profile data as a separate backend concern from auth identity.
 
 ### Identity source
 
@@ -32,11 +32,11 @@ This is used for auth and session hydration.
 - `avatarUrl`
 - `avatarAssetId`
 
-This is used for the production-facing profile page.
+This is used for the signed-in production-facing profile page.
 
 ## Frontend API client split
 
-The frontend now uses dedicated service clients for both profile and asset flows.
+The frontend now uses dedicated service clients for profile, asset, and public photographer flows.
 
 ### Current clients
 
@@ -47,6 +47,7 @@ The frontend now uses dedicated service clients for both profile and asset flows
 
 - auth service and profile service are separate backend services
 - asset upload flow is a separate backend concern from profile field editing
+- public photographer read flow should stay separate from signed-in editing concerns
 - service boundaries should stay visible in the frontend service layer too
 
 ## Current `/profile` behavior
@@ -79,79 +80,76 @@ The current frontend avatar flow is:
 8. update or refetch `/profiles/me`
 9. render the real `avatarUrl` in the profile UI
 
-## Current profile UX behavior
-
-**Status:** Improved
-
-### Behavior
-
-- profile save uses snackbar feedback instead of inline success boxes
-- profile foundation creation uses snackbar feedback
-- avatar upload uses snackbar feedback
-- summary card handles long email and phone values more safely
-- profile access is available from the signed-in account area instead of cluttering the main navbar
-- avatar upload keeps the page flow lightweight instead of moving users to a separate media page
-
 ## Relationship to workspace direction
 
 - `/profile` remains the editable profile source page for signed-in users
 - `/photographer/dashboard` remains the photographer workspace / progress page
-- `/photographer/portfolio` now handles real photographer portfolio persistence separately
+- `/photographer/portfolio` handles signed-in photographer portfolio persistence
+- `/photographers` and `/photographers/[slug]` now consume real backend public photographer data
 - the workspace route does not replace `/profile`; it gives post-auth product direction a clearer home
-- profile role data continues to help drive authenticated UI direction where auth identity alone was not sufficient
 
-## Current known limitations
+## Current public photographer detail status
 
-This phase now covers the real profile foundation and real avatar upload, but it still does not complete the full public photographer experience.
+**Status:** Working with real saved backend data
 
-Still pending:
+### Current public read behavior
 
-- richer photographer profile fields for public presentation
-- public photographer-profile read flow from real backend data
-- public photographer detail integration with real saved portfolio content
-- broader profile completion guidance that reacts to avatar and portfolio readiness together
+- `/photographers` now reads real public photographer summaries from the backend
+- `/photographers/[slug]` now reads real public photographer detail by slug
+- public pages now render real saved avatar data
+- public pages now render real saved portfolio items
+- the public read side now updates when signed-in profile or portfolio data changes and the public page is refreshed
 
 ## Why this phase matters
 
-This phase gives the product its first real profile-media vertical slice.
+This means Fotovia is no longer limited to “signed-in edit flows only”.
 
-The current end-to-end flow now includes:
+The current product now supports a real loop of:
 
-- sign in
-- open `/profile`
-- load real profile data
-- upload a real avatar through the asset service
-- connect the uploaded asset to the profile
-- render the saved avatar again after refresh
+- photographer signs in
+- photographer updates profile and avatar
+- photographer saves portfolio items
+- public marketplace pages read the saved data
+- clients can browse real photographer detail instead of mock content
 
-This is the first production-facing profile/media loop in the web app that is no longer frontend-only.
+That is the first meaningful signed-in to public-read bridge in the system.
+
+## Current known limitations
+
+This phase completes the first real public photographer read flow, but it is still intentionally narrow.
+
+Still pending:
+
+- richer public photographer presentation fields
+- one cover image plus optional gallery images per portfolio item
+- client-side compression or image optimization before upload
+- broader profile completion guidance that reacts to avatar, portfolio, and public readiness together
+- booking flow consumption of real public photographer detail data
 
 ## Recommended next phase
 
-## Phase FE/BE Next: Public Photographer Detail Integration with Real Saved Data
+## Phase FE/BE Next: Multi-image Portfolio Gallery + Client-side Compression
 
 ### Why this should be next
 
-The signed-in profile and portfolio flows now persist real backend data, but the public marketplace still does not consume that saved data yet.
+The public detail flow now works, so the next gap is no longer “can clients see real data?”
+The next gap is “is photographer media rich enough and efficient enough for real usage?”
 
-The next visible product milestone should be:
-
-- real public photographer detail data
-- real public portfolio rendering
-- real bridge from photographer workspace to marketplace-facing pages
+The current portfolio item still uses one primary image only. That is good for the first persistence slice, but it is limiting for real photography showcase workflows.
 
 ### Suggested goals
 
-- expose a public photographer read model from the backend
-- support a stable public route key such as slug
-- replace mock detail-page portfolio sections with real saved backend portfolio items
-- surface avatar, basic profile fields, and featured works from real saved data
-- keep the signed-in edit routes separate from the public read routes
+- keep one required cover image per portfolio item
+- add optional gallery images for the same portfolio item
+- support image ordering inside each portfolio item
+- add client-side image compression before upload
+- keep asset upload-session flow as the shared upload path
+- avoid breaking the current single-image item flow while expanding it
 
 ## Notes for later
 
-After public photographer detail integration is stable, the next logical media/product step should likely be:
+After multi-image gallery support is stable, the next likely product step should be:
 
-- multi-image gallery support per portfolio item
-- image upload hardening and client-side compression
-- discovery/listing integration from real saved photographer data
+- public photographer detail gallery refinement
+- booking flow integration using real public photographer data
+- AI classification triggered from saved uploaded photographer works

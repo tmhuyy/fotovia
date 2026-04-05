@@ -137,19 +137,51 @@ Portfolio items now attach their primary image into a usage slot shaped around:
 - portfolio item entity
 - primary image field
 
-This keeps asset ownership and media-lifecycle concerns inside the asset service while the profile domain owns portfolio business logic.
-
 ### 4. Delete flow now includes asset-usage cleanup
 
 The current backend shape now supports detaching the active usage for a saved portfolio item when that item is deleted.
 
-This keeps the portfolio/media relationship cleaner than a create-only integration.
+---
+
+## Phase BE-4: Public Photographer Detail Read Integration
+
+**Status:** Completed
+
+## Goal
+
+Use the saved profile and portfolio data from the profile domain to power real public photographer pages instead of mock-only public presentation.
+
+## What was completed in BE-4
+
+### 1. Public photographer summaries now read from the backend
+
+The public marketplace list flow now reads photographer summaries from real saved profile data.
+
+### 2. Public photographer detail now reads by slug
+
+The profile domain now supports a public read model keyed by a stable slug for `/photographers/[slug]`.
+
+### 3. Public detail pages now render real media
+
+The public photographer detail flow now uses:
+
+- real saved avatar data
+- real saved portfolio items
+- real backend profile fields for public presentation
+
+### 4. Signed-in and public flows are now connected
+
+The system now supports a real bridge from:
+
+- signed-in photographer profile editing
+- signed-in photographer portfolio persistence
+- public client-facing photographer browsing
 
 ---
 
 ## Current verified media flows
 
-The backend asset service is now part of two working product flows:
+The backend asset service is now part of three real product slices:
 
 ### Avatar flow
 
@@ -159,7 +191,7 @@ The backend asset service is now part of two working product flows:
 4. `PATCH /profiles/me/avatar`
 5. `GET /profiles/me`
 
-### Portfolio flow
+### Portfolio persistence flow
 
 1. `POST /assets/upload-sessions`
 2. upload file to Supabase using signed upload data
@@ -168,6 +200,14 @@ The backend asset service is now part of two working product flows:
 5. `GET /profiles/me/portfolio-items`
 6. `PATCH /profiles/me/portfolio-items/{itemId}`
 7. `DELETE /profiles/me/portfolio-items/{itemId}`
+
+### Public photographer detail flow
+
+1. signed-in photographer saves profile data
+2. signed-in photographer saves portfolio data
+3. public photographer list reads saved backend summaries
+4. public photographer detail reads saved backend detail by slug
+5. public pages render saved avatar and saved portfolio media
 
 ---
 
@@ -185,67 +225,69 @@ The backend asset service is now part of two working product flows:
 ### Asset service does not own
 
 - photographer portfolio business logic itself
-- public photographer detail presentation logic
+- public photographer presentation logic itself
 - AI style classification results as domain source of truth
 
 ### Profile service owns
 
 - profile-facing media attachments
 - saved photographer portfolio item records
+- public photographer read model
 - photographer-owned CRUD rules for portfolio items
 
 ---
 
 ## Current implementation limits
 
-The current system is intentionally still a first real persistence slice.
+The current system is intentionally still an early real media platform slice.
 
 Still pending:
 
 - multi-image gallery support per portfolio item
 - stronger upload confirmation hardening against real storage object existence
-- public photographer detail integration using saved portfolio data
-- listing/discovery integration from real saved data
+- client-side compression or other upload-size optimization before upload
+- thumbnail or derivative-image strategy if needed
 - AI classification triggered from saved portfolio uploads
 
 ## Why this phase matters
 
-The asset service is no longer only infrastructure groundwork.
+The asset service is no longer only infrastructure groundwork and the profile service is no longer only an authenticated edit surface.
 
-It now powers two real business flows:
+Together they now support:
 
 - avatar uploads
 - photographer portfolio uploads
+- public photographer detail rendering from saved data
 
-That means the asset backend has moved from “foundation only” to “actively supporting real product slices.”
+That means the backend now supports a meaningful signed-in to public-read content pipeline.
 
 ## Recommended next phase
 
-## Phase BE/FE Next: Public Photographer Detail Integration with Real Saved Data
+## Phase BE/FE Next: Multi-image Portfolio Gallery + Client-side Compression
 
 ### Why this should be next
 
-The system can now save real photographer profile media and real portfolio items, but the public marketplace still does not consume that saved data yet.
+The current media system now proves that single-image portfolio items work.
 
-The next product milestone should expose:
+The next practical media gap is quality and scalability:
 
-- public photographer read data
-- public saved portfolio rendering
-- real bridge from signed-in photographer setup to client-facing browsing
+- real photographer projects usually need more than one image
+- large uploads can waste Supabase free-tier storage and bandwidth
+- the current one-primary-image model is a good base, but it is not rich enough for a stronger showcase experience
 
 ### Suggested goals
 
-- expose a public photographer detail read model
-- support a stable public route key such as slug
-- render saved avatar + saved featured portfolio items publicly
-- keep edit/write flows private and read flows public
-- prepare discovery/listing integration for a later phase
+- keep one required cover image per portfolio item
+- add optional gallery images for the same portfolio item
+- support gallery ordering
+- compress large images before upload on the client
+- keep asset upload-session flow as the shared upload path
+- expand current asset usage mapping instead of replacing it
 
 ## Notes for later
 
-After public detail integration is stable, the next media hardening step should likely be:
+After gallery + compression is stable, the next likely media/product steps should be:
 
-- cover image plus optional gallery images per portfolio item
-- client-side image compression before upload
-- thumbnail or derivative-image strategy
-- AI classification integration on saved works
+- public gallery layout polish
+- booking flow consumption of real public photographer data
+- AI classification integration on saved uploaded works

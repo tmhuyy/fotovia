@@ -66,6 +66,40 @@ type DetachAssetUsagePayload = {
     usageId: string;
 };
 
+type PublicPhotographerSummary = {
+    id: string;
+    slug: string;
+    name: string;
+    specialty: string;
+    styles: string[];
+    location: string;
+    bio: string;
+    avatarUrl: string | null;
+    rating: number | null;
+    reviewCount: number | null;
+    startingPrice: number | null;
+    tags: string[];
+};
+
+type PublicPhotographerPortfolioItem = {
+    id: string;
+    title: string;
+    description: string;
+    imageUrl: string;
+    category: string;
+    isFeatured: boolean;
+};
+
+type PublicPhotographerDetail = PublicPhotographerSummary & {
+    intro: string;
+    experienceYears: number | null;
+    availability: string;
+    services: [];
+    portfolio: PublicPhotographerPortfolioItem[];
+    testimonials: [];
+    specialties: string[];
+};
+
 @Injectable()
 export class ProfileService {
     constructor(
@@ -78,26 +112,40 @@ export class ProfileService {
         createProfileDto: CreateProfileDto,
         userId: string,
     ): Promise<Profile> {
-        return this.profileRepository.createProfile(createProfileDto, userId);
+        const profile = await this.profileRepository.createProfile(
+            createProfileDto,
+            userId,
+        );
+
+        return this.ensurePublicSlugIfNeeded(profile);
     }
 
     async createProfileFromSignup(
         createProfileFromAuthDto: CreateProfileFromAuthDto,
     ): Promise<Profile> {
-        return this.profileRepository.createProfileFromSignup(
+        const profile = await this.profileRepository.createProfileFromSignup(
             createProfileFromAuthDto,
         );
+
+        return this.ensurePublicSlugIfNeeded(profile);
     }
 
     async updateProfile(
         updateProfileDto: UpdateProfileDto,
         userId: string,
     ): Promise<Profile> {
-        return this.profileRepository.updateProfile(updateProfileDto, userId);
+        const profile = await this.profileRepository.updateProfile(
+            updateProfileDto,
+            userId,
+        );
+
+        return this.ensurePublicSlugIfNeeded(profile);
     }
 
     async getMyProfile(userId: string): Promise<Profile> {
-        return this.profileRepository.getProfileByUserId(userId);
+        const profile = await this.profileRepository.getProfileByUserId(userId);
+
+        return this.ensurePublicSlugIfNeeded(profile);
     }
 
     async updateMyAvatar(
@@ -149,11 +197,13 @@ export class ProfileService {
             );
         }
 
-        return this.profileRepository.updateAvatar(
+        const updatedProfile = await this.profileRepository.updateAvatar(
             userId,
             updateProfileAvatarDto.assetId,
             readUrl.url,
         );
+
+        return this.ensurePublicSlugIfNeeded(updatedProfile);
     }
 
     async getMyPortfolioItems(userId: string): Promise<ProfilePortfolioItem[]> {
@@ -288,6 +338,41 @@ export class ProfileService {
         return { deleted: true };
     }
 
+    async getPublicPhotographers(): Promise<PublicPhotographerSummary[]> {
+        const profiles =
+            await this.profileRepository.listPublicPhotographerProfiles();
+        const hydratedProfiles: Profile[] = [];
+
+        for (const profile of profiles) {
+            hydratedProfiles.push(await this.ensurePublicSlugIfNeeded(profile));
+        }
+
+        return hydratedProfiles.map((profile) =>
+            this.buildPublicPhotographerSummary(profile),
+        );
+    }
+
+    async getPublicPhotographerBySlug(
+        slug: string,
+    ): Promise<PublicPhotographerDetail> {
+        const normalizedSlug = decodeURIComponent(slug).trim().toLowerCase();
+        const profile =
+            await this.profileRepository.getPublicPhotographerBySlug(
+                normalizedSlug,
+            );
+
+        const hydratedProfile = await this.ensurePublicSlugIfNeeded(profile);
+        const portfolioItems =
+            await this.profilePortfolioItemRepository.listPublicByProfileId(
+                hydratedProfile.id,
+            );
+
+        return this.buildPublicPhotographerDetail(
+            hydratedProfile,
+            portfolioItems,
+        );
+    }
+
     private async getPhotographerProfile(userId: string): Promise<Profile> {
         const profile = await this.profileRepository.getProfileByUserId(userId);
 
@@ -297,7 +382,7 @@ export class ProfileService {
             );
         }
 
-        return profile;
+        return this.ensurePublicSlugIfNeeded(profile);
     }
 
     private async resolvePortfolioAsset(assetId: string, userId: string) {
@@ -387,6 +472,172 @@ export class ProfileService {
             userId,
             usageId: activeUsage.id,
         });
+    }
+
+    private async ensurePublicSlugIfNeeded(profile: Profile): Promise<Profile> {
+        if (profile.role !== UserRole.PHOTOGRAPHER) {
+            return profile;
+        }
+
+        const hasMeaningfulName = Boolean(profile.fullName?.trim());
+        const fallbackSlug = this.buildFallbackPhotographerSlug(profile.id);
+        const shouldRegenerate =
+            !profile.slug ||
+            (profile.slug === fallbackSlug && hasMeaningfulName);
+
+        if (!shouldRegenerate) {
+            return profile;
+        }
+
+        const slugBase = this.slugify(profile.fullName ?? '') || fallbackSlug;
+        const nextSlug = await this.buildUniqueSlug(slugBase, profile.id);
+
+        if (profile.slug === nextSlug) {
+            return profile;
+        }
+
+        return this.profileRepository.updateSlug(profile.id, nextSlug);
+    }
+
+    private async buildUniqueSlug(
+        slugBase: string,
+        excludeProfileId?: string,
+    ): Promise<string> {
+        let candidate = slugBase;
+        let suffix = 2;
+
+        while (
+            await this.profileRepository.isSlugTaken(
+                candidate,
+                excludeProfileId,
+            )
+        ) {
+            candidate = `${slugBase}-${suffix}`;
+            suffix += 1;
+        }
+
+        return candidate;
+    }
+
+    private slugify(value: string): string {
+        return value
+            .normalize('NFKD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase()
+            .trim()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '');
+    }
+
+    private buildFallbackPhotographerSlug(profileId: string): string {
+        return `photographer-${profileId.slice(0, 8)}`;
+    }
+
+    private buildPublicPhotographerSummary(
+        profile: Profile,
+    ): PublicPhotographerSummary {
+        const specialties = this.normalizeSpecialties(profile.specialties);
+        const specialty = specialties[0] ?? 'Photography';
+        const displayName = profile.fullName?.trim() || 'Photographer';
+        const location = profile.location?.trim() || 'Location updating soon';
+        const bio =
+            profile.bio?.trim() ||
+            'This photographer is preparing their public Fotovia profile.';
+        const price = this.normalizeMoneyValue(profile.pricePerHour);
+
+        return {
+            id: profile.id,
+            slug:
+                profile.slug ?? this.buildFallbackPhotographerSlug(profile.id),
+            name: displayName,
+            specialty,
+            styles: specialties,
+            location,
+            bio,
+            avatarUrl: profile.avatarUrl ?? null,
+            rating: null,
+            reviewCount: null,
+            startingPrice: price,
+            tags: specialties.slice(0, 3),
+        };
+    }
+
+    private buildPublicPhotographerDetail(
+        profile: Profile,
+        portfolioItems: ProfilePortfolioItem[],
+    ): PublicPhotographerDetail {
+        const summary = this.buildPublicPhotographerSummary(profile);
+        const specialties = this.normalizeSpecialties(profile.specialties);
+        const intro =
+            profile.bio?.trim() ||
+            `${summary.name} is building a public Fotovia profile with saved portfolio work and booking-ready details.`;
+
+        return {
+            ...summary,
+            intro,
+            experienceYears:
+                typeof profile.experienceYears === 'number'
+                    ? profile.experienceYears
+                    : null,
+            availability: 'Open to booking requests on Fotovia',
+            services: [],
+            testimonials: [],
+            specialties,
+            portfolio: portfolioItems.map((item) => ({
+                id: item.id,
+                title: item.title,
+                description: item.description,
+                imageUrl: item.assetUrl,
+                category: this.toDisplayLabel(item.category),
+                isFeatured: item.isFeatured,
+            })),
+        };
+    }
+
+    private normalizeSpecialties(
+        values: string[] | null | undefined,
+    ): string[] {
+        if (!Array.isArray(values)) {
+            return [];
+        }
+
+        return Array.from(
+            new Set(
+                values
+                    .filter(
+                        (value): value is string => typeof value === 'string',
+                    )
+                    .map((value) => value.trim())
+                    .filter(Boolean)
+                    .map((value) => this.toDisplayLabel(value)),
+            ),
+        );
+    }
+
+    private toDisplayLabel(value: string): string {
+        return value
+            .split(/[\s-_]+/)
+            .filter(Boolean)
+            .map((part) => part[0].toUpperCase() + part.slice(1).toLowerCase())
+            .join(' ');
+    }
+
+    private normalizeMoneyValue(
+        value: string | number | null | undefined,
+    ): number | null {
+        if (typeof value === 'number' && Number.isFinite(value)) {
+            return value;
+        }
+
+        if (
+            typeof value === 'string' &&
+            value.trim() &&
+            !Number.isNaN(Number(value))
+        ) {
+            return Number(value);
+        }
+
+        return null;
     }
 
     private normalizeAssetSizeBytes(

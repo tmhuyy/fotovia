@@ -1,7 +1,17 @@
+import { isAxiosError } from "axios";
+
 import type { AssetPreview } from "../features/asset/types/asset.types";
+import type {
+    PhotographerDetail,
+    PhotographerPortfolioEntry,
+    PhotographerPortfolioShowcaseItem,
+    PhotographerService as PhotographerServiceItem,
+    PhotographerTestimonial,
+} from "../features/photographer/types/photographer-detail.types";
 import {
     PORTFOLIO_CATEGORIES,
     type PhotographerPortfolioItem,
+    type PhotographerProfile,
     type PortfolioCategory,
     type PortfolioItemMutationPayload,
 } from "../features/photographer/types/portfolio.types";
@@ -14,6 +24,9 @@ type AnyRecord = Record<string, unknown>;
 
 const PHOTOGRAPHER_ENDPOINTS = {
     portfolioItems: "/profiles/me/portfolio-items",
+    publicPhotographers: "/profiles/public/photographers",
+    publicPhotographerBySlug: (slug: string) =>
+        `/profiles/public/photographers/${encodeURIComponent(slug)}`,
 };
 
 const normalizeString = (value: unknown): string => {
@@ -50,6 +63,17 @@ const normalizeBoolean = (value: unknown): boolean => {
     }
 
     return false;
+};
+
+const normalizeStringArray = (value: unknown): string[] => {
+    if (!Array.isArray(value)) {
+        return [];
+    }
+
+    return value
+        .filter((item): item is string => typeof item === "string")
+        .map((item) => item.trim())
+        .filter(Boolean);
 };
 
 const normalizeCategory = (value: unknown): PortfolioCategory => {
@@ -108,6 +132,106 @@ const normalizePortfolioItem = (
     };
 };
 
+const normalizePhotographerProfile = (
+    payload: AnyRecord,
+): PhotographerProfile => {
+    return {
+        id: normalizeString(payload.id),
+        slug: normalizeString(payload.slug),
+        name: normalizeString(payload.name) || "Photographer",
+        specialty: normalizeString(payload.specialty) || "Photography",
+        styles: normalizeStringArray(payload.styles),
+        location: normalizeString(payload.location) || "Location updating soon",
+        bio:
+            normalizeString(payload.bio) ||
+            "This photographer is preparing their public Fotovia profile.",
+        avatarUrl: normalizeNullableString(payload.avatarUrl),
+        rating: normalizeNumber(payload.rating),
+        reviewCount: normalizeNumber(payload.reviewCount),
+        startingPrice: normalizeNumber(payload.startingPrice),
+        tags: normalizeStringArray(payload.tags),
+    };
+};
+
+const normalizePortfolioEntry = (
+    payload: unknown,
+): PhotographerPortfolioEntry => {
+    if (typeof payload === "string") {
+        return payload;
+    }
+
+    const record = (payload as AnyRecord | undefined) ?? {};
+
+    const entry: PhotographerPortfolioShowcaseItem = {
+        id: normalizeString(record.id),
+        title: normalizeString(record.title) || "Saved portfolio work",
+        description: normalizeString(record.description),
+        imageUrl: normalizeString(record.imageUrl),
+        category: normalizeString(record.category) || "Photography",
+        isFeatured: normalizeBoolean(record.isFeatured),
+    };
+
+    return entry;
+};
+
+const normalizeServices = (value: unknown): PhotographerServiceItem[] => {
+    if (!Array.isArray(value)) {
+        return [];
+    }
+
+    return value.map((item) => {
+        const record = (item as AnyRecord | undefined) ?? {};
+
+        return {
+            title: normalizeString(record.title),
+            description: normalizeString(record.description),
+            duration: normalizeString(record.duration),
+            startingPrice: normalizeNumber(record.startingPrice) ?? 0,
+        };
+    });
+};
+
+const normalizeTestimonials = (value: unknown): PhotographerTestimonial[] => {
+    if (!Array.isArray(value)) {
+        return [];
+    }
+
+    return value.map((item) => {
+        const record = (item as AnyRecord | undefined) ?? {};
+
+        return {
+            name: normalizeString(record.name),
+            context: normalizeString(record.context),
+            quote: normalizeString(record.quote),
+        };
+    });
+};
+
+const normalizePhotographerDetail = (
+    payload: AnyRecord,
+): PhotographerDetail => {
+    const summary = normalizePhotographerProfile(payload);
+    const portfolioRaw = Array.isArray(payload.portfolio)
+        ? payload.portfolio
+        : [];
+
+    return {
+        ...summary,
+        intro:
+            normalizeString(payload.intro) ||
+            summary.bio ||
+            `${summary.name} is building a public Fotovia profile.`,
+        experienceYears: normalizeNumber(payload.experienceYears),
+        availability:
+            normalizeString(payload.availability) ||
+            "Open to booking requests on Fotovia",
+        services: normalizeServices(payload.services),
+        portfolio: portfolioRaw.map((item) => normalizePortfolioEntry(item)),
+        testimonials: normalizeTestimonials(payload.testimonials),
+        specialties: normalizeStringArray(payload.specialties),
+    };
+};
+
 export const photographerService = {
     async getMyPortfolioItems(): Promise<PhotographerPortfolioItem[]> {
         const response = await profileClient.get<
@@ -149,5 +273,39 @@ export const photographerService = {
         await profileClient.delete(
             `${PHOTOGRAPHER_ENDPOINTS.portfolioItems}/${itemId}`,
         );
+    },
+
+    async getPublicPhotographers(): Promise<PhotographerProfile[]> {
+        const response = await profileClient.get<
+            ApiResponse<unknown> | unknown
+        >(PHOTOGRAPHER_ENDPOINTS.publicPhotographers);
+        const data = unwrapResponse<unknown>(response.data);
+
+        if (!Array.isArray(data)) {
+            return [];
+        }
+
+        return data.map((item) =>
+            normalizePhotographerProfile((item as AnyRecord | undefined) ?? {}),
+        );
+    },
+
+    async getPublicPhotographerDetailBySlug(
+        slug: string,
+    ): Promise<PhotographerDetail | null> {
+        try {
+            const response = await profileClient.get<
+                ApiResponse<AnyRecord> | AnyRecord
+            >(PHOTOGRAPHER_ENDPOINTS.publicPhotographerBySlug(slug));
+            const data = unwrapResponse<AnyRecord>(response.data);
+
+            return normalizePhotographerDetail(data);
+        } catch (error) {
+            if (isAxiosError(error) && error.response?.status === 404) {
+                return null;
+            }
+
+            throw error;
+        }
     },
 };

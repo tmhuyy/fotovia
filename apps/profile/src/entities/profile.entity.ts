@@ -18,6 +18,9 @@ export class Profile {
     @Column({ type: 'varchar', length: 30, default: UserRole.CLIENT })
     role: UserRole;
 
+    @Column({ type: 'varchar', length: 255, nullable: true, unique: true })
+    slug: string | null;
+
     @Column({ name: 'full_name', type: 'varchar', length: 255, nullable: true })
     fullName: string | null;
 

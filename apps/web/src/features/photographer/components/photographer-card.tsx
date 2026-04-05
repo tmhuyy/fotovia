@@ -1,60 +1,113 @@
 import Link from "next/link";
-import { Card, CardContent } from "../../../components/ui/card";
+
 import { Badge } from "../../../components/ui/badge";
 import { buttonVariants } from "../../../components/ui/button";
+import { Card, CardContent } from "../../../components/ui/card";
 import type { PhotographerProfile } from "../types/photographer.types";
 
-interface PhotographerCardProps {
+interface PhotographerCardProps
+{
   photographer: PhotographerProfile;
 }
 
-export const PhotographerCard = ({ photographer }: PhotographerCardProps) => {
+const getInitials = (name: string) =>
+{
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
+};
+
+const formatStartingPrice = (value: number | null) =>
+{
+  if (value === null) {
+    return "Pricing on request";
+  }
+
+  return `From $${Math.round(value)}`;
+};
+
+export const PhotographerCard = ({ photographer }: PhotographerCardProps) =>
+{
+  const hasReviews =
+    typeof photographer.rating === "number" &&
+    typeof photographer.reviewCount === "number" &&
+    photographer.reviewCount > 0;
+
   return (
-    <Card className="overflow-hidden">
-      <div className="aspect-[4/3] w-full bg-gradient-to-br from-background to-surface">
-        <div className="h-full w-full rounded-b-none border-b border-border bg-background/40" />
-      </div>
-      <CardContent className="space-y-4 pt-5">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-lg font-medium text-foreground">
-              {photographer.name}
-            </p>
-            <p className="text-sm text-muted">{photographer.specialty}</p>
+    <Card className="rounded-[2rem] border-border bg-surface shadow-sm">
+      <CardContent className="flex h-full flex-col gap-5 p-6">
+        <div className="flex items-start gap-4">
+          <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-background text-sm font-semibold text-foreground">
+            {photographer.avatarUrl ? (
+              <img
+                src={photographer.avatarUrl}
+                alt={`${photographer.name} avatar`}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              getInitials(photographer.name)
+            )}
           </div>
-          <Badge variant="accent">{photographer.location}</Badge>
+
+          <div className="min-w-0 space-y-2">
+            <div className="space-y-1">
+              <h2 className="font-serif text-2xl text-foreground">
+                {photographer.name}
+              </h2>
+
+              <p className="text-sm font-medium text-foreground">
+                {photographer.specialty}
+              </p>
+
+              <p className="text-sm text-muted">{photographer.location}</p>
+            </div>
+          </div>
         </div>
-        <p className="text-sm text-muted">{photographer.bio}</p>
+
+        <p className="line-clamp-3 text-sm leading-7 text-muted">
+          {photographer.bio}
+        </p>
+
         <div className="flex flex-wrap gap-2">
           {photographer.styles.slice(0, 3).map((style) => (
-            <span
-              key={style}
-              className="rounded-full border border-border bg-background px-3 py-1 text-[11px] text-muted"
-            >
+            <Badge key={style} variant="neutral">
               {style}
-            </span>
+            </Badge>
           ))}
+
           {photographer.tags.slice(0, 1).map((tag) => (
-            <span
-              key={tag}
-              className="rounded-full border border-border bg-surface px-3 py-1 text-[11px] text-muted"
-            >
+            <Badge key={tag} variant="accent">
               {tag}
-            </span>
+            </Badge>
           ))}
         </div>
-        <div className="flex items-center justify-between text-xs text-muted">
-          <span>
-            {photographer.rating.toFixed(1)} rating · {photographer.reviewCount} reviews
-          </span>
-          <span>From ${photographer.startingPrice}</span>
+
+        <div className="mt-auto flex items-center justify-between gap-4 border-t border-border pt-4">
+          <div className="space-y-1 text-sm text-muted">
+            <p>
+              {hasReviews
+                ? `${photographer.rating?.toFixed(1)} rating · ${photographer.reviewCount} reviews`
+                : "New public profile on Fotovia"}
+            </p>
+
+            <p className="font-medium text-foreground">
+              {formatStartingPrice(photographer.startingPrice)}
+            </p>
+          </div>
+
+          <Link
+            href={`/photographers/${encodeURIComponent(photographer.slug)}`}
+            className={buttonVariants({
+              size: "sm",
+            })}
+          >
+            View profile
+          </Link>
         </div>
-        <Link
-          href={`/photographers/${encodeURIComponent(photographer.slug)}`}
-          className={buttonVariants({ variant: "secondary", size: "sm" })}
-        >
-          View profile
-        </Link>
       </CardContent>
     </Card>
   );

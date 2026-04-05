@@ -28,6 +28,19 @@ export class ProfilePortfolioItemRepository extends Repository<ProfilePortfolioI
         });
     }
 
+    async listPublicByProfileId(
+        profileId: string,
+    ): Promise<ProfilePortfolioItem[]> {
+        return this.repo.find({
+            where: { profileId },
+            order: {
+                isFeatured: 'DESC',
+                createdAt: 'DESC',
+                sortOrder: 'DESC',
+            },
+        });
+    }
+
     async getByIdForProfile(
         itemId: string,
         profileId: string,

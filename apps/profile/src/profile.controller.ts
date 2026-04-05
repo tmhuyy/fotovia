@@ -33,6 +33,26 @@ import { ProfileService } from './profile.service';
 export class ProfileController {
     constructor(private readonly profileService: ProfileService) {}
 
+    @Get('/public/photographers')
+    @ApiOperation({ summary: 'Get public photographer summaries' })
+    @ApiOkResponse({
+        description: 'Public photographers fetched successfully',
+    })
+    async getPublicPhotographers(): Promise<Record<string, unknown>[]> {
+        return this.profileService.getPublicPhotographers();
+    }
+
+    @Get('/public/photographers/:slug')
+    @ApiOperation({ summary: 'Get public photographer detail by slug' })
+    @ApiOkResponse({
+        description: 'Public photographer detail fetched successfully',
+    })
+    async getPublicPhotographerBySlug(
+        @Param('slug') slug: string,
+    ): Promise<Record<string, unknown>> {
+        return this.profileService.getPublicPhotographerBySlug(slug);
+    }
+
     @UseGuards(JwtAuthGuard)
     @Get('/me')
     @ApiOperation({ summary: 'Get my profile' })

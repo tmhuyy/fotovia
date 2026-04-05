@@ -1,11 +1,13 @@
 import { Badge } from "../../../components/ui/badge";
 import type { PhotographerDetail } from "../types/photographer-detail.types";
 
-interface PhotographerDetailHeroProps {
+interface PhotographerDetailHeroProps
+{
   photographer: PhotographerDetail;
 }
 
-const getInitials = (name: string) => {
+const getInitials = (name: string) =>
+{
   return name
     .split(" ")
     .filter(Boolean)
@@ -15,61 +17,95 @@ const getInitials = (name: string) => {
     .toUpperCase();
 };
 
+const formatPrice = (value: number | null) =>
+{
+  if (value === null) {
+    return "Pricing on request";
+  }
+
+  return `From $${Math.round(value)}`;
+};
+
 export const PhotographerDetailHero = ({
   photographer,
-}: PhotographerDetailHeroProps) => {
+}: PhotographerDetailHeroProps) =>
+{
+  const hasReviews =
+    typeof photographer.rating === "number" &&
+    typeof photographer.reviewCount === "number" &&
+    photographer.reviewCount > 0;
+
   return (
-    <div className="space-y-6">
-      <div className="relative overflow-hidden rounded-3xl border border-border bg-surface">
-        <div className="aspect-[16/9] w-full bg-gradient-to-br from-background to-surface" />
-        <div className="absolute inset-0 bg-gradient-to-t from-background/70 via-transparent to-transparent" />
-      </div>
-      <div className="flex flex-wrap items-start justify-between gap-6">
-        <div className="flex items-center gap-4">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full border border-border bg-background text-sm font-semibold text-foreground">
-            {getInitials(photographer.name)}
+    <div className="rounded-[2rem] border border-border bg-surface p-8 shadow-sm">
+      <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex items-start gap-5">
+          <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-background text-2xl font-semibold text-foreground">
+            {photographer.avatarUrl ? (
+              <img
+                src={photographer.avatarUrl}
+                alt={`${photographer.name} avatar`}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              getInitials(photographer.name)
+            )}
           </div>
-          <div className="space-y-1">
-            <p className="text-xs uppercase tracking-[0.3em] text-muted">
-              {photographer.specialty}
-            </p>
-            <h1 className="font-display text-3xl text-foreground md:text-4xl">
-              {photographer.name}
-            </h1>
-            <p className="text-sm text-muted">{photographer.location}</p>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <p className="text-xs uppercase tracking-[0.22em] text-muted">
+                {photographer.specialty}
+              </p>
+
+              <h1 className="font-serif text-4xl text-foreground sm:text-5xl">
+                {photographer.name}
+              </h1>
+
+              <p className="text-sm leading-7 text-muted sm:text-base">
+                {photographer.location}
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3 text-sm text-muted">
+              {photographer.experienceYears !== null ? (
+                <span>{photographer.experienceYears} yrs experience</span>
+              ) : (
+                <span>Experience details updating soon</span>
+              )}
+
+              <span>•</span>
+
+              <span>
+                {hasReviews
+                  ? `${photographer.rating?.toFixed(1)} · ${photographer.reviewCount} reviews`
+                  : "New public profile"}
+              </span>
+
+              <span>•</span>
+
+              <span>{formatPrice(photographer.startingPrice)}</span>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {photographer.styles.map((style) => (
+                <Badge key={style} variant="neutral">
+                  {style}
+                </Badge>
+              ))}
+
+              {photographer.tags.map((tag) => (
+                <Badge key={tag} variant="accent">
+                  {tag}
+                </Badge>
+              ))}
+            </div>
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2 text-xs text-muted">
-          <Badge variant="neutral">
-            {photographer.experienceYears} yrs experience
-          </Badge>
-          <Badge variant="accent">
-            {photographer.rating.toFixed(1)} · {photographer.reviewCount} reviews
-          </Badge>
-          <Badge variant="neutral">From ${photographer.startingPrice}</Badge>
+
+        <div className="max-w-xl rounded-[1.5rem] border border-border bg-background px-5 py-4">
+          <p className="text-sm leading-7 text-muted">{photographer.intro}</p>
         </div>
       </div>
-      <div className="flex flex-wrap gap-2">
-        {photographer.styles.map((style) => (
-          <span
-            key={style}
-            className="rounded-full border border-border bg-background px-3 py-1 text-[11px] text-muted"
-          >
-            {style}
-          </span>
-        ))}
-        {photographer.tags.map((tag) => (
-          <span
-            key={tag}
-            className="rounded-full border border-border bg-surface px-3 py-1 text-[11px] text-muted"
-          >
-            {tag}
-          </span>
-        ))}
-      </div>
-      <p className="text-sm text-muted md:text-base">
-        {photographer.intro}
-      </p>
     </div>
   );
 };
