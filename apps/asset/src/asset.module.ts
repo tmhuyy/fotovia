@@ -1,26 +1,25 @@
 import { Module } from '@nestjs/common';
-import { AssetService } from './asset.service';
-import { AssetController } from './asset.controller';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { ConfigSchemaValidation } from './config.schema';
-import { LoggerModule } from 'nestjs-pino';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { AssetRepository } from './repositories/asset.repository';
-import { Asset } from './entities/asset.entity';
 import { ClientsModule, Transport } from '@nestjs/microservices';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+
 import { AUTH_SERVICE } from '@repo/common';
+
+import { AssetController } from './asset.controller';
+import { AssetService } from './asset.service';
+import { ConfigSchemaValidation } from './config.schema';
 import { AssetUploadSession } from './entities/asset-upload-session.entity';
 import { AssetUsage } from './entities/asset-usage.entity';
+import { Asset } from './entities/asset.entity';
 import { SupabaseModule } from './infrastructure/supabase/supabase.module';
 
 @Module({
     imports: [
         ConfigModule.forRoot({
             isGlobal: true,
-            envFilePath: [`.env`],
+            envFilePath: ['.env'],
             validationSchema: ConfigSchemaValidation,
         }),
-        // LoggerModule,
         TypeOrmModule.forRootAsync({
             imports: [ConfigModule],
             inject: [ConfigService],
@@ -28,9 +27,9 @@ import { SupabaseModule } from './infrastructure/supabase/supabase.module';
                 return {
                     type: 'postgres',
                     autoLoadEntities: true,
-                    synchronize: configService.get('ENV') === 'DEV', // for data migration,
+                    synchronize: configService.get('ENV') === 'DEV',
                     host: configService.get('DB_HOST'),
-                    port: configService.get('DB_PORT'),
+                    port: Number(configService.get('DB_PORT')),
                     username: configService.get('DB_USERNAME'),
                     password: configService.get('DB_PASSWORD'),
                     database: configService.get('DB_DATABASE'),
@@ -51,7 +50,7 @@ import { SupabaseModule } from './infrastructure/supabase/supabase.module';
                         transport: Transport.TCP,
                         options: {
                             host: configService.get('AUTH_TCP_HOST'),
-                            port: configService.get('AUTH_TCP_PORT'),
+                            port: Number(configService.get('AUTH_TCP_PORT')),
                         },
                     };
                 },
@@ -59,7 +58,7 @@ import { SupabaseModule } from './infrastructure/supabase/supabase.module';
         ]),
         SupabaseModule,
     ],
-    providers: [AssetService, AssetRepository],
+    providers: [AssetService],
     controllers: [AssetController],
 })
 export class AssetModule {}

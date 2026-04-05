@@ -1,18 +1,34 @@
-import { NestFactory } from '@nestjs/core';
-import * as cookieParser from 'cookie-parser';
-import { AssetModule } from './asset.module';
 import { ValidationPipe } from '@nestjs/common';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
-import { Logger } from 'nestjs-pino';
+import { NestFactory } from '@nestjs/core';
+import { Transport } from '@nestjs/microservices';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import * as cookieParser from 'cookie-parser';
+
 import { ResponseInterceptor } from '@repo/common';
+
+import { AssetModule } from './asset.module';
 
 async function bootstrap() {
     const app = await NestFactory.create(AssetModule);
-    const configService = app.get(ConfigService)
+    const configService = app.get(ConfigService);
+
+    app.enableCors({
+        origin: true,
+        credentials: true,
+    });
+
     app.use(cookieParser());
+
+    app.connectMicroservice({
+        transport: Transport.TCP,
+        options: {
+            host: '0.0.0.0',
+            port: configService.getOrThrow<number>('TCP_PORT'),
+        },
+    });
+
     app.useGlobalInterceptors(new ResponseInterceptor());
-    // app.useLogger(app.get(Logger));
     app.useGlobalPipes(
         new ValidationPipe({
             transform: true,
@@ -21,16 +37,17 @@ async function bootstrap() {
     );
 
     const config = new DocumentBuilder()
-        .setTitle(`Asset Service`)
+        .setTitle('Asset Service')
         .setDescription('The Asset API Description')
         .setVersion('1.0')
         .addBearerAuth()
-
         .build();
 
-    const documentFactory = () => SwaggerModule.createDocument(app, config);
-    SwaggerModule.setup('api', app, documentFactory);
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('api', app, document);
 
-    await app.listen(configService.getOrThrow('HTTP_PORT') || '4444');
+    await app.startAllMicroservices();
+    await app.listen(configService.getOrThrow<number>('HTTP_PORT'));
 }
+
 bootstrap();
