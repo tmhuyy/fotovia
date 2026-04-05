@@ -1173,3 +1173,57 @@ This file tracks the progress of frontend tasks for Fotovia.
 - Add profile completion guidance for photographer accounts.
 - Show completion status based on real profile fields.
 - Connect workspace actions to meaningful next steps instead of placeholder-only navigation.
+
+## Phase 26: Photographer Profile Completion Guidance
+
+**Status:** Completed
+
+### Scope
+
+- Add profile completion guidance into the photographer workspace.
+- Compute completion progress from real `/profiles/me` data.
+- Show photographers which core profile fields are still missing.
+- Keep `/profile` as the real editing page while the workspace acts as guidance.
+
+### Delivered
+
+- Added a reusable profile-completion helper for photographer profile data.
+- Added a dedicated profile completion card in the photographer workspace.
+- Workspace now reads real profile data and shows:
+    - completion percentage
+    - completed vs missing fields
+    - loading state
+    - profile-missing state
+    - recoverable error state
+- Photographer workspace now gives a clearer next step instead of acting like a placeholder-only page.
+
+### Decisions
+
+- Profile completion logic is treated as reusable domain logic, not hardcoded UI-only behavior.
+- The workspace remains a guidance layer, while `/profile` remains the true profile editing source.
+- Completion is based on core marketplace-ready fields only:
+    - full name
+    - phone
+    - location
+    - bio
+    - specialties
+    - price per hour
+    - experience years
+
+### Notes
+
+- This phase does not add avatar upload, portfolio upload, or booking management yet.
+- Completion guidance is intentionally lightweight and focused on foundational profile readiness.
+- The same completion helper can later be reused in onboarding, banners, badges, or gated actions.
+
+### Key Files
+
+- `apps/web/src/features/profile/lib/get-profile-completion.ts`
+- `apps/web/src/features/photographer/components/photographer-profile-completion-card.tsx`
+- `apps/web/src/features/photographer/components/photographer-dashboard-page.tsx`
+
+### Next Recommended Phase
+
+- Build the photographer portfolio foundation.
+- Decide how photographers should add, preview, and manage portfolio items.
+- Prepare the workspace to connect profile readiness with future portfolio and discovery flows.

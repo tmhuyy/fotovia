@@ -143,3 +143,24 @@ Goals:
 - connect protected profile access with clearer completion or onboarding guidance
 - define whether future protected routes should expand into dashboard, booking management, or role-based workspace flows
 - keep auth-aware homepage and entry-point behavior consistent with the real auth store
+
+## Phase 26 impact on auth-aware product flow
+
+Phase 26 does not change the underlying authentication model, but it improves the first meaningful destination for signed-in photographer accounts.
+
+### Current behavior after Phase 26
+
+- guest-only auth routes still work as before
+- authenticated-only routes still work as before
+- role-aware post-auth redirect still sends photographer accounts toward `/photographer/dashboard` when no stronger safe `next` route exists
+- the photographer workspace now has a clearer purpose after sign-in because it can read profile progress from real `/profiles/me` data
+
+### Why this matters
+
+Before this phase, the workspace route existed but behaved mostly like a structural placeholder.  
+After this phase, the same route becomes a more useful authenticated destination because it now shows real profile readiness and points photographers toward the next necessary action.
+
+### Important rule carried forward
+
+- auth-aware routing decides **where the user lands**
+- profile completion guidance decides **what the user should do next once they arrive**

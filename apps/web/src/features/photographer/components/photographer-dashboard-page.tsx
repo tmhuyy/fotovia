@@ -1,42 +1,86 @@
 "use client";
 
 import Link from "next/link";
+import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 import { Footer } from "../../../components/home/footer";
 import { Navbar } from "../../../components/home/navbar";
 import { Container } from "../../../components/layout/container";
 import { Badge } from "../../../components/ui/badge";
 import { buttonVariants } from "../../../components/ui/button";
+import { normalizeApiError } from "../../../services/api/error";
+import { profileService } from "../../../services/profile.service";
 import { useAuthStore } from "../../../store/auth.store";
+import { getPhotographerProfileCompletion } from "../../profile/lib/get-profile-completion";
+import { PhotographerProfileCompletionCard } from "./photographer-profile-completion-card";
 
 const workspaceHighlights = [
     {
-        title: "Profile foundation",
+        title: "Profile editing",
         description:
-            "Keep your photographer-facing details ready so future portfolio and booking flows have a stable profile source.",
-        ctaLabel: "Update profile",
+            "Your real photographer data still lives in /profile. This workspace is meant to guide what needs attention first.",
+        ctaLabel: "Open profile",
         href: "/profile",
     },
     {
         title: "Portfolio direction",
         description:
-            "Portfolio tools will land in a later phase. This workspace now gives that future feature a real home in the product flow.",
+            "Portfolio tools will land in a later phase. A stronger profile foundation will make that next module feel more complete.",
         ctaLabel: "Coming next",
     },
     {
         title: "Booking readiness",
         description:
-            "Direct and guided booking entry are already protected. Request management can grow here once the booking backend is ready.",
+            "Protected booking entry is already in place. Request management can grow here once booking features become real backend flows.",
         ctaLabel: "View booking entry",
         href: "/bookings/new",
     },
 ];
 
 export const PhotographerDashboardPage = () => {
-    const { user } = useAuthStore();
+    const { user, isAuthenticated, isHydrating, hasHydrated } = useAuthStore();
 
+    const authEmail = user?.email ?? "";
     const isPhotographer = user?.role === "photographer";
-    const displayName = user?.fullName?.trim() || user?.email || "Photographer";
+
+    const profileQuery = useQuery({
+        queryKey: [
+            "photographer-workspace-profile",
+            user?.id ?? authEmail ?? "anonymous",
+        ],
+        queryFn: () => profileService.getMyProfile(authEmail),
+        enabled:
+            hasHydrated &&
+            !isHydrating &&
+            isAuthenticated &&
+            isPhotographer &&
+            Boolean(authEmail),
+        retry: false,
+    });
+
+    const profileError = profileQuery.error
+        ? normalizeApiError(
+              profileQuery.error,
+              "We couldn’t load your profile progress right now.",
+          )
+        : null;
+
+    const isProfileMissing = profileError?.status === 404;
+
+    const completion = useMemo(() => {
+        if (profileQuery.data) {
+            return getPhotographerProfileCompletion(profileQuery.data);
+        }
+
+        return getPhotographerProfileCompletion(null);
+    }, [profileQuery.data]);
+
+    const displayName =
+        profileQuery.data?.fullName?.trim() ||
+        user?.fullName?.trim() ||
+        user?.email ||
+        "Photographer";
 
     if (!isPhotographer) {
         return (
@@ -97,11 +141,10 @@ export const PhotographerDashboardPage = () => {
                         </h1>
 
                         <p className="mt-4 max-w-3xl text-base leading-relaxed text-muted md:text-lg">
-                            This workspace is the first protected landing area
-                            for photographers after sign-in when no stronger
-                            destination exists. It keeps the next product steps
-                            focused while deeper marketplace tools are still
-                            being built.
+                            This workspace now points you toward the most
+                            important next step: making sure your photographer
+                            profile is complete enough for later portfolio,
+                            discovery, and booking phases.
                         </p>
 
                         <div className="mt-8 flex flex-wrap gap-3">
@@ -109,7 +152,7 @@ export const PhotographerDashboardPage = () => {
                                 href="/profile"
                                 className={buttonVariants({ size: "lg" })}
                             >
-                                Complete your profile
+                                Edit profile details
                             </Link>
 
                             <Link
@@ -124,38 +167,82 @@ export const PhotographerDashboardPage = () => {
                         </div>
                     </section>
 
-                    <section className="grid gap-4 md:grid-cols-3">
-                        {workspaceHighlights.map((item) => (
-                            <div
-                                key={item.title}
-                                className="rounded-[1.75rem] border border-border bg-surface p-6 shadow-sm"
-                            >
+                    <section className="grid gap-4 xl:grid-cols-[1.45fr_0.85fr]">
+                        <PhotographerProfileCompletionCard
+                            completion={completion}
+                            isLoading={profileQuery.isLoading}
+                            isProfileMissing={isProfileMissing}
+                            errorMessage={
+                                isProfileMissing
+                                    ? undefined
+                                    : profileError?.message
+                            }
+                        />
+
+                        <div className="space-y-4">
+                            <div className="rounded-[1.75rem] border border-border bg-surface p-6 shadow-sm">
                                 <p className="text-xs uppercase tracking-[0.28em] text-muted">
-                                    Workspace pillar
+                                    Current status
                                 </p>
 
-                                <h2 className="mt-4 text-xl font-semibold text-foreground">
-                                    {item.title}
-                                </h2>
+                                <p className="mt-4 text-2xl font-semibold text-foreground">
+                                    {completion.isComplete
+                                        ? "Foundation ready"
+                                        : `${completion.totalCount - completion.completedCount} items left`}
+                                </p>
 
                                 <p className="mt-3 text-sm leading-7 text-muted">
-                                    {item.description}
+                                    {completion.isComplete
+                                        ? "Your core profile is ready for later portfolio and booking-management phases."
+                                        : "Finish the missing profile fields first, then future marketplace tools will have stronger data to build on."}
                                 </p>
 
-                                {item.href ? (
-                                    <Link
-                                        href={item.href}
-                                        className="mt-6 inline-flex text-sm font-medium text-foreground transition hover:text-accent"
-                                    >
-                                        {item.ctaLabel} →
-                                    </Link>
-                                ) : (
-                                    <p className="mt-6 text-sm font-medium text-accent">
-                                        {item.ctaLabel}
+                                <div className="mt-6 rounded-2xl bg-background px-4 py-4">
+                                    <p className="text-xs uppercase tracking-[0.22em] text-muted">
+                                        Completion score
                                     </p>
-                                )}
+                                    <p className="mt-2 text-3xl font-semibold text-foreground">
+                                        {completion.completionPercentage}%
+                                    </p>
+                                </div>
                             </div>
-                        ))}
+
+                            <div className="rounded-[1.75rem] border border-border bg-surface p-6 shadow-sm">
+                                <p className="text-xs uppercase tracking-[0.28em] text-muted">
+                                    Next product direction
+                                </p>
+
+                                <div className="mt-4 space-y-4">
+                                    {workspaceHighlights.map((item) => (
+                                        <div
+                                            key={item.title}
+                                            className="rounded-2xl border border-border bg-background px-4 py-4"
+                                        >
+                                            <h2 className="text-base font-semibold text-foreground">
+                                                {item.title}
+                                            </h2>
+
+                                            <p className="mt-2 text-sm leading-7 text-muted">
+                                                {item.description}
+                                            </p>
+
+                                            {item.href ? (
+                                                <Link
+                                                    href={item.href}
+                                                    className="mt-4 inline-flex text-sm font-medium text-foreground transition hover:text-accent"
+                                                >
+                                                    {item.ctaLabel} →
+                                                </Link>
+                                            ) : (
+                                                <p className="mt-4 text-sm font-medium text-accent">
+                                                    {item.ctaLabel}
+                                                </p>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
                     </section>
                 </Container>
             </main>

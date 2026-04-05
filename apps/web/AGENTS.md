@@ -244,3 +244,10 @@ When working on auth forms such as sign-in or sign-up:
 - If no safe `next` route exists after authentication, fall back by role instead of always hardcoding `/`.
 - Treat `/photographer/dashboard` as the protected workspace foundation for photographer accounts unless a later phase explicitly replaces that route.
 - When role-aware product UI needs more than auth identity currently provides, hydrate a merged session user from the appropriate backend sources before making navigation decisions.
+
+## Phase 26 working rules
+
+- Keep `/profile` as the real editable source for photographer profile data.
+- Use the photographer workspace to show progress, guidance, and next-step direction rather than duplicating edit forms.
+- Keep profile completion logic in reusable feature-level helpers instead of scattering field checks across UI components.
+- When adding future onboarding or portfolio modules, prefer building on top of the existing profile completion foundation instead of replacing it.

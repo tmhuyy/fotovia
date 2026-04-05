@@ -77,6 +77,7 @@ Still pending:
 - portfolio integration
 - public photographer-profile read flow from real backend data
 - profile completion guidance after sign-in or sign-up
+
 ## Relationship to workspace direction
 
 - `/profile` remains the editable profile source page for signed-in users
@@ -93,7 +94,59 @@ This phase still keeps profile editing separate from richer onboarding, portfoli
 ### Profile Completion Direction + Role-Aware Product Guidance
 
 Goals:
+
 - connect profile completeness more clearly to the photographer workspace
 - decide whether incomplete profile state should drive stronger prompts or gated actions
 - prepare later portfolio and booking-management flows without overloading the current profile page
-```
+
+## Phase 26: Profile completion guidance
+
+This phase builds on top of the existing real `/profiles/me` integration and uses that data to guide photographer users inside the protected workspace.
+
+### What changed
+
+- profile completion is now computed from real profile data
+- the photographer workspace now shows completion percentage and missing profile areas
+- `/profile` remains the editable source page
+- the workspace acts as a guidance and progress layer rather than replacing profile editing
+
+### Current completion fields
+
+The current profile completion logic checks these fields:
+
+- full name
+- phone
+- location
+- bio
+- specialties
+- price per hour
+- experience years
+
+### Current states handled
+
+The workspace now handles these profile-related states:
+
+- loading profile progress
+- profile exists and is partially complete
+- profile exists and is fully complete
+- profile is missing
+- profile request fails for another reason
+
+### Relationship to workspace direction
+
+This phase makes the photographer workspace more meaningful without turning it into a heavy dashboard.
+
+Current rule:
+
+- `/profile` = edit real data
+- `/photographer/dashboard` = see progress, guidance, and next product direction
+
+## Recommended next phase
+
+### Photographer Portfolio Foundation
+
+Goals:
+
+- define the first real portfolio structure for photographer accounts
+- connect workspace direction to portfolio setup
+- prepare later public discovery and photographer detail improvements using more realistic portfolio data
