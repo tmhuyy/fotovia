@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document tracks the current photographer portfolio foundation state in `apps/web`.
+This document tracks the current photographer portfolio flow in `apps/web`.
 
 ## Current route direction
 
@@ -11,51 +11,40 @@ Status: **working**
 Routes:
 
 - `/photographer/dashboard` = photographer workspace and next-step guidance
-- `/photographer/portfolio` = protected portfolio management route for photographer accounts
+- `/photographer/portfolio` = protected persistent portfolio management route for photographer accounts
 
 ## Current portfolio behavior
 
-Status: **asset-first frontend foundation**
+Status: **persistent local portfolio management**
 
 Behavior:
 
-- signed-in photographer accounts can access the protected portfolio page
+- signed-in photographer accounts can manage a saved portfolio set
 - signed-out users are redirected through the existing protected-route flow
+- portfolio items now persist in the current browser
 - the portfolio page supports:
-    - empty state
-    - sample-loading state
-    - portfolio grid state
-    - add item flow
-    - local image preview generation
-- portfolio items now use asset-style preview data instead of only a plain image URL field
-
-## Current asset direction
-
-The current portfolio item structure now includes asset-style media data.
-
-This phase supports:
-
-- local image validation
-- local preview generation
-- seeded sample asset preview data
-- replace/remove selected image before creating a portfolio item
+    - create
+    - edit
+    - delete
+    - feature / unfeature
+    - reset
+- portfolio ordering now uses a stable newest-first strategy
 
 ## Current limitation
 
 This phase does not yet include:
 
-- real upload to backend storage
-- persistent asset save
-- edit/delete/reorder workflow depth
-- public rendering of real uploaded portfolio assets
-- media moderation or transformation
+- real backend media persistence
+- shared cross-device portfolio state
+- public photographer detail integration with saved portfolio items
+- advanced media management or transformations
 
 ## Recommended next phase
 
-### Persistent Asset Upload and Portfolio Management Actions
+### Backend-Ready Portfolio Asset Persistence
 
 Goals:
 
-- connect the current asset-first UI to real persistent media upload
-- add portfolio item edit/delete/reorder actions
-- prepare public photographer detail and discovery pages to consume real stored assets
+- replace browser-only persistence with a backend-ready persistence path
+- connect asset/media metadata to persistent portfolio records
+- prepare later public photographer detail and discovery flows to consume real saved portfolio data

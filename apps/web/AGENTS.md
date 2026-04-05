@@ -259,3 +259,11 @@ When working on auth forms such as sign-in or sign-up:
 - When the real upload phase begins, extend the existing asset preview structure instead of replacing it with a completely different model.
 - Keep `/photographer/portfolio` as the main photographer-side portfolio management route unless a later phase explicitly changes that direction.
 - Prefer reusable asset helpers and services for media handling instead of scattering file validation and preview logic across UI components.
+
+## Phase 29 working rules
+
+- Keep photographer portfolio management stable and simple while backend media persistence is not ready yet.
+- Treat local browser persistence as a temporary bridge, not the final source of truth for portfolio data.
+- Keep portfolio item actions page-driven so item cards remain reusable and presentational.
+- Prefer newest-first ordering for portfolio items until a later phase explicitly introduces a stable real reorder system.
+- When real backend asset persistence starts, extend the current persistent portfolio flow instead of rebuilding the photographer portfolio page from scratch.

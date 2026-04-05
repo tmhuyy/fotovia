@@ -242,3 +242,36 @@ Still pending:
 - asset persistence in backend
 - portfolio edit/delete/reorder workflows
 - public use of real portfolio assets
+
+## Phase 29: Relationship to persistent portfolio management
+
+Phase 29 keeps the role-aware photographer workspace and profile completion direction in place, then strengthens the photographer-side portfolio flow with saved local management actions.
+
+### What changed
+
+- the portfolio page now supports persistent local save in the current browser
+- photographers can now edit existing portfolio items
+- photographers can now delete portfolio items
+- photographers can now mark items as featured or remove featured state
+- portfolio ordering is now simplified to newest-first instead of manual reordering
+
+### Why this matters
+
+The photographer-side experience is now more realistic than a create-only portfolio prototype.
+
+Current photographer-side direction is now:
+
+- `/profile` = edit real profile data
+- `/photographer/dashboard` = view progress and next-step direction
+- `/photographer/portfolio` = manage saved portfolio items in a persistent local workflow
+
+## Current limitation
+
+This phase still keeps portfolio persistence local to the current browser.
+
+Still pending:
+
+- real backend upload persistence
+- real asset/media records
+- public photographer detail integration with saved portfolio items
+- backend-driven edit/delete behavior

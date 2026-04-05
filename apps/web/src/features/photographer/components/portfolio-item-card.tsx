@@ -1,15 +1,39 @@
+import type { ReactNode } from "react";
+
 import { Badge } from "../../../components/ui/badge";
 import { assetService } from "../../../services/asset.service";
-import {
-    PORTFOLIO_CATEGORY_LABELS,
-    type PhotographerPortfolioItem,
-} from "../types/portfolio.types";
+import
+    {
+        PORTFOLIO_CATEGORY_LABELS,
+        type PhotographerPortfolioItem,
+    } from "../types/portfolio.types";
 
-interface PortfolioItemCardProps {
+interface PortfolioItemCardProps
+{
     item: PhotographerPortfolioItem;
+    actions?: ReactNode;
 }
 
-export const PortfolioItemCard = ({ item }: PortfolioItemCardProps) => {
+const formatCreatedAt = (value: string) =>
+{
+    const parsed = new Date(value);
+
+    if (Number.isNaN(parsed.getTime())) {
+        return "Unknown date";
+    }
+
+    return parsed.toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+    });
+};
+
+export const PortfolioItemCard = ({
+    item,
+    actions,
+}: PortfolioItemCardProps) =>
+{
     const isLocalPreview = item.asset.source === "local-preview";
 
     return (
@@ -26,13 +50,9 @@ export const PortfolioItemCard = ({ item }: PortfolioItemCardProps) => {
                         {PORTFOLIO_CATEGORY_LABELS[item.category]}
                     </Badge>
 
-                    {item.isFeatured ? (
-                        <Badge variant="accent">Featured</Badge>
-                    ) : null}
+                    {item.isFeatured ? <Badge variant="accent">Featured</Badge> : null}
 
-                    {isLocalPreview ? (
-                        <Badge variant="neutral">Local preview</Badge>
-                    ) : null}
+                    {isLocalPreview ? <Badge variant="neutral">Local preview</Badge> : null}
                 </div>
             </div>
 
@@ -43,14 +63,12 @@ export const PortfolioItemCard = ({ item }: PortfolioItemCardProps) => {
                             {item.title}
                         </h3>
                         <p className="mt-1 text-xs uppercase tracking-[0.22em] text-muted">
-                            Sort order {item.sortOrder}
+                            Added {formatCreatedAt(item.createdAt)}
                         </p>
                     </div>
                 </div>
 
-                <p className="text-sm leading-7 text-muted">
-                    {item.description}
-                </p>
+                <p className="text-sm leading-7 text-muted">{item.description}</p>
 
                 <div className="rounded-2xl border border-border bg-background px-4 py-3">
                     <p className="text-xs uppercase tracking-[0.22em] text-muted">
@@ -64,6 +82,8 @@ export const PortfolioItemCard = ({ item }: PortfolioItemCardProps) => {
                         {assetService.formatFileSize(item.asset.sizeInBytes)}
                     </p>
                 </div>
+
+                {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
             </div>
         </article>
     );

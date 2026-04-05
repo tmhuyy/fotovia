@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Badge } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";
@@ -12,12 +12,15 @@ import {
 } from "../types/portfolio.types";
 
 interface PortfolioItemFormProps {
+    mode?: "create" | "edit";
+    initialValue?: PortfolioItemDraft;
     onSubmit: (draft: PortfolioItemDraft) => void;
-    onLoadSamples: () => void;
-    canLoadSamples: boolean;
+    onCancel?: () => void;
+    onLoadSamples?: () => void;
+    canLoadSamples?: boolean;
 }
 
-const initialDraft: PortfolioItemDraft = {
+const emptyDraft: PortfolioItemDraft = {
     title: "",
     description: "",
     asset: null,
@@ -26,22 +29,34 @@ const initialDraft: PortfolioItemDraft = {
 };
 
 export const PortfolioItemForm = ({
+    mode = "create",
+    initialValue,
     onSubmit,
+    onCancel,
     onLoadSamples,
-    canLoadSamples,
+    canLoadSamples = false,
 }: PortfolioItemFormProps) => {
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-    const [draft, setDraft] = useState<PortfolioItemDraft>(initialDraft);
+    const [draft, setDraft] = useState<PortfolioItemDraft>(
+        initialValue ?? emptyDraft,
+    );
     const [formError, setFormError] = useState<string | null>(null);
     const [isPreparingAsset, setIsPreparingAsset] = useState(false);
 
+    useEffect(() => {
+        setDraft(initialValue ?? emptyDraft);
+        setFormError(null);
+    }, [initialValue, mode]);
+
+    const isEditMode = mode === "edit";
+
     const remainingHint = useMemo(() => {
         if (!draft.asset)
-            return "Upload an image file to create a local asset preview.";
+            return "Upload an image file to create an asset preview.";
         if (!draft.description.trim())
             return "Add a short description of the work.";
-        return "This portfolio item is ready to be added.";
+        return "This portfolio item is ready to be saved.";
     }, [draft.asset, draft.description]);
 
     const handleChange = <K extends keyof PortfolioItemDraft>(
@@ -115,22 +130,31 @@ export const PortfolioItemForm = ({
             description: draft.description.trim(),
         });
 
-        setDraft(initialDraft);
+        if (!isEditMode) {
+            setDraft(emptyDraft);
+        }
     };
 
     return (
         <div className="rounded-[1.75rem] border border-border bg-surface p-6 shadow-sm">
             <div className="flex items-start justify-between gap-3">
                 <div>
-                    <Badge variant="accent">Upload portfolio work</Badge>
+                    <Badge variant="accent">
+                        {isEditMode
+                            ? "Edit portfolio work"
+                            : "Upload portfolio work"}
+                    </Badge>
+
                     <h2 className="mt-4 text-2xl font-semibold text-foreground">
-                        Add a portfolio asset
+                        {isEditMode
+                            ? "Update a saved portfolio item"
+                            : "Add a portfolio asset"}
                     </h2>
+
                     <p className="mt-3 text-sm leading-7 text-muted">
-                        This phase replaces manual image URLs with a real
-                        upload-oriented flow. Files still stay frontend-only for
-                        now, but the page now behaves like an asset-first
-                        portfolio workflow.
+                        {isEditMode
+                            ? "Edit the title, description, category, featured state, or replace the image. Changes are saved locally in this phase."
+                            : "This phase uses an asset-first portfolio flow. Files stay local for now, but the structure is ready for a later persistent upload integration."}
                     </p>
                 </div>
             </div>
@@ -306,10 +330,21 @@ export const PortfolioItemForm = ({
 
                 <div className="flex flex-wrap gap-3">
                     <Button type="submit" size="lg" disabled={isPreparingAsset}>
-                        Add portfolio item
+                        {isEditMode ? "Save changes" : "Add portfolio item"}
                     </Button>
 
-                    {canLoadSamples ? (
+                    {isEditMode ? (
+                        <Button
+                            type="button"
+                            size="lg"
+                            variant="secondary"
+                            onClick={onCancel}
+                        >
+                            Cancel edit
+                        </Button>
+                    ) : null}
+
+                    {!isEditMode && canLoadSamples && onLoadSamples ? (
                         <Button
                             type="button"
                             size="lg"

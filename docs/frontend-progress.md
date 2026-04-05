@@ -1340,3 +1340,61 @@ This file tracks the progress of frontend tasks for Fotovia.
 - Connect the asset-first portfolio flow to a real persistent asset/media backend.
 - Decide how stored assets should map into public photographer detail and discovery pages.
 - Prepare edit/delete/reorder behavior once portfolio assets are no longer frontend-only.
+
+## Phase 29: Persistent Portfolio Management
+
+**Status:** Completed
+
+### Scope
+
+- Keep the asset-first portfolio flow from Phase 28.
+- Add local persistence so portfolio items survive refresh.
+- Add portfolio item management actions:
+    - edit
+    - delete
+    - feature / unfeature
+- simplify ordering behavior by removing manual reorder controls and using newest-first sorting instead
+
+### Delivered
+
+- Added local portfolio persistence through a dedicated storage helper.
+- Portfolio items now remain available after page refresh in the same browser.
+- Portfolio item form now supports both create mode and edit mode.
+- Portfolio cards now support injected action controls from the page layer.
+- Portfolio page now supports:
+    - create
+    - edit
+    - delete
+    - feature / unfeature
+    - reset portfolio
+- Manual reorder behavior was removed after experimentation.
+- Portfolio list now uses a simpler default ordering strategy: newest item first.
+- Portfolio card metadata now shows a created-date label instead of a sort-order label.
+
+### Decisions
+
+- Persistent local storage is treated as a bridge phase before real backend media persistence.
+- Edit/delete/featured actions are now part of the portfolio foundation.
+- Reorder controls were intentionally removed to keep the UX stable and simple at this stage.
+- Portfolio ordering now prioritizes recency over manual arrangement.
+
+### Notes
+
+- This phase still does not persist portfolio assets to a real backend.
+- Portfolio data is saved locally in the current browser only.
+- Public photographer detail pages still do not consume this saved portfolio data yet.
+
+### Key Files
+
+- `apps/web/src/features/photographer/lib/portfolio-storage.ts`
+- `apps/web/src/features/photographer/components/portfolio-item-form.tsx`
+- `apps/web/src/features/photographer/components/portfolio-item-card.tsx`
+- `apps/web/src/features/photographer/components/portfolio-grid.tsx`
+- `apps/web/src/features/photographer/components/photographer-portfolio-page.tsx`
+- `apps/web/src/features/photographer/components/photographer-dashboard-page.tsx`
+
+### Next Recommended Phase
+
+- Connect portfolio persistence to a real backend media flow.
+- Define how photographer-managed portfolio assets should later appear on public photographer detail pages.
+- Prepare a backend-ready path for asset upload, stored media metadata, and public portfolio read integration.

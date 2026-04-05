@@ -24,9 +24,9 @@ const workspaceHighlights = [
         href: "/profile",
     },
     {
-        title: "Portfolio asset upload",
+        title: "Persistent portfolio management",
         description:
-            "The portfolio page now supports a real upload-oriented asset preview flow instead of relying only on manual image URLs.",
+            "The portfolio page now supports asset-first item creation plus local persistence, editing, delete, featured toggles, and simple reorder actions.",
         ctaLabel: "Open portfolio",
         href: "/photographer/portfolio",
     },
@@ -143,9 +143,11 @@ export const PhotographerDashboardPage = () => {
 
                         <p className="mt-4 max-w-3xl text-base leading-relaxed text-muted md:text-lg">
                             This workspace now points you toward the next
-                            meaningful creative step: keep your profile strong,
-                            then move into an asset-first portfolio flow that
-                            future discovery and booking trust can build on.
+                            practical creative step: keep your profile strong,
+                            then move into a portfolio flow that can actually
+                            save, edit, and organize your works on this device
+                            while the real media backend is still being
+                            prepared.
                         </p>
 
                         <div className="mt-8 flex flex-wrap gap-3">
@@ -188,13 +190,13 @@ export const PhotographerDashboardPage = () => {
 
                                 <p className="mt-4 text-2xl font-semibold text-foreground">
                                     {completion.isComplete
-                                        ? "Ready for asset-first portfolio setup"
+                                        ? "Ready for persistent portfolio setup"
                                         : `${completion.totalCount - completion.completedCount} items left`}
                                 </p>
 
                                 <p className="mt-3 text-sm leading-7 text-muted">
                                     {completion.isComplete
-                                        ? "Your core profile is ready enough to move into the portfolio asset upload foundation phase."
+                                        ? "Your core profile is ready enough to move into the first persistent portfolio management phase."
                                         : "Finish the missing profile fields first, then your portfolio setup will feel more complete and trustworthy."}
                                 </p>
 
