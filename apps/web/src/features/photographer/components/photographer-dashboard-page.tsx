@@ -24,9 +24,9 @@ const workspaceHighlights = [
         href: "/profile",
     },
     {
-        title: "Portfolio foundation",
+        title: "Portfolio asset upload",
         description:
-            "The portfolio workspace is now ready as the next product step. Start shaping the works that will later support discovery and booking trust.",
+            "The portfolio page now supports a real upload-oriented asset preview flow instead of relying only on manual image URLs.",
         ctaLabel: "Open portfolio",
         href: "/photographer/portfolio",
     },
@@ -144,8 +144,8 @@ export const PhotographerDashboardPage = () => {
                         <p className="mt-4 max-w-3xl text-base leading-relaxed text-muted md:text-lg">
                             This workspace now points you toward the next
                             meaningful creative step: keep your profile strong,
-                            then start shaping a portfolio foundation that
-                            future discovery and booking flows can build on.
+                            then move into an asset-first portfolio flow that
+                            future discovery and booking trust can build on.
                         </p>
 
                         <div className="mt-8 flex flex-wrap gap-3">
@@ -188,14 +188,14 @@ export const PhotographerDashboardPage = () => {
 
                                 <p className="mt-4 text-2xl font-semibold text-foreground">
                                     {completion.isComplete
-                                        ? "Ready for portfolio setup"
+                                        ? "Ready for asset-first portfolio setup"
                                         : `${completion.totalCount - completion.completedCount} items left`}
                                 </p>
 
                                 <p className="mt-3 text-sm leading-7 text-muted">
                                     {completion.isComplete
-                                        ? "Your core profile is ready enough to move into the first portfolio foundation phase."
-                                        : "Finish the missing profile fields first, then your portfolio foundation will feel more complete and trustworthy."}
+                                        ? "Your core profile is ready enough to move into the portfolio asset upload foundation phase."
+                                        : "Finish the missing profile fields first, then your portfolio setup will feel more complete and trustworthy."}
                                 </p>
 
                                 <div className="mt-6 rounded-2xl bg-background px-4 py-4">

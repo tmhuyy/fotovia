@@ -22,11 +22,15 @@ const createPortfolioItem = (
     draft: PortfolioItemDraft,
     currentItems: PhotographerPortfolioItem[],
 ): PhotographerPortfolioItem => {
+    if (!draft.asset) {
+        throw new Error("Asset is required to create a portfolio item.");
+    }
+
     return {
         id: `portfolio-${Date.now()}`,
         title: draft.title,
         description: draft.description,
-        imageUrl: draft.imageUrl,
+        asset: draft.asset,
         category: draft.category,
         isFeatured: draft.isFeatured,
         sortOrder: currentItems.length + 1,
@@ -51,15 +55,21 @@ export const PhotographerPortfolioPage = () => {
         return portfolioItems.filter((item) => item.isFeatured).length;
     }, [portfolioItems]);
 
+    const localPreviewCount = useMemo(() => {
+        return portfolioItems.filter(
+            (item) => item.asset.source === "local-preview",
+        ).length;
+    }, [portfolioItems]);
+
     const handleAddItem = (draft: PortfolioItemDraft) => {
         setPortfolioItems((current) => [
-            createPortfolioItem(draft, current),
             ...current,
+            createPortfolioItem(draft, current),
         ]);
     };
 
     const handleLoadSamples = () => {
-        setPortfolioItems(mockPortfolioItems);
+        setPortfolioItems([...mockPortfolioItems]);
     };
 
     const handleResetPortfolio = () => {
@@ -120,17 +130,20 @@ export const PhotographerPortfolioPage = () => {
             <main className="bg-background">
                 <Container className="space-y-10 py-14 md:py-20">
                     <section className="rounded-[2rem] border border-border bg-surface p-8 shadow-sm md:p-10">
-                        <Badge variant="accent">Photographer portfolio</Badge>
+                        <Badge variant="accent">
+                            Portfolio asset upload foundation
+                        </Badge>
 
                         <h1 className="mt-4 text-3xl font-semibold leading-tight text-foreground md:text-5xl">
-                            Build your portfolio foundation, {displayName}.
+                            Build your portfolio with real image assets,{" "}
+                            {displayName}.
                         </h1>
 
                         <p className="mt-4 max-w-3xl text-base leading-relaxed text-muted md:text-lg">
-                            This page is the first dedicated portfolio workspace
-                            for photographer accounts. In this phase, the goal
-                            is to shape your portfolio structure and management
-                            flow before real asset upload is connected.
+                            This phase upgrades the portfolio flow from manual
+                            image URLs into an upload-oriented experience. The
+                            files are still frontend-only for now, but the page
+                            now behaves like an asset-first portfolio workspace.
                         </p>
 
                         <div className="mt-8 grid gap-4 md:grid-cols-3">
@@ -154,10 +167,10 @@ export const PhotographerPortfolioPage = () => {
 
                             <div className="rounded-2xl bg-background px-5 py-5">
                                 <p className="text-xs uppercase tracking-[0.22em] text-muted">
-                                    Next real phase
+                                    Local asset previews
                                 </p>
-                                <p className="mt-3 text-lg font-semibold text-foreground">
-                                    Asset upload integration
+                                <p className="mt-3 text-3xl font-semibold text-foreground">
+                                    {localPreviewCount}
                                 </p>
                             </div>
                         </div>
@@ -180,11 +193,11 @@ export const PhotographerPortfolioPage = () => {
                                                 Your current portfolio set
                                             </h2>
                                             <p className="mt-2 text-sm leading-7 text-muted">
-                                                This is still a frontend-only
-                                                portfolio foundation. Use it to
-                                                validate page structure and
-                                                management flow before
-                                                connecting real asset upload.
+                                                These works now use asset-style
+                                                preview data instead of a plain
+                                                image URL field. That makes the
+                                                portfolio page closer to a later
+                                                real upload flow.
                                             </p>
                                         </div>
 

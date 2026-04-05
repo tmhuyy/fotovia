@@ -1,50 +1,61 @@
-## Phase 27: Portfolio foundation relationship
+# Frontend Portfolio Foundation Notes
 
-Phase 27 extends the photographer-side product flow beyond profile readiness and into portfolio setup.
+## Purpose
 
-### What changed
+This document tracks the current photographer portfolio foundation state in `apps/web`.
 
-- photographer accounts now have a protected portfolio management route
-- the photographer workspace now points more clearly from profile readiness to portfolio foundation
-- the portfolio page acts as the first dedicated place to manage portfolio items
-- `/profile` still remains the real editable source for photographer profile fields
+## Current route direction
 
-### Current product direction
+Status: **working**
 
-The current photographer-side direction is now:
+Routes:
 
-- `/profile` = edit real profile data
-- `/photographer/dashboard` = see progress, guidance, and next-step direction
-- `/photographer/portfolio` = build and manage the first portfolio foundation
+- `/photographer/dashboard` = photographer workspace and next-step guidance
+- `/photographer/portfolio` = protected portfolio management route for photographer accounts
 
-### Why this matters
+## Current portfolio behavior
 
-Profile completion alone is not enough for a strong photographer marketplace experience.
+Status: **asset-first frontend foundation**
 
-The portfolio phase starts to provide:
+Behavior:
 
-- creative proof
-- future discovery value
-- a better bridge toward public photographer detail quality
-- a future foundation for real asset/media integration
+- signed-in photographer accounts can access the protected portfolio page
+- signed-out users are redirected through the existing protected-route flow
+- the portfolio page supports:
+    - empty state
+    - sample-loading state
+    - portfolio grid state
+    - add item flow
+    - local image preview generation
+- portfolio items now use asset-style preview data instead of only a plain image URL field
+
+## Current asset direction
+
+The current portfolio item structure now includes asset-style media data.
+
+This phase supports:
+
+- local image validation
+- local preview generation
+- seeded sample asset preview data
+- replace/remove selected image before creating a portfolio item
 
 ## Current limitation
 
-This phase still keeps portfolio data frontend-only.
+This phase does not yet include:
 
-Still pending:
-
-- real asset upload
-- portfolio persistence to backend
-- portfolio editing and deletion workflows
-- public photographer detail integration with real uploaded works
+- real upload to backend storage
+- persistent asset save
+- edit/delete/reorder workflow depth
+- public rendering of real uploaded portfolio assets
+- media moderation or transformation
 
 ## Recommended next phase
 
-### Portfolio Asset Upload / Asset Integration Foundation
+### Persistent Asset Upload and Portfolio Management Actions
 
 Goals:
 
-- connect the portfolio page to a real upload flow
-- define how uploaded media maps into portfolio items
-- prepare later public portfolio rendering using real media assets
+- connect the current asset-first UI to real persistent media upload
+- add portfolio item edit/delete/reorder actions
+- prepare public photographer detail and discovery pages to consume real stored assets

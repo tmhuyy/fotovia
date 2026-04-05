@@ -12,16 +12,16 @@ export const PortfolioEmptyState = ({
 }: PortfolioEmptyStateProps) => {
     return (
         <div className="rounded-[1.75rem] border border-border bg-surface p-6 shadow-sm md:p-8">
-            <Badge variant="accent">Portfolio foundation</Badge>
+            <Badge variant="accent">Portfolio asset foundation</Badge>
 
             <h2 className="mt-4 text-2xl font-semibold text-foreground md:text-3xl">
                 Your portfolio is still empty.
             </h2>
 
             <p className="mt-3 max-w-2xl text-sm leading-7 text-muted">
-                Add your first portfolio work so future discovery, photographer
-                detail, and AI-assisted matching flows can start building on
-                real creative samples.
+                Upload your first work so later discovery, photographer detail,
+                and booking trust can build on real visual proof instead of
+                placeholder content.
             </p>
 
             <div className="mt-6 flex flex-wrap gap-3">
@@ -45,9 +45,9 @@ export const PortfolioEmptyState = ({
                     Suggested first portfolio mix
                 </p>
                 <p className="mt-2 text-sm leading-7 text-muted">
-                    Start with 3 to 6 works that show your best visual
-                    direction, your key specialties, and at least one featured
-                    image that feels like your signature.
+                    Start with 3 to 6 works, upload at least one strong featured
+                    image, and use categories that match the type of jobs you
+                    want clients to trust you with.
                 </p>
             </div>
         </div>

@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import { Badge } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";
+import { assetService } from "../../../services/asset.service";
 import {
     PORTFOLIO_CATEGORIES,
     PORTFOLIO_CATEGORY_LABELS,
@@ -19,7 +20,7 @@ interface PortfolioItemFormProps {
 const initialDraft: PortfolioItemDraft = {
     title: "",
     description: "",
-    imageUrl: "",
+    asset: null,
     category: "wedding",
     isFeatured: false,
 };
@@ -29,16 +30,19 @@ export const PortfolioItemForm = ({
     onLoadSamples,
     canLoadSamples,
 }: PortfolioItemFormProps) => {
+    const fileInputRef = useRef<HTMLInputElement | null>(null);
+
     const [draft, setDraft] = useState<PortfolioItemDraft>(initialDraft);
     const [formError, setFormError] = useState<string | null>(null);
+    const [isPreparingAsset, setIsPreparingAsset] = useState(false);
 
     const remainingHint = useMemo(() => {
+        if (!draft.asset)
+            return "Upload an image file to create a local asset preview.";
         if (!draft.description.trim())
             return "Add a short description of the work.";
-        if (!draft.imageUrl.trim())
-            return "Paste an image URL to preview the work.";
-        return "This item is ready to be added.";
-    }, [draft.description, draft.imageUrl]);
+        return "This portfolio item is ready to be added.";
+    }, [draft.asset, draft.description]);
 
     const handleChange = <K extends keyof PortfolioItemDraft>(
         key: K,
@@ -48,6 +52,40 @@ export const PortfolioItemForm = ({
             ...current,
             [key]: value,
         }));
+    };
+
+    const handleChooseFile = async (
+        event: React.ChangeEvent<HTMLInputElement>,
+    ) => {
+        const file = event.target.files?.[0];
+
+        const validation = assetService.validateImageFile(file);
+
+        if (!validation.isValid) {
+            setFormError(validation.message);
+            return;
+        }
+
+        if (!file) return;
+
+        setFormError(null);
+        setIsPreparingAsset(true);
+
+        try {
+            const asset = await assetService.createLocalAssetPreview(file);
+            handleChange("asset", asset);
+        } catch {
+            setFormError("We couldn’t prepare a preview for this image.");
+        } finally {
+            setIsPreparingAsset(false);
+            if (event.target) {
+                event.target.value = "";
+            }
+        }
+    };
+
+    const handleRemoveAsset = () => {
+        handleChange("asset", null);
     };
 
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -66,8 +104,8 @@ export const PortfolioItemForm = ({
             return;
         }
 
-        if (!draft.imageUrl.trim()) {
-            setFormError("Please add an image URL for this portfolio work.");
+        if (!draft.asset) {
+            setFormError("Please upload an image for this portfolio work.");
             return;
         }
 
@@ -75,7 +113,6 @@ export const PortfolioItemForm = ({
             ...draft,
             title: draft.title.trim(),
             description: draft.description.trim(),
-            imageUrl: draft.imageUrl.trim(),
         });
 
         setDraft(initialDraft);
@@ -85,14 +122,15 @@ export const PortfolioItemForm = ({
         <div className="rounded-[1.75rem] border border-border bg-surface p-6 shadow-sm">
             <div className="flex items-start justify-between gap-3">
                 <div>
-                    <Badge variant="accent">Add portfolio work</Badge>
+                    <Badge variant="accent">Upload portfolio work</Badge>
                     <h2 className="mt-4 text-2xl font-semibold text-foreground">
-                        Build your first portfolio set
+                        Add a portfolio asset
                     </h2>
                     <p className="mt-3 text-sm leading-7 text-muted">
-                        Keep this phase simple: add title, description,
-                        category, and an image URL. Real asset upload can come
-                        later.
+                        This phase replaces manual image URLs with a real
+                        upload-oriented flow. Files still stay frontend-only for
+                        now, but the page now behaves like an asset-first
+                        portfolio workflow.
                     </p>
                 </div>
             </div>
@@ -143,22 +181,79 @@ export const PortfolioItemForm = ({
                     </select>
                 </div>
 
-                <div className="space-y-2">
-                    <label
-                        htmlFor="portfolio-image-url"
-                        className="text-sm font-medium text-foreground"
-                    >
-                        Image URL
-                    </label>
+                <div className="space-y-3">
+                    <p className="text-sm font-medium text-foreground">
+                        Asset image
+                    </p>
+
                     <input
-                        id="portfolio-image-url"
-                        value={draft.imageUrl}
-                        onChange={(event) =>
-                            handleChange("imageUrl", event.target.value)
-                        }
-                        placeholder="https://..."
-                        className="h-12 w-full rounded-2xl border border-border bg-background px-4 text-sm text-foreground outline-none transition focus:border-accent"
+                        ref={fileInputRef}
+                        type="file"
+                        accept={assetService.acceptedImageMimeTypes.join(",")}
+                        className="hidden"
+                        onChange={handleChooseFile}
                     />
+
+                    {!draft.asset ? (
+                        <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="flex w-full flex-col items-center justify-center rounded-[1.5rem] border border-dashed border-border bg-background px-5 py-8 text-center transition hover:border-accent"
+                        >
+                            <span className="text-sm font-medium text-foreground">
+                                {isPreparingAsset
+                                    ? "Preparing preview..."
+                                    : "Choose image file"}
+                            </span>
+                            <span className="mt-2 text-sm leading-6 text-muted">
+                                JPG, PNG, or WEBP · maximum 8MB
+                            </span>
+                        </button>
+                    ) : (
+                        <div className="rounded-[1.5rem] border border-border bg-background p-4">
+                            <div className="overflow-hidden rounded-2xl border border-border">
+                                <img
+                                    src={draft.asset.previewUrl}
+                                    alt={draft.title || draft.asset.fileName}
+                                    className="aspect-[4/3] w-full object-cover"
+                                />
+                            </div>
+
+                            <div className="mt-4 rounded-2xl border border-border bg-surface px-4 py-4">
+                                <p className="break-all text-sm font-medium text-foreground">
+                                    {draft.asset.fileName}
+                                </p>
+                                <p className="mt-1 text-sm text-muted">
+                                    {draft.asset.mimeType} ·{" "}
+                                    {assetService.formatFileSize(
+                                        draft.asset.sizeInBytes,
+                                    )}
+                                </p>
+                            </div>
+
+                            <div className="mt-4 flex flex-wrap gap-3">
+                                <Button
+                                    type="button"
+                                    size="md"
+                                    variant="secondary"
+                                    onClick={() =>
+                                        fileInputRef.current?.click()
+                                    }
+                                >
+                                    Replace image
+                                </Button>
+
+                                <Button
+                                    type="button"
+                                    size="md"
+                                    variant="secondary"
+                                    onClick={handleRemoveAsset}
+                                >
+                                    Remove image
+                                </Button>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 <div className="space-y-2">
@@ -210,7 +305,7 @@ export const PortfolioItemForm = ({
                 ) : null}
 
                 <div className="flex flex-wrap gap-3">
-                    <Button type="submit" size="lg">
+                    <Button type="submit" size="lg" disabled={isPreparingAsset}>
                         Add portfolio item
                     </Button>
 

@@ -1,3 +1,5 @@
+import type { AssetPreview } from "../../asset/types/asset.types";
+
 export const PORTFOLIO_CATEGORIES = [
     "aerial",
     "architecture",
@@ -30,7 +32,7 @@ export interface PhotographerPortfolioItem {
     id: string;
     title: string;
     description: string;
-    imageUrl: string;
+    asset: AssetPreview;
     category: PortfolioCategory;
     isFeatured: boolean;
     sortOrder: number;
@@ -40,7 +42,7 @@ export interface PhotographerPortfolioItem {
 export interface PortfolioItemDraft {
     title: string;
     description: string;
-    imageUrl: string;
+    asset: AssetPreview | null;
     category: PortfolioCategory;
     isFeatured: boolean;
 }

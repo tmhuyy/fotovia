@@ -1282,3 +1282,61 @@ This file tracks the progress of frontend tasks for Fotovia.
 - Connect the portfolio foundation to real asset upload flow.
 - Define how uploaded media should map into portfolio items.
 - Prepare later public photographer detail improvements to consume more realistic portfolio data.
+
+## Phase 28: Portfolio Asset Upload / Asset Integration Foundation
+
+**Status:** Completed
+
+### Scope
+
+- Replace manual portfolio image URL entry with an asset-first upload-oriented flow.
+- Add a reusable asset preview model for photographer portfolio works.
+- Introduce local image preview generation for portfolio items.
+- Keep the experience frontend-only for now while preparing for real upload integration later.
+
+### Delivered
+
+- Added a reusable asset preview type for local and seeded portfolio assets.
+- Implemented an `asset.service.ts` foundation for:
+    - image validation
+    - local preview generation
+    - seeded asset preview creation
+    - file-size formatting
+- Updated portfolio item structure to store `asset` metadata instead of a plain `imageUrl`.
+- Updated sample portfolio data to use seeded asset previews.
+- Reworked the portfolio item form so photographers now:
+    - choose a local image file
+    - see a real local preview
+    - can replace or remove the selected image
+- Updated portfolio cards so they now display asset metadata and local-preview state.
+- Updated the portfolio page so it now behaves like an asset-first portfolio workspace.
+- Updated the photographer workspace copy so the next step is clearly positioned as portfolio asset setup.
+
+### Decisions
+
+- This phase introduces upload-oriented UX without adding real backend persistence yet.
+- Local preview assets are treated as a bridge between frontend-only portfolio management and future real asset storage.
+- The existing portfolio page structure remains in place; only the media/input model shifts from manual URL to asset-style preview data.
+
+### Notes
+
+- This phase does not yet upload files to real storage.
+- Portfolio asset previews are still local/frontend-only in this phase.
+- Real asset persistence, public rendering, and media management actions remain for later phases.
+
+### Key Files
+
+- `apps/web/src/features/asset/types/asset.types.ts`
+- `apps/web/src/services/asset.service.ts`
+- `apps/web/src/features/photographer/types/portfolio.types.ts`
+- `apps/web/src/features/photographer/data/mock-portfolio-items.ts`
+- `apps/web/src/features/photographer/components/portfolio-item-form.tsx`
+- `apps/web/src/features/photographer/components/portfolio-item-card.tsx`
+- `apps/web/src/features/photographer/components/photographer-portfolio-page.tsx`
+- `apps/web/src/features/photographer/components/photographer-dashboard-page.tsx`
+
+### Next Recommended Phase
+
+- Connect the asset-first portfolio flow to a real persistent asset/media backend.
+- Decide how stored assets should map into public photographer detail and discovery pages.
+- Prepare edit/delete/reorder behavior once portfolio assets are no longer frontend-only.

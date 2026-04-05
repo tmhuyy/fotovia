@@ -251,3 +251,11 @@ When working on auth forms such as sign-in or sign-up:
 - Use the photographer workspace to show progress, guidance, and next-step direction rather than duplicating edit forms.
 - Keep profile completion logic in reusable feature-level helpers instead of scattering field checks across UI components.
 - When adding future onboarding or portfolio modules, prefer building on top of the existing profile completion foundation instead of replacing it.
+
+## Phase 28 working rules
+
+- Treat photographer portfolio media as asset-style data, not just plain image URLs.
+- Keep local asset previews as the temporary bridge until real upload persistence is implemented.
+- When the real upload phase begins, extend the existing asset preview structure instead of replacing it with a completely different model.
+- Keep `/photographer/portfolio` as the main photographer-side portfolio management route unless a later phase explicitly changes that direction.
+- Prefer reusable asset helpers and services for media handling instead of scattering file validation and preview logic across UI components.

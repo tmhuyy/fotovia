@@ -201,3 +201,44 @@ Goals:
 - connect the portfolio page to a real upload flow
 - define how uploaded media maps into portfolio items
 - prepare later public portfolio rendering using real media assets
+
+## Phase 28: Asset-first portfolio direction
+
+Phase 28 extends the photographer-side flow beyond portfolio foundation and into asset-first portfolio setup.
+
+### What changed
+
+- portfolio items no longer rely only on a manual `imageUrl` input
+- the portfolio page now works with asset-style preview data
+- photographers can now choose a local image file and preview it inside the portfolio flow
+- the photographer workspace now points more clearly toward asset-first portfolio setup
+
+### Current photographer-side direction
+
+The current photographer-side product flow is now:
+
+- `/profile` = edit real profile data
+- `/photographer/dashboard` = see readiness and next-step guidance
+- `/photographer/portfolio` = manage asset-first portfolio setup
+
+### Why this matters
+
+Moving from a plain image URL field to asset-style preview data makes the portfolio flow more realistic and prepares the frontend for a later real upload integration phase.
+
+This gives the product a better bridge toward:
+
+- real media storage
+- stronger portfolio management
+- more realistic public photographer detail rendering
+- future AI/media-related features
+
+## Current limitation
+
+This phase still keeps portfolio assets frontend-only.
+
+Still pending:
+
+- real file upload to storage
+- asset persistence in backend
+- portfolio edit/delete/reorder workflows
+- public use of real portfolio assets

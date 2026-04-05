@@ -1,3 +1,4 @@
+import { assetService } from "../../../services/asset.service";
 import type { PhotographerPortfolioItem } from "../types/portfolio.types";
 
 export const mockPortfolioItems: PhotographerPortfolioItem[] = [
@@ -6,8 +7,12 @@ export const mockPortfolioItems: PhotographerPortfolioItem[] = [
         title: "Golden Hour Couple Session",
         description:
             "Warm cinematic wedding portraits with soft backlight and natural movement.",
-        imageUrl:
-            "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1200&q=80",
+        asset: assetService.createSeededAssetPreview({
+            previewUrl:
+                "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1200&q=80",
+            fileName: "golden-hour-couple-session.jpg",
+            mimeType: "image/jpeg",
+        }),
         category: "wedding",
         isFeatured: true,
         sortOrder: 1,
@@ -18,9 +23,13 @@ export const mockPortfolioItems: PhotographerPortfolioItem[] = [
         title: "Modern Editorial Portrait",
         description:
             "Clean portrait direction with premium styling and a calm neutral palette.",
-        imageUrl:
-            "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=1200&q=80",
-        category: "food",
+        asset: assetService.createSeededAssetPreview({
+            previewUrl:
+                "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=1200&q=80",
+            fileName: "modern-editorial-portrait.jpg",
+            mimeType: "image/jpeg",
+        }),
+        category: "fashion",
         isFeatured: true,
         sortOrder: 2,
         createdAt: "2026-04-05T08:10:00.000Z",
@@ -30,8 +39,12 @@ export const mockPortfolioItems: PhotographerPortfolioItem[] = [
         title: "Private Brand Launch Coverage",
         description:
             "Event storytelling focused on atmosphere, guests, and premium detail shots.",
-        imageUrl:
-            "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=1200&q=80",
+        asset: assetService.createSeededAssetPreview({
+            previewUrl:
+                "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=1200&q=80",
+            fileName: "private-brand-launch-coverage.jpg",
+            mimeType: "image/jpeg",
+        }),
         category: "event",
         isFeatured: false,
         sortOrder: 3,
