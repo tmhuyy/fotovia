@@ -28,7 +28,9 @@ const createClient = (
     return client;
 };
 
-export const apiClient = createClient(process.env.NEXT_PUBLIC_API_BASE_URL);
+const defaultApiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+
+export const apiClient = createClient(defaultApiBaseUrl);
 
 export const authClient = createClient(process.env.NEXT_PUBLIC_AUTH_API_URL, {
     withCredentials: true,
@@ -44,3 +46,10 @@ export const profileClient = createClient(
 export const assetClient = createClient(process.env.NEXT_PUBLIC_ASSET_API_URL, {
     withCredentials: true,
 });
+
+export const bookingClient = createClient(
+    process.env.NEXT_PUBLIC_BOOKING_API_URL ?? defaultApiBaseUrl,
+    {
+        withCredentials: true,
+    },
+);

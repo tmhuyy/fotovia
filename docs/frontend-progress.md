@@ -1398,3 +1398,56 @@ This file tracks the progress of frontend tasks for Fotovia.
 - Connect portfolio persistence to a real backend media flow.
 - Define how photographer-managed portfolio assets should later appear on public photographer detail pages.
 - Prepare a backend-ready path for asset upload, stored media metadata, and public portfolio read integration.
+
+## Phase: Real Booking Request Foundation from Public Photographer Detail
+
+### Status
+
+Completed foundation
+
+### What changed
+
+This phase connects public photographer discovery to a real booking request flow.
+
+The frontend booking experience now supports:
+
+- booking CTA from `/photographers/[slug]`
+- selected photographer context passed into `/bookings/new`
+- authenticated booking entry behavior
+- real public photographer lookup on the booking page
+- real booking API submission instead of local-only submit state
+- success UI based on created booking response data
+
+The paired backend booking foundation now supports:
+
+- real booking request DTO and entity shape
+- persisted booking creation
+- request ownership through `clientUserId`
+- initial `pending` booking status
+- response payload suitable for frontend success state rendering
+
+### Why this phase matters
+
+This is the first real booking slice that turns public photographer browsing into a persisted user action.
+
+It closes the gap between:
+
+- public photographer discovery
+- protected request entry
+- real backend booking creation
+
+### Current limitations after this phase
+
+The booking path is now real on request creation, but post-submit lifecycle management is still pending.
+
+Still missing:
+
+- photographer booking inbox
+- photographer request status actions
+- client booking history
+- richer booking lifecycle tracking
+- AI-assisted booking inputs
+
+### Recommended next phase
+
+Photographer Booking Inbox and Status Foundation

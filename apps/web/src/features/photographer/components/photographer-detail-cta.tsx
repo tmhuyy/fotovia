@@ -1,7 +1,7 @@
 import Link from "next/link";
 
-import { Card, CardContent } from "../../../components/ui/card";
 import { buttonVariants } from "../../../components/ui/button";
+import { Card, CardContent } from "../../../components/ui/card";
 import type { PhotographerDetail } from "../types/photographer-detail.types";
 
 interface PhotographerDetailCtaProps
@@ -22,41 +22,34 @@ export const PhotographerDetailCta = ({
   photographer,
 }: PhotographerDetailCtaProps) =>
 {
+  const bookingHref = `/bookings/new?photographerSlug=${encodeURIComponent(
+    photographer.slug,
+  )}`;
+
   return (
-    <Card className="rounded-[2rem] border-border bg-surface shadow-sm">
+    <Card className="border-brand-border bg-brand-surface">
       <CardContent className="space-y-5 p-6">
         <div className="space-y-2">
-          <p className="text-xs uppercase tracking-[0.22em] text-muted">
+          <p className="text-sm font-medium uppercase tracking-[0.18em] text-brand-muted">
             Starting at
           </p>
-
-          <p className="font-serif text-4xl text-foreground">
+          <p className="text-2xl font-semibold text-brand-primary">
             {formatPrice(photographer.startingPrice)}
           </p>
+          <p className="text-sm text-brand-muted">{photographer.availability}</p>
         </div>
 
-        <div className="rounded-[1.5rem] border border-border bg-background px-4 py-4">
-          <p className="text-sm leading-7 text-muted">
-            {photographer.availability}
-          </p>
-        </div>
+        <Link
+          href={bookingHref}
+          className={buttonVariants({ variant: "primary", size: "lg" })}
+        >
+          Request booking
+        </Link>
 
-        <div className="space-y-3">
-          <Link
-            href={`/bookings/new?photographerSlug=${encodeURIComponent(
-              photographer.slug,
-            )}`}
-            className={buttonVariants({
-              size: "lg",
-            })}
-          >
-            Request booking
-          </Link>
-
-          <p className="text-sm leading-6 text-muted">
-            Share a few details to start your booking request.
-          </p>
-        </div>
+        <p className="text-sm leading-6 text-brand-muted">
+          Share a few details to start your real booking request with this
+          photographer.
+        </p>
       </CardContent>
     </Card>
   );

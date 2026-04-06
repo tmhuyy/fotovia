@@ -1,21 +1,17 @@
 import { AuthenticatedRoute } from "../../../features/auth/components/authenticated-route";
-import { BookingBriefPage } from "../../../features/booking/components/booking-brief-page";
+import { BookingEntryPage } from "../../../features/booking/components/booking-entry-page";
+import type { BookingEntrySearchParams } from "../../../features/booking/types/booking.types";
 
-interface BookingBriefRouteProps {
-    searchParams: {
-        sessionType?: string;
-        location?: string;
-        date?: string;
-        budget?: string;
-    };
+interface BookingRouteProps
+{
+    searchParams: BookingEntrySearchParams;
 }
 
-export default function BookingBriefRoute({
-    searchParams,
-}: BookingBriefRouteProps) {
+export default function BookingRoute({ searchParams }: BookingRouteProps)
+{
     return (
         <AuthenticatedRoute>
-            <BookingBriefPage prefill={searchParams} />
+            <BookingEntryPage searchParams={searchParams} />
         </AuthenticatedRoute>
     );
 }

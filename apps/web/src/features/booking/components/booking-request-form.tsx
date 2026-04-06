@@ -1,130 +1,156 @@
 "use client";
 
 import { useFormContext } from "react-hook-form";
+
 import { Button } from "../../../components/ui/button";
 import { Card, CardContent, CardHeader } from "../../../components/ui/card";
-import {
-  budgetOptions,
-  contactOptions,
-  durationOptions,
-  sessionTypeOptions,
-} from "../data/booking-options";
+import
+  {
+    budgetOptions,
+    contactOptions,
+    durationOptions,
+    sessionTypeOptions,
+  } from "../data/booking-options";
 import type { BookingRequestFormValues } from "../schemas/booking-request.schema";
-import {
-  BookingSelectField,
-  BookingTextField,
-  BookingTextareaField,
-} from "./booking-form-fields";
+import
+  {
+    BookingSelectField,
+    BookingTextField,
+    BookingTextareaField,
+  } from "./booking-form-fields";
 
-interface BookingRequestFormProps {
+interface BookingRequestFormProps
+{
   onSubmit: (values: BookingRequestFormValues) => Promise<void> | void;
+  submitError?: string | null;
 }
 
-export const BookingRequestForm = ({ onSubmit }: BookingRequestFormProps) => {
+export const BookingRequestForm = ({
+  onSubmit,
+  submitError,
+}: BookingRequestFormProps) =>
+{
   const {
     handleSubmit,
     formState: { isSubmitting },
   } = useFormContext<BookingRequestFormValues>();
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      <Card>
-        <CardHeader className="space-y-2">
-          <p className="text-xs uppercase tracking-[0.3em] text-muted">
+    <Card className="border-brand-border bg-brand-surface">
+      <CardHeader className="space-y-4 p-6 sm:p-8">
+        <div className="space-y-2">
+          <p className="text-sm font-medium uppercase tracking-[0.2em] text-brand-muted">
             Booking request
           </p>
-          <div>
-            <h2 className="text-xl font-semibold text-foreground">
-              Share your session details
-            </h2>
-            <p className="text-sm text-muted">
-              We will send these details to the photographer so they can confirm availability.
-            </p>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
+          <h2 className="text-2xl font-semibold text-brand-primary">
+            Share your session details
+          </h2>
+          <p className="text-sm leading-6 text-brand-muted">
+            This will create a real booking request and send the details to the
+            selected photographer.
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-brand-border bg-brand-background/70 p-4 text-sm text-brand-muted">
+          <p className="font-medium text-brand-primary">What happens next</p>
+          <p className="mt-2 leading-6">
+            The photographer will review your request, confirm availability, and
+            continue the conversation from there.
+          </p>
+        </div>
+      </CardHeader>
+
+      <CardContent className="p-6 pt-0 sm:px-8 sm:pb-8">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div className="grid gap-4 md:grid-cols-2">
             <BookingSelectField
               name="sessionType"
               label="Session type"
               options={sessionTypeOptions}
-              placeholder="Select a session type"
+              placeholder="Choose the kind of shoot"
             />
+
             <BookingSelectField
               name="duration"
               label="Session length"
               options={durationOptions}
-              placeholder="Select duration"
+              placeholder="Choose the duration"
             />
+
             <BookingTextField
               name="sessionDate"
               label="Preferred date"
               type="date"
+              helper="Pick the date you want to book."
             />
+
             <BookingTextField
               name="sessionTime"
               label="Preferred time"
               type="time"
+              helper="Choose the ideal start time."
             />
+
             <BookingTextField
               name="location"
               label="Location"
-              placeholder="City, studio, or venue"
+              placeholder="Where should the session happen?"
+              autoComplete="address-level2"
+              helper="Add the city, venue, or area."
             />
+
             <BookingSelectField
               name="budget"
-              label="Budget range"
+              label="Budget"
               options={budgetOptions}
-              placeholder="Select budget"
+              placeholder="Choose your budget range"
             />
-          </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
             <BookingSelectField
               name="contactPreference"
-              label="Contact preference"
+              label="Preferred contact method"
               options={contactOptions}
-            />
-            <BookingTextField
-              name="inspiration"
-              label="Inspiration link (optional)"
-              placeholder="Moodboard or reference link"
-              type="url"
+              placeholder="How should the photographer reply?"
             />
           </div>
 
           <BookingTextareaField
             name="concept"
-            label="Session concept"
-            placeholder="Describe the mood, styling, and deliverables you're hoping for."
-            helper="Aim for a short, specific overview."
+            label="Shoot concept"
+            placeholder="Describe the mood, purpose, deliverables, or ideas for the session."
+            helper="A little context helps the photographer quote more accurately."
+          />
+
+          <BookingTextareaField
+            name="inspiration"
+            label="Inspiration"
+            placeholder="Add inspiration notes or a reference link if you have one."
+            helper="Optional"
           />
 
           <BookingTextareaField
             name="notes"
-            label="Additional notes"
-            placeholder="Share any additional details or constraints."
+            label="Extra notes"
+            placeholder="Anything else the photographer should know?"
+            helper="Optional"
           />
 
-          <div className="rounded-2xl border border-border bg-background px-4 py-3">
-            <p className="text-sm font-medium text-foreground">
-              What happens next
-            </p>
-            <p className="mt-2 text-sm text-muted">
-              The photographer will review your request and reply with availability and package details.
-            </p>
-          </div>
+          {submitError ? (
+            <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {submitError}
+            </div>
+          ) : null}
 
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-xs text-muted">
-              Requests are stored locally until booking APIs are live.
-            </p>
-            <Button type="submit" size="sm" disabled={isSubmitting}>
-              {isSubmitting ? "Sending..." : "Send booking request"}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </form>
+          <Button
+            type="submit"
+            size="lg"
+            className="w-full md:w-auto"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "Sending..." : "Send booking request"}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   );
 };
