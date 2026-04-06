@@ -13,10 +13,10 @@ import { Badge } from "../../../components/ui/badge";
 import { Button, buttonVariants } from "../../../components/ui/button";
 import { Card, CardContent } from "../../../components/ui/card";
 import
-  {
-    assetService,
-    type AssetPurpose,
-  } from "../../../services/asset.service";
+{
+  assetService,
+  type AssetPurpose,
+} from "../../../services/asset.service";
 import { photographerService } from "../../../services/photographer.service";
 import { useAuthStore } from "../../../store/auth.store";
 import type { AssetPreview } from "../../asset/types/asset.types";
@@ -28,6 +28,7 @@ import type {
 import { PortfolioEmptyState } from "./portfolio-empty-state";
 import { PortfolioGrid } from "./portfolio-grid";
 import { PortfolioItemForm } from "./portfolio-item-form";
+import { DeletePortfolioItemDialog } from "./delete-portfolio-item-dialog";
 
 const sortPortfolioItems = (items: PhotographerPortfolioItem[]) =>
 {
@@ -266,7 +267,8 @@ export const PhotographerPortfolioPage = () =>
       }
 
       toast.success("Portfolio item deleted", {
-        description: "The saved work was removed from your portfolio.",
+        description:
+          "The saved work was removed from your portfolio. Any orphaned media is now eligible for cleanup too.",
       });
     },
     onError: () =>
@@ -347,6 +349,17 @@ export const PhotographerPortfolioPage = () =>
   {
     return sortedItems.find((item) => item.id === editingItemId) ?? null;
   }, [editingItemId, sortedItems]);
+
+  const [deletingItem, setDeletingItem] =
+    useState<PhotographerPortfolioItem | null>(null);
+
+  const handleConfirmDeletePortfolioItem = async (
+    item: PhotographerPortfolioItem,
+  ) =>
+  {
+    await deletePortfolioItemMutation.mutateAsync(item.id);
+    setDeletingItem(null);
+  };
 
   if (!hasHydrated || isHydrating) {
     return <PortfolioPageSkeleton />;
@@ -488,9 +501,8 @@ export const PhotographerPortfolioPage = () =>
                 </h1>
 
                 <p className="max-w-3xl text-sm leading-7 text-muted sm:text-base">
-                  This phase expands your portfolio from a single-image item into
-                  a cover image plus optional gallery, while compressing images
-                  on the client before upload.
+                  This phase refines gallery UX, strengthens client-side
+                  compression, and adds safer cleanup behavior after delete.
                 </p>
               </div>
             </div>
@@ -568,8 +580,8 @@ export const PhotographerPortfolioPage = () =>
 
                 <p className="text-sm leading-7 text-muted">
                   These works now come from the real backend source of truth.
-                  Each item supports one cover image and optional gallery images,
-                  and local image preparation now compresses before upload.
+                  Deleting an item asks for confirmation first, and orphaned
+                  media can now be cleaned up after delete.
                 </p>
               </div>
 
@@ -601,7 +613,7 @@ export const PhotographerPortfolioPage = () =>
                       type="button"
                       variant="secondary"
                       size="sm"
-                      onClick={() => deletePortfolioItemMutation.mutate(item.id)}
+                      onClick={() => setDeletingItem(item)}
                       disabled={isAnyMutationPending}
                     >
                       Delete
@@ -614,6 +626,18 @@ export const PhotographerPortfolioPage = () =>
         </Container>
       </main>
       <Footer />
+      <DeletePortfolioItemDialog
+        item={deletingItem}
+        isOpen={deletingItem !== null}
+        isDeleting={deletePortfolioItemMutation.isPending}
+        onClose={() =>
+        {
+          if (!deletePortfolioItemMutation.isPending) {
+            setDeletingItem(null);
+          }
+        }}
+        onConfirm={handleConfirmDeletePortfolioItem}
+      />
     </>
   );
 };

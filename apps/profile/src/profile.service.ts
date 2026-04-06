@@ -3,6 +3,7 @@ import {
     ForbiddenException,
     Inject,
     Injectable,
+    Logger,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
@@ -27,6 +28,7 @@ const ASSET_GET_READ_URL_PATTERN = 'asset.get_read_url';
 const ASSET_ATTACH_USAGE_PATTERN = 'asset.attach_usage';
 const ASSET_GET_USAGES_PATTERN = 'asset.get_usages';
 const ASSET_DETACH_USAGE_PATTERN = 'asset.detach_usage';
+const ASSET_DELETE_IF_ORPHANED_PATTERN = 'asset.delete_if_orphaned';
 
 type AssetRecord = {
     id: string;
@@ -111,7 +113,7 @@ export class ProfileService {
         private readonly profilePortfolioItemImageRepository: ProfilePortfolioItemImageRepository,
         @Inject(ASSET_SERVICE) private readonly assetClient: ClientProxy,
     ) {}
-
+    private readonly logger = new Logger(ProfileService.name);
     async createProfile(
         createProfileDto: CreateProfileDto,
         userId: string,
@@ -275,13 +277,21 @@ export class ProfileService {
                 dto.galleryAssetIds ?? [],
                 userId,
             );
+
             await this.profilePortfolioItemImageRepository.deleteByPortfolioItemId(
                 createdItem.id,
             );
+
             await this.profilePortfolioItemRepository.deletePortfolioItem(
                 createdItem.id,
                 profile.id,
             );
+
+            await this.cleanupAssetsIfOrphaned(
+                [dto.coverAssetId, ...(dto.galleryAssetIds ?? [])],
+                userId,
+            );
+
             throw error;
         }
     }
@@ -297,6 +307,13 @@ export class ProfileService {
                 itemId,
                 profile.id,
             );
+
+        const previousAssetIds = [
+            currentItem.assetId,
+            ...(currentItem.galleryImages ?? []).map(
+                (galleryImage) => galleryImage.assetId,
+            ),
+        ];
 
         const nextValues: Partial<ProfilePortfolioItem> = {};
 
@@ -359,10 +376,26 @@ export class ProfileService {
             );
         }
 
-        return this.profilePortfolioItemRepository.getByIdForProfile(
-            itemId,
-            profile.id,
-        );
+        const refreshedItem =
+            await this.profilePortfolioItemRepository.getByIdForProfile(
+                itemId,
+                profile.id,
+            );
+
+        const nextAssetIds = [
+            refreshedItem.assetId,
+            ...(refreshedItem.galleryImages ?? []).map(
+                (galleryImage) => galleryImage.assetId,
+            ),
+        ];
+
+        const removedAssetIds = previousAssetIds.filter((assetId) => {
+            return !nextAssetIds.includes(assetId);
+        });
+
+        await this.cleanupAssetsIfOrphaned(removedAssetIds, userId);
+
+        return refreshedItem;
     }
 
     async deleteMyPortfolioItem(
@@ -375,6 +408,13 @@ export class ProfileService {
                 itemId,
                 profile.id,
             );
+
+        const assetIdsToCleanup = [
+            currentItem.assetId,
+            ...(currentItem.galleryImages ?? []).map(
+                (galleryImage) => galleryImage.assetId,
+            ),
+        ];
 
         await this.detachPortfolioAssetUsageByField(
             currentItem.id,
@@ -400,6 +440,8 @@ export class ProfileService {
             currentItem.id,
             profile.id,
         );
+
+        await this.cleanupAssetsIfOrphaned(assetIdsToCleanup, userId);
 
         return { deleted: true };
     }
@@ -853,5 +895,33 @@ export class ProfileService {
         return firstValueFrom(
             this.assetClient.send<T, unknown>(pattern, payload),
         );
+    }
+
+    private async cleanupAssetsIfOrphaned(assetIds: string[], userId: string) {
+        const uniqueAssetIds = Array.from(
+            new Set(
+                (assetIds ?? [])
+                    .map((assetId) => assetId?.trim())
+                    .filter(Boolean),
+            ),
+        );
+
+        for (const assetId of uniqueAssetIds) {
+            try {
+                await this.sendAssetRpc(ASSET_DELETE_IF_ORPHANED_PATTERN, {
+                    assetId,
+                    userId,
+                });
+            } catch (error) {
+                const message =
+                    error instanceof Error
+                        ? error.message
+                        : 'Unknown cleanup error';
+
+                this.logger.warn(
+                    `Failed to clean up orphaned asset ${assetId}: ${message}`,
+                );
+            }
+        }
     }
 }

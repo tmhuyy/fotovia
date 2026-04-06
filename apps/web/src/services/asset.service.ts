@@ -95,19 +95,19 @@ const ASSET_ENDPOINTS = {
 const COMPRESSION_PROFILES: Record<ImageCompressionTarget, CompressionProfile> =
     {
         avatar: {
-            maxWidthOrHeight: 1600,
-            quality: 0.8,
-            skipIfSmallerThanBytes: 350 * 1024,
+            maxWidthOrHeight: 1200,
+            quality: 0.72,
+            skipIfSmallerThanBytes: 180 * 1024,
         },
         "portfolio-cover": {
-            maxWidthOrHeight: 2400,
-            quality: 0.82,
-            skipIfSmallerThanBytes: 500 * 1024,
+            maxWidthOrHeight: 1800,
+            quality: 0.72,
+            skipIfSmallerThanBytes: 250 * 1024,
         },
         "portfolio-gallery": {
-            maxWidthOrHeight: 2000,
-            quality: 0.78,
-            skipIfSmallerThanBytes: 450 * 1024,
+            maxWidthOrHeight: 1400,
+            quality: 0.68,
+            skipIfSmallerThanBytes: 180 * 1024,
         },
     };
 
@@ -181,24 +181,12 @@ const replaceFileExtension = (fileName: string, nextExtension: string) => {
     return fileName.replace(/\.[^.]+$/, `.${normalizedExtension}`);
 };
 
-const getCompressedOutputType = (mimeType: string) => {
-    if (mimeType === "image/png") {
-        return "image/webp";
-    }
-
-    if (mimeType === "image/webp") {
-        return "image/webp";
-    }
-
-    return "image/jpeg";
+const getCompressedOutputType = () => {
+    return "image/webp";
 };
 
-const getCompressedFileName = (fileName: string, mimeType: string) => {
-    if (mimeType === "image/webp") {
-        return replaceFileExtension(fileName, "webp");
-    }
-
-    return replaceFileExtension(fileName, "jpg");
+const getCompressedFileName = (fileName: string) => {
+    return replaceFileExtension(fileName, "webp");
 };
 
 const createCanvasBlob = (
@@ -392,13 +380,7 @@ export const assetService = {
             const targetWidth = Math.max(1, Math.round(width * scale));
             const targetHeight = Math.max(1, Math.round(height * scale));
 
-            if (
-                scale === 1 &&
-                file.size <= profile.skipIfSmallerThanBytes * 1.2
-            ) {
-                return file;
-            }
-
+            const outputType = getCompressedOutputType();
             const canvas = document.createElement("canvas");
             canvas.width = targetWidth;
             canvas.height = targetHeight;
@@ -411,7 +393,6 @@ export const assetService = {
 
             context.drawImage(image, 0, 0, targetWidth, targetHeight);
 
-            const outputType = getCompressedOutputType(file.type);
             const blob = await createCanvasBlob(
                 canvas,
                 outputType,
@@ -423,20 +404,16 @@ export const assetService = {
             }
 
             const didResize = targetWidth !== width || targetHeight !== height;
-            const isMeaningfullySmaller = blob.size < file.size * 0.95;
+            const isMeaningfullySmaller = blob.size < file.size * 0.88;
 
             if (!didResize && !isMeaningfullySmaller) {
                 return file;
             }
 
-            return new File(
-                [blob],
-                getCompressedFileName(file.name, outputType),
-                {
-                    type: outputType,
-                    lastModified: Date.now(),
-                },
-            );
+            return new File([blob], getCompressedFileName(file.name), {
+                type: outputType,
+                lastModified: Date.now(),
+            });
         } finally {
             cleanup();
         }

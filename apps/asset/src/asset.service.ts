@@ -149,13 +149,6 @@ export class AssetService {
 
         const savedAsset = await this.assetRepository.save(asset);
 
-        const expiresInSeconds =
-            this.configService.get<number>(
-                'ASSET_SIGNED_UPLOAD_URL_EXPIRES_IN',
-            ) ?? 7200;
-
-        const expiresAt = new Date(Date.now() + expiresInSeconds * 1000);
-
         const uploadSession = this.uploadSessionRepository.create({
             assetId: savedAsset.id,
             requestedByUserId: userId,
@@ -164,7 +157,15 @@ export class AssetService {
             maxSizeBytes: String(dto.sizeBytes),
             clientFilename: dto.originalFilename,
             status: UploadSessionStatus.ISSUED,
-            expiresAt,
+            expiresAt: new Date(
+                Date.now() +
+                    Number(
+                        this.configService.get<string>(
+                            'ASSET_SIGNED_UPLOAD_URL_EXPIRES_IN',
+                        ) ?? '7200',
+                    ) *
+                        1000,
+            ),
             uploadedAt: null,
             confirmedAt: null,
             failureReason: null,
@@ -202,47 +203,28 @@ export class AssetService {
             throw new NotFoundException('Upload session not found.');
         }
 
-        if (uploadSession.requestedByUserId !== userId) {
-            throw new NotFoundException('Upload session not found.');
+        this.assertAssetOwner(uploadSession.asset, userId);
+
+        if (uploadSession.status === UploadSessionStatus.CONFIRMED) {
+            return {
+                asset: uploadSession.asset,
+                uploadSession,
+            };
         }
-
-        if (
-            uploadSession.status === UploadSessionStatus.CANCELLED ||
-            uploadSession.status === UploadSessionStatus.EXPIRED ||
-            uploadSession.status === UploadSessionStatus.FAILED
-        ) {
-            throw new BadRequestException(
-                `Upload session is not confirmable in status ${uploadSession.status}.`,
-            );
-        }
-
-        if (uploadSession.expiresAt.getTime() < Date.now()) {
-            uploadSession.status = UploadSessionStatus.EXPIRED;
-            uploadSession.failureReason =
-                'Upload session expired before confirmation.';
-            await this.uploadSessionRepository.save(uploadSession);
-
-            throw new BadRequestException('Upload session has expired.');
-        }
-
-        const now = new Date();
 
         uploadSession.status = UploadSessionStatus.CONFIRMED;
-        uploadSession.uploadedAt = now;
-        uploadSession.confirmedAt = now;
-        uploadSession.failureReason = null;
+        uploadSession.confirmedAt = new Date();
+        uploadSession.uploadedAt = new Date();
 
-        const asset = uploadSession.asset;
-        asset.status = AssetStatus.READY;
-        asset.uploadedAt = now;
-        asset.failureReason = null;
-        asset.checksumSha256 = dto.checksumSha256 ?? asset.checksumSha256;
-        asset.width = dto.width ?? asset.width;
-        asset.height = dto.height ?? asset.height;
-        asset.durationMs = dto.durationMs ?? asset.durationMs;
-        asset.metadataJson = dto.metadataJson ?? asset.metadataJson;
+        uploadSession.asset.status = AssetStatus.READY;
+        uploadSession.asset.uploadedAt = new Date();
+        uploadSession.asset.width = dto.width ?? null;
+        uploadSession.asset.height = dto.height ?? null;
+        uploadSession.asset.durationMs = dto.durationMs ?? null;
+        uploadSession.asset.checksumSha256 = dto.checksumSha256 ?? null;
+        uploadSession.asset.metadataJson = dto.metadataJson ?? null;
 
-        const savedAsset = await this.assetRepository.save(asset);
+        const savedAsset = await this.assetRepository.save(uploadSession.asset);
         const savedUploadSession =
             await this.uploadSessionRepository.save(uploadSession);
 
@@ -265,34 +247,26 @@ export class AssetService {
 
         if (asset.status !== AssetStatus.READY) {
             throw new BadRequestException(
-                'Only READY assets can be attached to usages.',
+                'Only READY assets can be attached to a business usage slot.',
             );
         }
 
         if (dto.replaceExistingActiveUsage) {
-            const activeUsages = await this.assetUsageRepository.find({
-                where: {
-                    serviceName: dto.serviceName,
+            await this.assetUsageRepository.update(
+                {
                     entityType: dto.entityType,
                     entityId: dto.entityId,
                     fieldName: dto.fieldName,
                     detachedAt: IsNull(),
                 },
-            });
-
-            if (activeUsages.length > 0) {
-                const detachedAt = new Date();
-
-                for (const usage of activeUsages) {
-                    usage.detachedAt = detachedAt;
-                }
-
-                await this.assetUsageRepository.save(activeUsages);
-            }
+                {
+                    detachedAt: new Date(),
+                },
+            );
         }
 
         const usage = this.assetUsageRepository.create({
-            assetId: asset.id,
+            assetId: dto.assetId,
             serviceName: dto.serviceName,
             entityType: dto.entityType,
             entityId: dto.entityId,
@@ -341,31 +315,31 @@ export class AssetService {
         this.assertAssetOwner(asset, userId);
 
         if (asset.status !== AssetStatus.READY) {
-            throw new BadRequestException('Asset is not ready to be read.');
-        }
-
-        if (asset.visibility === AssetVisibility.PUBLIC) {
-            return {
-                assetId: asset.id,
-                visibility: asset.visibility,
-                url: this.supabaseStorageService.getPublicUrl(
-                    asset.bucketName,
-                    asset.objectKey,
-                ),
-                expiresInSeconds: null,
-            };
+            throw new BadRequestException(
+                'Only READY assets can resolve a readable URL.',
+            );
         }
 
         const expiresInSeconds =
-            this.configService.get<number>(
-                'ASSET_SIGNED_READ_URL_EXPIRES_IN',
-            ) ?? 3600;
+            asset.visibility === AssetVisibility.PRIVATE
+                ? Number(
+                      this.configService.get<string>(
+                          'ASSET_SIGNED_READ_URL_EXPIRES_IN',
+                      ) ?? '3600',
+                  )
+                : null;
 
-        const url = await this.supabaseStorageService.createSignedReadUrl(
-            asset.bucketName,
-            asset.objectKey,
-            expiresInSeconds,
-        );
+        const url =
+            asset.visibility === AssetVisibility.PUBLIC
+                ? this.supabaseStorageService.getPublicUrl(
+                      asset.bucketName,
+                      asset.objectKey,
+                  )
+                : await this.supabaseStorageService.createSignedReadUrl(
+                      asset.bucketName,
+                      asset.objectKey,
+                      expiresInSeconds ?? undefined,
+                  );
 
         return {
             assetId: asset.id,
@@ -414,5 +388,43 @@ export class AssetService {
         this.assertAssetOwner(asset, userId);
 
         return asset;
+    }
+
+    async deleteIfOrphaned(assetId: string, userId: string) {
+        const asset = await this.assetRepository.findOne({
+            where: { id: assetId },
+        });
+
+        if (!asset) {
+            throw new NotFoundException('Asset not found.');
+        }
+
+        this.assertAssetOwner(asset, userId);
+
+        const activeUsageCount = await this.assetUsageRepository.count({
+            where: {
+                assetId,
+                detachedAt: IsNull(),
+            },
+        });
+
+        if (activeUsageCount > 0) {
+            return {
+                assetId,
+                deleted: false,
+                reason: 'asset_still_has_active_usages',
+            };
+        }
+
+        await this.supabaseStorageService.deleteObject(
+            asset.bucketName,
+            asset.objectKey,
+        );
+
+        return {
+            assetId,
+            deleted: true,
+            reason: null,
+        };
     }
 }

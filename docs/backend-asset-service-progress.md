@@ -202,8 +202,6 @@ The portfolio model now supports:
 - one cover image stored directly on the portfolio item
 - additional gallery images stored separately but linked to the same item
 
-This keeps the previous single-image model usable as the cover while enabling richer showcase content.
-
 ### 2. Portfolio gallery persistence now exists in the profile domain
 
 The backend now persists gallery image records for each portfolio item instead of treating every item as a one-image entry.
@@ -215,8 +213,6 @@ The media usage layer now distinguishes between:
 - cover image usage
 - gallery image usage
 
-This keeps the asset service as the shared media lifecycle layer while letting the profile domain own portfolio business rules.
-
 ### 4. Public photographer detail can now render richer saved media
 
 The public detail read model now supports:
@@ -224,13 +220,68 @@ The public detail read model now supports:
 - cover image rendering
 - optional gallery image rendering for the same saved portfolio item
 
-This is the first richer multi-image public showcase slice in the system.
+---
+
+## Phase BE-6: Portfolio Gallery UX Refinement + Safe Asset Cleanup
+
+**Status:** Completed
+
+## Goal
+
+Refine the product experience around saved photographer media while making storage cleanup safer.
+
+This phase focuses on:
+
+- better gallery interaction on the signed-in side
+- more compact public portfolio browsing
+- focused viewing of one selected portfolio item
+- safer delete behavior in both UX and storage lifecycle
+
+## What was completed in BE-6
+
+### 1. Gallery-limit handling now has explicit user feedback
+
+The frontend now surfaces immediate user-facing feedback when one portfolio item exceeds the allowed gallery image limit instead of relying only on quiet inline behavior.
+
+### 2. Gallery interaction was refined
+
+The signed-in portfolio flow now supports:
+
+- more natural gallery reordering
+- cleaner thumbnail removal actions
+- clearer per-image management during create and edit flows
+
+### 3. Public portfolio browsing is now more focused
+
+The public photographer detail side no longer needs to expand every saved project inline by default.
+
+Instead, the current shape supports:
+
+- more compact portfolio item browsing
+- selecting one saved work
+- focused viewing of that work’s cover and gallery media
+
+### 4. Safe asset cleanup now exists after delete
+
+Deleting a portfolio item no longer stops at detaching usages and deleting portfolio records.
+
+The backend now supports an orphan-safe cleanup path:
+
+1. detach active usages for the deleted item
+2. remove the portfolio records
+3. attempt physical storage cleanup only when the asset no longer has active usages
+
+This keeps the storage lifecycle safer than immediately deleting every related object regardless of reuse.
+
+### 5. Delete flow is safer for users
+
+The product now requires explicit confirmation before deleting a portfolio item, reducing accidental destructive actions.
 
 ---
 
 ## Current verified media flows
 
-The backend asset service is now part of four real product slices:
+The backend asset service is now part of five real product slices:
 
 ### Avatar flow
 
@@ -266,6 +317,14 @@ The backend asset service is now part of four real product slices:
 4. backend persists cover and gallery image records
 5. public detail reads and renders richer saved portfolio media
 
+### Safe cleanup flow
+
+1. user confirms deletion of a saved portfolio item
+2. backend detaches active usages for the item
+3. backend removes portfolio records
+4. asset service checks whether each related asset still has active usages
+5. storage objects are removed only when the asset is orphaned
+
 ---
 
 ## Current domain boundaries
@@ -278,12 +337,13 @@ The backend asset service is now part of four real product slices:
 - asset metadata
 - asset usage attachment / detachment
 - read URL generation
+- orphan-safe physical asset cleanup
 
 ### Asset service does not own
 
 - photographer portfolio business logic itself
 - public photographer presentation logic itself
-- client-side image compression itself
+- client-side image preparation itself
 - AI style classification results as domain source of truth
 
 ### Profile service owns
@@ -298,68 +358,53 @@ The backend asset service is now part of four real product slices:
 
 ## Current implementation limits
 
-The current system is now a stronger media platform slice, but several important issues are still open.
+The current system is now a much stronger media platform slice, but some product gaps still remain.
 
 Still pending:
 
+- broader public gallery polish for very large portfolios
+- deeper real-world tuning and monitoring for compression effectiveness across many image types
+- more advanced viewer features such as richer zoom/fullscreen behavior
 - stronger upload confirmation hardening against real storage object existence
-- better-tuned client-side compression with more meaningful file-size reduction
-- snackbar/toast feedback when gallery upload exceeds the allowed limit
-- drag-and-drop gallery ordering instead of basic move controls
-- safer public portfolio presentation for large portfolios
-- dialog/lightbox viewing and carousel navigation for gallery media
-- delete confirmation before removing a portfolio item
-- safe physical asset cleanup in storage when an item is deleted and no active usages remain
-- thumbnail or derivative-image strategy if needed
-- AI classification triggered from saved portfolio uploads
+- booking flow consumption of real public photographer data
+- inspiration-image upload and AI classification triggered from booking or portfolio flows
+- thumbnail or derivative-image strategy if needed later
 
 ## Why this phase matters
 
-The media layer is no longer limited to:
+The media layer is no longer limited to saving images and rendering them publicly.
 
-- avatar uploads
-- one-image portfolio items
-- public single-image showcase
+It now supports a more realistic product loop with:
 
-It now supports a richer photographer content model with:
+- refined gallery interaction on the signed-in side
+- safer delete behavior for users
+- compact public browsing plus focused media viewing
+- safer storage cleanup after delete
 
-- cover image + gallery image structure
-- first-pass image preparation before upload
-- public rendering of more realistic saved project media
-
-That makes the product feel more like a real photography marketplace instead of a simple saved-card system.
+That makes Fotovia feel closer to a usable photography platform instead of just a media persistence demo.
 
 ## Recommended next phase
 
-## Phase BE/FE Next: Portfolio Gallery UX Refinement + Safe Asset Cleanup
+## Phase BE/FE Next: Booking Flow Integration Using Real Public Photographer Data
 
 ### Why this should be next
 
-The current gallery model works, but the next gaps are now usability and storage hygiene.
+The photographer content pipeline is now real on both the signed-in and public sides.
 
-The main remaining issues are:
-
-- gallery interaction is still too mechanical
-- public portfolio rendering can become too long and heavy
-- current compression still needs stronger tuning
-- deleting a portfolio item does not yet clean up storage safely enough
+The next major product gap is converting that real photographer detail experience into a real booking path.
 
 ### Suggested goals
 
-- add better user feedback when gallery selection exceeds the limit
-- move from left/right ordering buttons to drag-and-drop ordering
-- use cleaner thumbnail overlay actions
-- show compact public portfolio cards instead of expanding everything inline
-- open a dialog/lightbox when a portfolio item is selected
-- support carousel navigation through cover + gallery images
-- improve compression results with stronger and more visible tuning
-- add delete confirmation before removing a portfolio item
-- delete physical storage objects only when the asset no longer has active usages
+- connect public photographer detail pages directly to real booking creation
+- prefill booking context from the selected photographer
+- keep booking entry routes protected and consistent with current auth rules
+- build on top of the existing real public photographer data instead of duplicating detail logic
+- prepare later inspiration-image and AI-assisted booking inputs on top of the real booking flow
 
 ## Notes for later
 
-After gallery UX refinement and safe asset cleanup are stable, the next likely media/product steps should be:
+After booking flow integration is stable, the next likely product steps should be:
 
-- public gallery polish
-- booking flow consumption of real public photographer data
-- AI classification integration on saved uploaded works
+- AI-assisted recommendation using inspiration images
+- richer booking status tracking
+- deeper public portfolio polish for larger accounts

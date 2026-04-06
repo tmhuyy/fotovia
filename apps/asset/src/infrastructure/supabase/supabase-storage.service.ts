@@ -58,4 +58,16 @@ export class SupabaseStorageService {
 
         return data.signedUrl;
     }
+
+    async deleteObject(bucket: string, objectKey: string) {
+        const { error } = await this.supabase.storage
+            .from(bucket)
+            .remove([objectKey]);
+
+        if (error) {
+            throw new InternalServerErrorException(error.message);
+        }
+
+        return { deleted: true };
+    }
 }

@@ -174,4 +174,12 @@ export class AssetController {
     async detachUsageInternal(@Payload() payload: AssetRpcDetachUsagePayload) {
         return this.assetService.detachUsage(payload.usageId, payload.userId);
     }
+
+    @MessagePattern('asset.delete_if_orphaned')
+    async deleteIfOrphanedInternal(@Payload() payload: AssetRpcByIdPayload) {
+        return this.assetService.deleteIfOrphaned(
+            payload.assetId,
+            payload.userId,
+        );
+    }
 }

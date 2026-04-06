@@ -2,15 +2,17 @@
 
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 
+import { toast } from "sonner";
+
+import type { AssetPreview } from "../../asset/types/asset.types";
 import { Button } from "../../../components/ui/button";
 import { assetService } from "../../../services/asset.service";
 import
-{
-    PORTFOLIO_CATEGORIES,
-    PORTFOLIO_CATEGORY_LABELS,
-    type PortfolioItemDraft,
-} from "../types/portfolio.types";
-import { AssetPreview } from "../../asset/types/asset.types";
+    {
+        PORTFOLIO_CATEGORIES,
+        PORTFOLIO_CATEGORY_LABELS,
+        type PortfolioItemDraft,
+    } from "../types/portfolio.types";
 
 interface PortfolioItemFormProps
 {
@@ -49,11 +51,15 @@ export const PortfolioItemForm = ({
     const [formError, setFormError] = useState<string | null>(null);
     const [isPreparingCover, setIsPreparingCover] = useState(false);
     const [isPreparingGallery, setIsPreparingGallery] = useState(false);
+    const [draggingGalleryIndex, setDraggingGalleryIndex] = useState<number | null>(
+        null,
+    );
 
     useEffect(() =>
     {
         setDraft(initialValue ?? emptyDraft);
         setFormError(null);
+        setDraggingGalleryIndex(null);
     }, [initialValue, mode]);
 
     const isEditMode = mode === "edit";
@@ -112,6 +118,7 @@ export const PortfolioItemForm = ({
             handleChange("coverAsset", coverAsset);
         } catch {
             setFormError("We couldn’t prepare this cover image.");
+            toast.error("We couldn’t prepare this cover image.");
         } finally {
             setIsPreparingCover(false);
 
@@ -132,9 +139,17 @@ export const PortfolioItemForm = ({
         }
 
         if (draft.galleryAssets.length + files.length > MAX_GALLERY_IMAGES) {
-            setFormError(
-                `Please keep the gallery at ${MAX_GALLERY_IMAGES} images or fewer.`,
-            );
+            const message = `You can upload up to ${MAX_GALLERY_IMAGES} gallery images for one portfolio item.`;
+
+            setFormError(message);
+            toast.error("Gallery image limit reached", {
+                description: message,
+            });
+
+            if (event.target) {
+                event.target.value = "";
+            }
+
             return;
         }
 
@@ -164,11 +179,15 @@ export const PortfolioItemForm = ({
                 galleryAssets: [...current.galleryAssets, ...preparedAssets],
             }));
         } catch (error) {
-            setFormError(
+            const message =
                 error instanceof Error
                     ? error.message
-                    : "We couldn’t prepare these gallery images.",
-            );
+                    : "We couldn’t prepare these gallery images.";
+
+            setFormError(message);
+            toast.error("Gallery image preparation failed", {
+                description: message,
+            });
         } finally {
             setIsPreparingGallery(false);
 
@@ -194,32 +213,34 @@ export const PortfolioItemForm = ({
         }));
     };
 
-    const handleMoveGalleryAsset = (index: number, direction: "left" | "right") =>
+    const handleGalleryDragStart = (index: number) =>
     {
+        setDraggingGalleryIndex(index);
+    };
+
+    const handleGalleryDrop = (targetIndex: number) =>
+    {
+        if (draggingGalleryIndex === null || draggingGalleryIndex === targetIndex) {
+            setDraggingGalleryIndex(null);
+            return;
+        }
+
         setDraft((current) =>
         {
             const nextAssets = [...current.galleryAssets];
-            const nextIndex = direction === "left" ? index - 1 : index + 1;
-
-            if (nextIndex < 0 || nextIndex >= nextAssets.length) {
-                return current;
+            const [draggedAsset] = nextAssets.splice(draggingGalleryIndex, 1);
+            
+            if (draggedAsset) {
+                nextAssets.splice(targetIndex, 0, draggedAsset);
             }
-
-            const currentAsset = nextAssets[index];
-            const targetAsset = nextAssets[nextIndex];
-
-            if (!currentAsset || !targetAsset) {
-                return current;
-            }
-
-            nextAssets[index] = targetAsset;
-            nextAssets[nextIndex] = currentAsset;
 
             return {
                 ...current,
                 galleryAssets: nextAssets,
             };
         });
+
+        setDraggingGalleryIndex(null);
     };
 
     const handleSubmit = async (event: React.FormEvent) =>
@@ -469,83 +490,75 @@ export const PortfolioItemForm = ({
                                 />
 
                                 {draft.galleryAssets.length ? (
-                                    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                                        {draft.galleryAssets.map((asset, index) => (
-                                            <div
-                                                key={`${asset.id}-${index}`}
-                                                className="overflow-hidden rounded-[1.5rem] border border-border bg-background"
-                                            >
-                                                <div className="aspect-[4/3] overflow-hidden bg-brand-background">
-                                                    <img
-                                                        src={asset.previewUrl}
-                                                        alt={asset.fileName}
-                                                        className="h-full w-full object-cover"
-                                                    />
-                                                </div>
+                                    <div className="space-y-3">
+                                        <p className="text-sm text-muted">
+                                            Drag and drop thumbnails to reorder your gallery.
+                                        </p>
 
-                                                <div className="space-y-3 p-4">
-                                                    <div className="space-y-1">
-                                                        <p className="truncate text-sm font-medium text-foreground">
-                                                            {asset.fileName}
-                                                        </p>
+                                        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                                            {draft.galleryAssets.map((asset, index) =>
+                                            {
+                                                const isDragging = draggingGalleryIndex === index;
 
-                                                        <p className="text-xs text-muted">
-                                                            {assetService.formatFileSize(asset.sizeInBytes)}
-                                                            {asset.originalSizeInBytes ? (
-                                                                <>
-                                                                    {" "}
-                                                                    (from{" "}
-                                                                    {assetService.formatFileSize(
-                                                                        asset.originalSizeInBytes,
-                                                                    )}
-                                                                    )
-                                                                </>
-                                                            ) : null}
-                                                        </p>
-                                                    </div>
-
-                                                    <div className="flex flex-wrap gap-2">
-                                                        <Button
+                                                return (
+                                                    <div
+                                                        key={`${asset.id}-${index}`}
+                                                        className={`relative overflow-hidden rounded-[1.5rem] border border-border bg-background transition ${isDragging ? "opacity-60" : ""
+                                                            }`}
+                                                        draggable={!isPreparingAsset && !isSubmitting}
+                                                        onDragStart={() => handleGalleryDragStart(index)}
+                                                        onDragOver={(event) =>
+                                                        {
+                                                            event.preventDefault();
+                                                        }}
+                                                        onDrop={() => handleGalleryDrop(index)}
+                                                        onDragEnd={() => setDraggingGalleryIndex(null)}
+                                                    >
+                                                        <button
                                                             type="button"
-                                                            size="sm"
-                                                            variant="secondary"
-                                                            onClick={() =>
-                                                                handleMoveGalleryAsset(index, "left")
-                                                            }
-                                                            disabled={index === 0 || isPreparingAsset || isSubmitting}
-                                                        >
-                                                            Move left
-                                                        </Button>
-
-                                                        <Button
-                                                            type="button"
-                                                            size="sm"
-                                                            variant="secondary"
-                                                            onClick={() =>
-                                                                handleMoveGalleryAsset(index, "right")
-                                                            }
-                                                            disabled={
-                                                                index === draft.galleryAssets.length - 1 ||
-                                                                isPreparingAsset ||
-                                                                isSubmitting
-                                                            }
-                                                        >
-                                                            Move right
-                                                        </Button>
-
-                                                        <Button
-                                                            type="button"
-                                                            size="sm"
-                                                            variant="secondary"
+                                                            className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-black/65 text-lg text-white transition hover:bg-black/80"
                                                             onClick={() => handleRemoveGalleryAsset(index)}
                                                             disabled={isPreparingAsset || isSubmitting}
+                                                            aria-label={`Remove ${asset.fileName}`}
                                                         >
-                                                            Remove
-                                                        </Button>
+                                                            ×
+                                                        </button>
+
+                                                        <div className="aspect-[4/3] overflow-hidden bg-brand-background">
+                                                            <img
+                                                                src={asset.previewUrl}
+                                                                alt={asset.fileName}
+                                                                className="h-full w-full object-cover"
+                                                            />
+                                                        </div>
+
+                                                        <div className="space-y-2 p-4">
+                                                            <p className="truncate text-sm font-medium text-foreground">
+                                                                {asset.fileName}
+                                                            </p>
+
+                                                            <p className="text-xs text-muted">
+                                                                {assetService.formatFileSize(asset.sizeInBytes)}
+                                                                {asset.originalSizeInBytes ? (
+                                                                    <>
+                                                                        {" "}
+                                                                        (from{" "}
+                                                                        {assetService.formatFileSize(
+                                                                            asset.originalSizeInBytes,
+                                                                        )}
+                                                                        )
+                                                                    </>
+                                                                ) : null}
+                                                            </p>
+
+                                                            <p className="text-xs uppercase tracking-[0.18em] text-muted">
+                                                                Position {index + 1}
+                                                            </p>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            </div>
-                                        ))}
+                                                );
+                                            })}
+                                        </div>
                                     </div>
                                 ) : (
                                     <div className="rounded-[1.5rem] border border-dashed border-border bg-background px-4 py-4">

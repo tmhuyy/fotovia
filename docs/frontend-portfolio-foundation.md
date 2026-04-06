@@ -4,7 +4,7 @@
 
 This document tracks the current photographer portfolio flow in `apps/web`.
 
-It explains how the portfolio experience moved from a browser-local foundation into a real backend-backed persistence flow, then into a public-facing read flow, and now into a richer multi-image media flow.
+It explains how the portfolio experience moved from a browser-local foundation into a real backend-backed persistence flow, then into a public-facing read flow, then into a richer multi-image media flow, and now into a more refined gallery UX.
 
 ## Previous foundation direction
 
@@ -24,7 +24,7 @@ That foundation was useful because it let the product lock the UX direction befo
 
 ## Current portfolio direction
 
-**Status:** Working end-to-end for signed-in photographer portfolio persistence, public portfolio reading, and first-pass multi-image support
+**Status:** Working end-to-end for signed-in photographer portfolio persistence, public portfolio reading, multi-image support, and first gallery UX refinement
 
 The current portfolio flow now uses:
 
@@ -33,7 +33,9 @@ The current portfolio flow now uses:
 - real saved portfolio items instead of browser-local source of truth
 - real public rendering of saved photographer works on public detail pages
 - one cover image plus optional gallery images per portfolio item
-- first-pass client-side image compression before upload
+- client-side image preparation before upload
+- improved signed-in gallery management UX
+- compact public portfolio browsing with a focused media viewer
 
 ### Current signed-in route
 
@@ -52,7 +54,7 @@ The current portfolio flow now uses:
 
 ## Current portfolio item shape
 
-The current implementation now supports:
+The current implementation supports:
 
 - one required cover image
 - optional gallery images
@@ -72,8 +74,6 @@ A saved portfolio item currently contains:
 - `createdAt`
 - `updatedAt`
 
-This is the first version of a richer media model for photographer works.
-
 ## Current signed-in flow
 
 The current signed-in photographer portfolio flow is:
@@ -81,7 +81,7 @@ The current signed-in photographer portfolio flow is:
 1. open `/photographer/portfolio`
 2. load saved portfolio items from the backend
 3. prepare local previews for cover and gallery images
-4. apply first-pass client-side compression before upload
+4. apply client-side image preparation before upload
 5. call `POST /assets/upload-sessions`
 6. upload images to the signed upload URL
 7. call `POST /assets/upload-sessions/{sessionId}/confirm`
@@ -93,9 +93,10 @@ The same real backend flow now also supports:
 - edit portfolio item
 - replace cover image
 - add gallery images
-- reorder gallery images
+- drag-and-drop style gallery reordering
+- cleaner thumbnail removal actions
 - feature / unfeature
-- delete saved portfolio item
+- delete saved portfolio item with confirmation
 - refresh and still see saved portfolio data
 
 ## Current public flow
@@ -106,9 +107,10 @@ The current public photographer flow now also consumes saved portfolio data:
 2. load public photographer summaries from the backend
 3. open `/photographers/[slug]`
 4. load public photographer detail by slug
-5. render saved portfolio items from real backend data
-6. render cover image plus optional gallery images
-7. refresh and still see the saved public state
+5. render compact saved portfolio cards from real backend data
+6. open a focused viewer dialog for one selected portfolio item
+7. browse cover and gallery media in a carousel-style flow
+8. refresh and still see the saved public state
 
 ## Current UX behavior
 
@@ -124,35 +126,34 @@ The current phase intentionally keeps the UX behaviors that already felt correct
 - image-first form flow
 - premium, calm workspace presentation
 
-### Expanded behavior
+### Refined behavior
 
-The current phase expands the portfolio flow with:
+The current phase refines the portfolio UX with:
 
-- one cover image per item
-- optional gallery images
-- simple gallery ordering controls
-- first-pass client-side compression before upload
-- richer public portfolio rendering
+- snackbar/toast feedback when gallery selection exceeds the allowed limit
+- drag-and-drop style gallery ordering instead of only move-left / move-right controls
+- cleaner overlay delete action for gallery thumbnails
+- delete confirmation before removing a portfolio item
+- more compact public portfolio presentation
+- dialog/lightbox-style viewing for one selected portfolio item
+- carousel-style browsing across cover and gallery images
+- stronger client-side image preparation than the first gallery pass
 
 ## Current known limitations
 
-This phase is a meaningful media upgrade, but it is still not the final photographer gallery experience.
+This phase is a strong portfolio UX milestone, but it is still not the final media experience.
 
 Still pending:
 
-- snackbar/toast feedback when gallery selection exceeds the allowed image limit
-- drag-and-drop gallery ordering for better UX
-- overlay delete button for gallery thumbnails
-- more compact public portfolio presentation on `/photographers/[slug]`
-- dialog/lightbox view for a selected portfolio item
-- carousel-style navigation across gallery images in the public view
-- stronger and better-tuned client-side compression, because current reduction may still be too small for some images
-- safe asset cleanup when deleting a portfolio item
-- confirmation dialog before deleting a portfolio item
+- broader public gallery polish for very large photographer portfolios
+- more advanced zooming or fullscreen controls in the viewer
+- deeper real-world tuning and monitoring for compression effectiveness across many image types
+- booking flow consumption of real public photographer detail data
+- inspiration-image upload and AI-assisted booking inputs
 
 ## Why this phase matters
 
-This phase moves Fotovia beyond “one saved image per project” into a more realistic photographer showcase model.
+This phase turns the portfolio system into something much closer to a real photographer showcase workflow.
 
 The current end-to-end content flow now includes:
 
@@ -160,47 +161,39 @@ The current end-to-end content flow now includes:
 - open `/photographer/portfolio`
 - choose a cover image
 - choose optional gallery images
-- compress images on the client
+- get immediate validation feedback for gallery limits
+- reorder gallery images more naturally
 - upload through the real asset flow
 - save a real backend portfolio item
-- edit / feature / delete it
+- edit / feature / delete it with safer UX
 - open `/photographers/[slug]`
-- view saved portfolio media publicly
+- browse saved portfolio media in a focused viewer
 - refresh and still see the saved state
 
-That turns the portfolio area into a richer saved media pipeline instead of a basic single-image project list.
+That makes the portfolio area feel less like a basic media form and more like a real photographer workspace feeding a public showcase.
 
 ## Recommended next phase
 
-## Phase FE/BE Next: Portfolio Gallery UX Refinement + Safe Asset Cleanup
+## Phase FE/BE Next: Booking Flow Integration Using Real Public Photographer Data
 
 ### Why this should be next
 
-The current gallery foundation works, but the next gaps are now mostly product UX and storage hygiene.
+The signed-in photographer side is now real, and the public photographer detail side is also real and much more usable.
 
-The biggest remaining issues are:
-
-- gallery interaction still feels too mechanical
-- public portfolio viewing can become too long and heavy
-- image compression still needs stronger tuning
-- deleting a portfolio item does not yet fully solve asset cleanup
+The next major product gap is the actual booking path from public photographer discovery into a real booking request flow.
 
 ### Suggested goals
 
-- show snackbar/toast feedback when gallery upload exceeds the allowed limit
-- replace move-left / move-right with drag-and-drop ordering
-- replace gallery remove buttons with cleaner thumbnail overlay actions
-- show public portfolio items in a more compact card-based layout
-- open a dialog/lightbox when a portfolio item is selected
-- support carousel navigation across cover and gallery images
-- tune client-side compression more aggressively and visibly
-- add delete confirmation before removing a portfolio item
-- clean up orphaned assets more safely after delete
+- connect `/photographers/[slug]` more directly to real booking creation
+- prefill booking context from the selected public photographer
+- support authenticated booking request creation from real photographer detail data
+- keep booking entry routes protected and consistent with existing auth rules
+- prepare later inspiration-image and AI-assisted booking inputs on top of the real booking flow
 
 ## Notes for later
 
-After gallery UX refinement and safe cleanup are stable, the next likely portfolio/media steps should be:
+After booking flow integration is stable, the next likely product steps should be:
 
-- public gallery polish
-- booking flow consumption of real public photographer data
-- AI classification flow attached to saved photographer works
+- AI-assisted photographer recommendation using uploaded inspiration images
+- richer booking status tracking
+- deeper public portfolio polish for larger accounts
