@@ -42,6 +42,40 @@ const formatDateTime = (value: string): string =>
     }).format(parsed);
 };
 
+const lifecycleCopy: Record<
+    BookingRequestRecord["status"],
+    {
+        title: string;
+        description: string;
+    }
+> = {
+    pending: {
+        title: "Initial response",
+        description:
+            "This request is still pending. You can confirm or decline it as the first photographer-side lifecycle action.",
+    },
+    confirmed: {
+        title: "Ready for completion",
+        description:
+            "This booking has already been confirmed. When the work is done, you can now mark it as completed in this phase.",
+    },
+    declined: {
+        title: "Request declined",
+        description:
+            "This request has already been declined, so no further lifecycle action is available here.",
+    },
+    completed: {
+        title: "Booking completed",
+        description:
+            "This booking already reached the final lifecycle state supported in the current phase.",
+    },
+    cancelled: {
+        title: "Request cancelled by client",
+        description:
+            "The client cancelled this request while it was still pending, so no photographer-side action is available now.",
+    },
+};
+
 const DetailItem = ({
     label,
     value,
@@ -83,6 +117,8 @@ export const PhotographerBookingDetailCard = ({
     }
 
     const canRespond = booking.status === "pending";
+    const canComplete = booking.status === "confirmed";
+    const currentLifecycleCopy = lifecycleCopy[booking.status];
 
     return (
         <Card className="border-brand-border bg-brand-surface">
@@ -167,38 +203,46 @@ export const PhotographerBookingDetailCard = ({
                 ) : null}
 
                 <div className="rounded-2xl border border-brand-border bg-brand-background/70 p-4 text-sm text-brand-muted">
-                    <p className="font-medium text-brand-primary">Initial response</p>
+                    <p className="font-medium text-brand-primary">
+                        {currentLifecycleCopy.title}
+                    </p>
                     <p className="mt-2 leading-6">
-                        This phase supports the first photographer-side response only:
-                        confirm or decline a pending request.
+                        {currentLifecycleCopy.description}
                     </p>
                 </div>
 
                 <div className="flex flex-wrap gap-3">
-                    <Button
-                        type="button"
-                        onClick={() => onStatusChange("confirmed")}
-                        disabled={!canRespond || isUpdating}
-                    >
-                        {isUpdating ? "Updating..." : "Confirm request"}
-                    </Button>
+                    {canRespond ? (
+                        <>
+                            <Button
+                                type="button"
+                                onClick={() => onStatusChange("confirmed")}
+                                disabled={isUpdating}
+                            >
+                                {isUpdating ? "Updating..." : "Confirm request"}
+                            </Button>
 
-                    <Button
-                        type="button"
-                        variant="secondary"
-                        onClick={() => onStatusChange("declined")}
-                        disabled={!canRespond || isUpdating}
-                    >
-                        Decline request
-                    </Button>
+                            <Button
+                                type="button"
+                                variant="secondary"
+                                onClick={() => onStatusChange("declined")}
+                                disabled={isUpdating}
+                            >
+                                Decline request
+                            </Button>
+                        </>
+                    ) : null}
+
+                    {canComplete ? (
+                        <Button
+                            type="button"
+                            onClick={() => onStatusChange("completed")}
+                            disabled={isUpdating}
+                        >
+                            {isUpdating ? "Updating..." : "Mark as completed"}
+                        </Button>
+                    ) : null}
                 </div>
-
-                {!canRespond ? (
-                    <p className="text-sm text-brand-muted">
-                        This request already moved out of the pending state, so it cannot be
-                        changed again in this phase.
-                    </p>
-                ) : null}
             </CardContent>
         </Card>
     );

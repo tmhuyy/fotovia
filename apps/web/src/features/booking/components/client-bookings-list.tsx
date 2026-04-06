@@ -20,6 +20,7 @@ const filterOptions: { value: ClientBookingFilter; label: string }[] = [
     { value: "pending", label: "Pending" },
     { value: "confirmed", label: "Confirmed" },
     { value: "declined", label: "Declined" },
+    { value: "cancelled", label: "Cancelled" },
     { value: "completed", label: "Completed" },
 ];
 

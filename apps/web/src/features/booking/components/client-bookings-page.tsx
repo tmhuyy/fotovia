@@ -3,7 +3,12 @@
 import { isAxiosError } from "axios";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import
+    {
+        useMutation,
+        useQuery,
+        useQueryClient,
+    } from "@tanstack/react-query";
 
 import { Section } from "../../../components/common/section";
 import { Footer } from "../../../components/home/footer";
@@ -15,6 +20,7 @@ import { bookingService } from "../../../services/booking.service";
 import { useAuthStore } from "../../../store/auth.store";
 import type {
     BookingRequestRecord,
+    ClientBookingActionStatus,
     ClientBookingFilter,
 } from "../types/booking.types";
 import { ClientBookingDetailCard } from "./client-booking-detail-card";
@@ -93,10 +99,12 @@ const BookingCounts = ({
         { label: "Pending", value: counts.pending },
         { label: "Confirmed", value: counts.confirmed },
         { label: "Declined", value: counts.declined },
+        { label: "Cancelled", value: counts.cancelled },
+        { label: "Completed", value: counts.completed },
     ];
 
     return (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {items.map((item) => (
                 <div
                     key={item.label}
@@ -158,6 +166,7 @@ const EmptyBookingHistory = () =>
 export const ClientBookingsPage = () =>
 {
     const { user, isAuthenticated, isHydrating, hasHydrated } = useAuthStore();
+    const queryClient = useQueryClient();
 
     const bookingHistoryQueryKey = [
         "client-bookings",
@@ -191,6 +200,8 @@ export const ClientBookingsPage = () =>
             confirmed: bookings.filter((item) => item.status === "confirmed")
                 .length,
             declined: bookings.filter((item) => item.status === "declined")
+                .length,
+            cancelled: bookings.filter((item) => item.status === "cancelled")
                 .length,
             completed: bookings.filter((item) => item.status === "completed")
                 .length,
@@ -239,12 +250,57 @@ export const ClientBookingsPage = () =>
         );
     }, [filteredBookings, selectedBookingId]);
 
+    const cancelBookingMutation = useMutation({
+        mutationFn: ({
+            bookingId,
+            status,
+        }: {
+            bookingId: string;
+            status: ClientBookingActionStatus;
+        }) => bookingService.cancelMyClientBooking(bookingId, status),
+        onSuccess: (updatedBooking) =>
+        {
+            queryClient.setQueryData<BookingRequestRecord[]>(
+                bookingHistoryQueryKey,
+                (current) =>
+                    current?.map((booking) =>
+                        booking.id === updatedBooking.id ? updatedBooking : booking,
+                    ) ?? [updatedBooking],
+            );
+        },
+        onSettled: async () =>
+        {
+            await queryClient.invalidateQueries({
+                queryKey: bookingHistoryQueryKey,
+            });
+        },
+    });
+
     const listErrorMessage = bookingsQuery.error
         ? getErrorMessage(
             bookingsQuery.error,
             "We couldn’t load your booking history right now.",
         )
         : null;
+
+    const actionErrorMessage = cancelBookingMutation.error
+        ? getErrorMessage(
+            cancelBookingMutation.error,
+            "We couldn’t cancel that booking request right now.",
+        )
+        : null;
+
+    const handleCancel = (status: ClientBookingActionStatus) =>
+    {
+        if (!selectedBooking) {
+            return;
+        }
+
+        cancelBookingMutation.mutate({
+            bookingId: selectedBooking.id,
+            status,
+        });
+    };
 
     if (!hasHydrated || isHydrating) {
         return (
@@ -282,15 +338,12 @@ export const ClientBookingsPage = () =>
                                     Client dashboard
                                 </p>
                                 <h1 className="text-3xl font-semibold tracking-tight text-brand-primary sm:text-4xl">
-                                    Track your booking requests and photographer
-                                    responses.
+                                    Track and manage your booking lifecycle.
                                 </h1>
                                 <p className="max-w-2xl text-base text-brand-muted">
-                                    This page closes the client-side visibility
-                                    gap after request submission. You can now
-                                    review past requests and see whether each
-                                    one is still pending, confirmed, or
-                                    declined.
+                                    You can now review submitted requests, track
+                                    the photographer response, and cancel a
+                                    pending request directly from the frontend.
                                 </p>
                             </div>
                         </div>
@@ -324,7 +377,7 @@ export const ClientBookingsPage = () =>
                             <EmptyBookingHistory />
                         ) : (
                             <>
-                                <BookingCounts counts={counts} />
+                                {/* <BookingCounts counts={counts} /> */}
 
                                 <div className="grid gap-6 xl:grid-cols-[380px_minmax(0,1fr)]">
                                     <ClientBookingsList
@@ -338,6 +391,9 @@ export const ClientBookingsPage = () =>
 
                                     <ClientBookingDetailCard
                                         booking={selectedBooking}
+                                        isUpdating={cancelBookingMutation.isPending}
+                                        actionError={actionErrorMessage}
+                                        onCancel={handleCancel}
                                     />
                                 </div>
                             </>

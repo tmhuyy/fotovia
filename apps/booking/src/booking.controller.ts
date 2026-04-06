@@ -61,6 +61,22 @@ export class BookingController {
     }
 
     @UseGuards(JwtAuthGuard)
+    @Patch('/client/me/:bookingId/cancel')
+    @ApiOperation({
+        summary: 'Cancel a pending booking request as the current client',
+    })
+    @ApiOkResponse({
+        description: 'Booking request cancelled successfully',
+        type: Booking,
+    })
+    async cancelMyClientBooking(
+        @Param('bookingId', new ParseUUIDPipe()) bookingId: string,
+        @GetUser() user: IUser,
+    ): Promise<Booking> {
+        return this.bookingService.cancelMyClientBooking(bookingId, user.id);
+    }
+
+    @UseGuards(JwtAuthGuard)
     @Get('/photographer/me')
     @ApiOperation({
         summary: 'Get incoming booking requests for my photographer account',

@@ -1,27 +1,37 @@
 import Link from "next/link";
 
-import { buttonVariants } from "../../../components/ui/button";
+import { Button, buttonVariants } from "../../../components/ui/button";
 import { Card, CardContent } from "../../../components/ui/card";
-import {
-    budgetOptions,
-    durationOptions,
-    sessionTypeOptions,
-} from "../data/booking-options";
-import type { BookingRequestRecord } from "../types/booking.types";
+import
+    {
+        budgetOptions,
+        durationOptions,
+        sessionTypeOptions,
+    } from "../data/booking-options";
+import type {
+    BookingRequestRecord,
+    ClientBookingActionStatus,
+} from "../types/booking.types";
 import { BookingStatusPill } from "./booking-status-pill";
 
-interface ClientBookingDetailCardProps {
+interface ClientBookingDetailCardProps
+{
     booking: BookingRequestRecord | null;
+    isUpdating?: boolean;
+    actionError?: string | null;
+    onCancel: (status: ClientBookingActionStatus) => void;
 }
 
 const resolveLabel = (
     value: string,
     options: { value: string; label: string }[],
-): string => {
+): string =>
+{
     return options.find((option) => option.value === value)?.label ?? value;
 };
 
-const formatDateTime = (value: string): string => {
+const formatDateTime = (value: string): string =>
+{
     const parsed = new Date(value);
 
     if (Number.isNaN(parsed.getTime())) {
@@ -44,12 +54,12 @@ const statusCopy: Record<
     pending: {
         title: "Awaiting photographer response",
         description:
-            "Your request was sent successfully and is still waiting for the photographer's first response.",
+            "Your request was sent successfully and is still waiting for the photographer's first response. You can still cancel it in this phase while it remains pending.",
     },
     confirmed: {
         title: "Request confirmed",
         description:
-            "The photographer has confirmed this booking request. The next coordination steps can be added in a later phase.",
+            "The photographer has confirmed this booking request. The next lifecycle step in this phase happens on the photographer side when the booking is completed.",
     },
     declined: {
         title: "Request declined",
@@ -59,7 +69,12 @@ const statusCopy: Record<
     completed: {
         title: "Booking completed",
         description:
-            "This booking has already moved to the completed state.",
+            "The photographer marked this booking as completed. This request has now reached the final lifecycle state supported in the current phase.",
+    },
+    cancelled: {
+        title: "Request cancelled",
+        description:
+            "You cancelled this booking request while it was still pending. It remains in your history for tracking, but it is no longer active.",
     },
 };
 
@@ -69,7 +84,8 @@ const DetailItem = ({
 }: {
     label: string;
     value: string;
-}) => {
+}) =>
+{
     return (
         <div className="rounded-2xl border border-brand-border bg-brand-background/60 p-4">
             <p className="text-xs uppercase tracking-[0.14em] text-brand-muted">
@@ -82,7 +98,11 @@ const DetailItem = ({
 
 export const ClientBookingDetailCard = ({
     booking,
-}: ClientBookingDetailCardProps) => {
+    isUpdating = false,
+    actionError,
+    onCancel,
+}: ClientBookingDetailCardProps) =>
+{
     if (!booking) {
         return (
             <Card className="border-brand-border bg-brand-surface">
@@ -100,6 +120,7 @@ export const ClientBookingDetailCard = ({
     }
 
     const currentStatusCopy = statusCopy[booking.status];
+    const canCancel = booking.status === "pending";
 
     return (
         <Card className="border-brand-border bg-brand-surface">
@@ -130,9 +151,8 @@ export const ClientBookingDetailCard = ({
                     />
                     <DetailItem
                         label="Date & time"
-                        value={`${booking.sessionDate || "Date not set"} · ${
-                            booking.sessionTime || "Time not set"
-                        }`}
+                        value={`${booking.sessionDate || "Date not set"} · ${booking.sessionTime || "Time not set"
+                            }`}
                     />
                     <DetailItem
                         label="Duration"
@@ -187,6 +207,12 @@ export const ClientBookingDetailCard = ({
                     </div>
                 </div>
 
+                {actionError ? (
+                    <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-300">
+                        {actionError}
+                    </div>
+                ) : null}
+
                 <div className="rounded-2xl border border-brand-border bg-brand-background/70 p-4 text-sm text-brand-muted">
                     <p className="font-medium text-brand-primary">
                         {currentStatusCopy.title}
@@ -200,6 +226,16 @@ export const ClientBookingDetailCard = ({
                 </div>
 
                 <div className="flex flex-wrap gap-3">
+                    {canCancel ? (
+                        <Button
+                            type="button"
+                            onClick={() => onCancel("cancelled")}
+                            disabled={isUpdating}
+                        >
+                            {isUpdating ? "Updating..." : "Cancel request"}
+                        </Button>
+                    ) : null}
+
                     <Link
                         href={`/photographers/${booking.photographerSlug}`}
                         className={buttonVariants({

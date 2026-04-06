@@ -151,6 +151,40 @@ describe('BookingService', () => {
         });
     });
 
+    it('should cancel a pending booking request for the current client', async () => {
+        bookingRepository.findOne.mockResolvedValue({
+            id: '88888888-8888-8888-8888-888888888888',
+            clientUserId: '22222222-2222-2222-2222-222222222222',
+            status: 'pending',
+        });
+
+        bookingRepository.save.mockImplementation(async (booking) => booking);
+
+        const result = await service.cancelMyClientBooking(
+            '88888888-8888-8888-8888-888888888888',
+            '22222222-2222-2222-2222-222222222222',
+        );
+
+        expect(bookingRepository.findOne).toHaveBeenCalledWith({
+            where: {
+                id: '88888888-8888-8888-8888-888888888888',
+                clientUserId: '22222222-2222-2222-2222-222222222222',
+            },
+        });
+
+        expect(bookingRepository.save).toHaveBeenCalledWith(
+            expect.objectContaining({
+                id: '88888888-8888-8888-8888-888888888888',
+                status: 'cancelled',
+            }),
+        );
+
+        expect(result).toMatchObject({
+            id: '88888888-8888-8888-8888-888888888888',
+            status: 'cancelled',
+        });
+    });
+
     it('should reject non-photographer access to the inbox', async () => {
         dataSource.query.mockResolvedValueOnce([]);
 
@@ -192,7 +226,7 @@ describe('BookingService', () => {
         });
     });
 
-    it('should update a pending booking request status for the photographer owner', async () => {
+    it('should update a pending booking request to confirmed for the photographer owner', async () => {
         dataSource.query.mockResolvedValueOnce([
             {
                 id: '44444444-4444-4444-4444-444444444444',
@@ -240,6 +274,43 @@ describe('BookingService', () => {
         expect(result).toMatchObject({
             id: '55555555-5555-5555-5555-555555555555',
             status: 'confirmed',
+        });
+    });
+
+    it('should mark a confirmed booking as completed for the photographer owner', async () => {
+        dataSource.query.mockResolvedValueOnce([
+            {
+                id: '44444444-4444-4444-4444-444444444444',
+                userId: '99999999-9999-9999-9999-999999999999',
+                role: UserRole.PHOTOGRAPHER,
+            },
+        ]);
+
+        bookingRepository.findOne.mockResolvedValue({
+            id: '66666666-6666-6666-6666-666666666666',
+            photographerProfileId: '44444444-4444-4444-4444-444444444444',
+            photographerUserId: '99999999-9999-9999-9999-999999999999',
+            status: 'confirmed',
+        });
+
+        bookingRepository.save.mockImplementation(async (booking) => booking);
+
+        const result = await service.updateMyPhotographerBookingStatus(
+            '66666666-6666-6666-6666-666666666666',
+            '99999999-9999-9999-9999-999999999999',
+            { status: 'completed' },
+        );
+
+        expect(bookingRepository.save).toHaveBeenCalledWith(
+            expect.objectContaining({
+                id: '66666666-6666-6666-6666-666666666666',
+                status: 'completed',
+            }),
+        );
+
+        expect(result).toMatchObject({
+            id: '66666666-6666-6666-6666-666666666666',
+            status: 'completed',
         });
     });
 });

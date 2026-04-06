@@ -20,6 +20,7 @@ const filterOptions: { value: BookingInboxFilter; label: string }[] = [
     { value: "pending", label: "Pending" },
     { value: "confirmed", label: "Confirmed" },
     { value: "declined", label: "Declined" },
+    { value: "cancelled", label: "Cancelled" },
     { value: "completed", label: "Completed" },
 ];
 
@@ -62,8 +63,8 @@ export const PhotographerBookingsList = ({
                         Booking inbox
                     </h2>
                     <p className="text-sm leading-6 text-brand-muted">
-                        Review incoming requests and choose the first response status for
-                        each one.
+                        Review incoming requests and manage the next lifecycle
+                        step for each one.
                     </p>
                 </div>
 
@@ -119,22 +120,33 @@ export const PhotographerBookingsList = ({
                                     <div className="flex items-start justify-between gap-3">
                                         <div className="space-y-1">
                                             <p className="font-medium text-brand-primary">
-                                                {formatSessionType(booking.sessionType)}
+                                                {formatSessionType(
+                                                    booking.sessionType,
+                                                )}
                                             </p>
                                             <p className="text-sm text-brand-muted">
-                                                {booking.clientEmail || "Client account email unavailable"}
+                                                {booking.clientEmail ||
+                                                    "Client account email unavailable"}
                                             </p>
                                         </div>
 
-                                        <BookingStatusPill status={booking.status} />
+                                        <BookingStatusPill
+                                            status={booking.status}
+                                        />
                                     </div>
 
                                     <div className="mt-4 grid gap-2 text-sm text-brand-muted">
                                         <span>
-                                            {booking.sessionDate || "Date not set"} ·{" "}
-                                            {booking.sessionTime || "Time not set"}
+                                            {booking.sessionDate ||
+                                                "Date not set"}{" "}
+                                            ·{" "}
+                                            {booking.sessionTime ||
+                                                "Time not set"}
                                         </span>
-                                        <span>{booking.location || "Location not set"}</span>
+                                        <span>
+                                            {booking.location ||
+                                                "Location not set"}
+                                        </span>
                                         <span>{formatBudget(booking.budget)}</span>
                                     </div>
                                 </button>

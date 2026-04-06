@@ -1,9 +1,16 @@
-export type BookingStatus = "pending" | "confirmed" | "declined" | "completed";
+export type BookingStatus =
+    | "pending"
+    | "confirmed"
+    | "declined"
+    | "completed"
+    | "cancelled";
 
 export type PhotographerBookingActionStatus = Extract<
     BookingStatus,
-    "confirmed" | "declined"
+    "confirmed" | "declined" | "completed"
 >;
+
+export type ClientBookingActionStatus = Extract<BookingStatus, "cancelled">;
 
 export type BookingInboxFilter = "all" | BookingStatus;
 export type ClientBookingFilter = "all" | BookingStatus;

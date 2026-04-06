@@ -72,6 +72,31 @@ export class BookingService {
         });
     }
 
+    async cancelMyClientBooking(
+        bookingId: string,
+        userId: string,
+    ): Promise<Booking> {
+        const booking = await this.bookingRepository.findOne({
+            where: {
+                id: bookingId,
+                clientUserId: userId,
+            },
+        });
+
+        if (!booking) {
+            throw new NotFoundException('Booking request not found.');
+        }
+
+        if (booking.status !== 'pending') {
+            throw new BadRequestException(
+                'Only pending booking requests can be cancelled right now.',
+            );
+        }
+
+        booking.status = 'cancelled';
+        return this.bookingRepository.save(booking);
+    }
+
     async getMyPhotographerBookings(userId: string): Promise<Booking[]> {
         const photographerProfile =
             await this.getPhotographerWorkspaceProfile(userId);
@@ -112,9 +137,20 @@ export class BookingService {
             throw new NotFoundException('Booking request not found.');
         }
 
+        if (updateBookingStatusDto.status === 'completed') {
+            if (booking.status !== 'confirmed') {
+                throw new BadRequestException(
+                    'Only confirmed bookings can be marked as completed right now.',
+                );
+            }
+
+            booking.status = 'completed';
+            return this.bookingRepository.save(booking);
+        }
+
         if (booking.status !== 'pending') {
             throw new BadRequestException(
-                'Only pending booking requests can be updated right now.',
+                'Only pending booking requests can be confirmed or declined right now.',
             );
         }
 

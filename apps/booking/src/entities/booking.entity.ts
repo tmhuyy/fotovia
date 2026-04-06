@@ -7,7 +7,12 @@ import {
     UpdateDateColumn,
 } from 'typeorm';
 
-export type BookingStatus = 'pending' | 'confirmed' | 'declined' | 'completed';
+export type BookingStatus =
+    | 'pending'
+    | 'confirmed'
+    | 'declined'
+    | 'completed'
+    | 'cancelled';
 
 @Entity({ name: 'bookings' })
 export class Booking {

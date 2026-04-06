@@ -100,10 +100,12 @@ const BookingCounts = ({
         { label: "Pending", value: counts.pending },
         { label: "Confirmed", value: counts.confirmed },
         { label: "Declined", value: counts.declined },
+        { label: "Cancelled", value: counts.cancelled },
+        { label: "Completed", value: counts.completed },
     ];
 
     return (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {items.map((item) => (
                 <div
                     key={item.label}
@@ -226,6 +228,7 @@ export const PhotographerBookingsPage = () =>
             pending: bookings.filter((item) => item.status === "pending").length,
             confirmed: bookings.filter((item) => item.status === "confirmed").length,
             declined: bookings.filter((item) => item.status === "declined").length,
+            cancelled: bookings.filter((item) => item.status === "cancelled").length,
             completed: bookings.filter((item) => item.status === "completed").length,
         };
     }, [bookings]);
@@ -357,13 +360,12 @@ export const PhotographerBookingsPage = () =>
                                     Photographer workspace
                                 </p>
                                 <h1 className="text-3xl font-semibold tracking-tight text-brand-primary sm:text-4xl">
-                                    Review and respond to incoming booking requests.
+                                    Manage booking lifecycle actions from your inbox.
                                 </h1>
                                 <p className="max-w-2xl text-base text-brand-muted">
-                                    This inbox completes the second half of the current booking
-                                    workflow: clients can send real requests, and photographers can
-                                    now review and make the first response decision from the
-                                    workspace.
+                                    This phase extends booking beyond the first response:
+                                    you can still confirm or decline pending requests, and now
+                                    you can also mark a confirmed booking as completed.
                                 </p>
                             </div>
                         </div>
@@ -398,7 +400,7 @@ export const PhotographerBookingsPage = () =>
                             <EmptyBookingInbox />
                         ) : (
                             <>
-                                <BookingCounts counts={counts} />
+                                {/* <BookingCounts counts={counts} /> */}
 
                                 <div className="grid gap-6 xl:grid-cols-[380px_minmax(0,1fr)]">
                                     <PhotographerBookingsList

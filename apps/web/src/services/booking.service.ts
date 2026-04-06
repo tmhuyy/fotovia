@@ -1,6 +1,7 @@
 import type {
     BookingRequestRecord,
     BookingStatus,
+    ClientBookingActionStatus,
     CreateBookingPayload,
     PhotographerBookingActionStatus,
 } from "../features/booking/types/booking.types";
@@ -13,6 +14,8 @@ type AnyRecord = Record<string, unknown>;
 const BOOKING_ENDPOINTS = {
     create: "/booking",
     clientMine: "/booking/client/me",
+    clientCancel: (bookingId: string) =>
+        `/booking/client/me/${bookingId}/cancel`,
     photographerMine: "/booking/photographer/me",
     photographerStatus: (bookingId: string) =>
         `/booking/photographer/me/${bookingId}/status`,
@@ -33,7 +36,8 @@ const normalizeStatus = (value: unknown): BookingStatus => {
         normalized === "pending" ||
         normalized === "confirmed" ||
         normalized === "declined" ||
-        normalized === "completed"
+        normalized === "completed" ||
+        normalized === "cancelled"
     ) {
         return normalized;
     }
@@ -107,6 +111,20 @@ export const bookingService = {
 
         const data = unwrapResponse<unknown>(response.data);
         return normalizeBookingArray(data);
+    },
+
+    async cancelMyClientBooking(
+        bookingId: string,
+        status: ClientBookingActionStatus = "cancelled",
+    ): Promise<BookingRequestRecord> {
+        const response = await bookingClient.patch<
+            ApiResponse<AnyRecord> | AnyRecord
+        >(BOOKING_ENDPOINTS.clientCancel(bookingId), {
+            status,
+        });
+
+        const data = unwrapResponse<AnyRecord>(response.data);
+        return normalizeBooking(data);
     },
 
     async getMyPhotographerBookings(): Promise<BookingRequestRecord[]> {
