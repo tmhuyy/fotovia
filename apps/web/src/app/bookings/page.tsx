@@ -1,11 +1,6 @@
-import { AuthenticatedRoute } from "../../features/auth/components/authenticated-route";
-import { PhotographerBookingsPage } from "../../features/booking/components/photographer-bookings-page";
+import { redirect } from "next/navigation";
 
-export default function PhotographerBookingsRoute()
+export default function LegacyBookingsRoute()
 {
-    return (
-        <AuthenticatedRoute>
-            <PhotographerBookingsPage />
-        </AuthenticatedRoute>
-    );
+    redirect("/photographer/bookings");
 }

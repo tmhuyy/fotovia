@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import {
     ApiCreatedResponse,
+    ApiForbiddenResponse,
     ApiOkResponse,
     ApiOperation,
     ApiTags,
@@ -55,6 +56,9 @@ export class BookingController {
         type: Booking,
         isArray: true,
     })
+    @ApiForbiddenResponse({
+        description: 'Only photographer accounts can access this inbox',
+    })
     async getMyPhotographerBookings(
         @GetUser() user: IUser,
     ): Promise<Booking[]> {
@@ -70,6 +74,9 @@ export class BookingController {
     @ApiOkResponse({
         description: 'Booking request status updated successfully',
         type: Booking,
+    })
+    @ApiForbiddenResponse({
+        description: 'Only photographer accounts can update this inbox',
     })
     async updateMyPhotographerBookingStatus(
         @Param('bookingId', new ParseUUIDPipe()) bookingId: string,

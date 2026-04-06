@@ -9,8 +9,11 @@ import { ResponseInterceptor } from '@repo/common';
 
 async function bootstrap() {
     const app = await NestFactory.create(BookingModule);
-    const configService = app.get(ConfigService)
-    app.use(cookieParser());
+    const configService = app.get(ConfigService);
+    app.enableCors({
+        origin: [configService.getOrThrow('NEXT_APP_URL')],
+        credentials: true,
+    });
     app.useGlobalInterceptors(new ResponseInterceptor());
     // app.useLogger(app.get(Logger));
     app.useGlobalPipes(

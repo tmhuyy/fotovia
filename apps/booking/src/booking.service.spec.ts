@@ -1,3 +1,4 @@
+import { ForbiddenException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { DataSource } from 'typeorm';
 import { UserRole } from '@repo/types';
@@ -100,7 +101,7 @@ describe('BookingService', () => {
         );
 
         expect(dataSource.query).toHaveBeenCalledWith(
-            expect.stringContaining('FROM profiles'),
+            expect.stringContaining('FROM public.profiles'),
             [dto.photographerProfileId, UserRole.PHOTOGRAPHER],
         );
 
@@ -133,7 +134,17 @@ describe('BookingService', () => {
         });
     });
 
-    it('should get photographer bookings using current ownership conditions', async () => {
+    it('should reject non-photographer access to the inbox', async () => {
+        dataSource.query.mockResolvedValueOnce([]);
+
+        await expect(
+            service.getMyPhotographerBookings(
+                '99999999-9999-9999-9999-999999999999',
+            ),
+        ).rejects.toBeInstanceOf(ForbiddenException);
+    });
+
+    it('should get photographer bookings using photographer ownership conditions', async () => {
         dataSource.query.mockResolvedValueOnce([
             {
                 id: '44444444-4444-4444-4444-444444444444',

@@ -1,9 +1,10 @@
 import {
     BadRequestException,
+    ForbiddenException,
     Injectable,
     NotFoundException,
 } from '@nestjs/common';
-import { DataSource, FindOptionsWhere } from 'typeorm';
+import { DataSource } from 'typeorm';
 import { UserRole } from '@repo/types';
 
 import { CreateBookingDto } from './dtos/create-booking.dto';
@@ -61,11 +62,14 @@ export class BookingService {
     }
 
     async getMyPhotographerBookings(userId: string): Promise<Booking[]> {
-        const ownershipWhere =
-            await this.buildPhotographerOwnershipWhere(userId);
+        const photographerProfile =
+            await this.getPhotographerWorkspaceProfile(userId);
 
         return this.bookingRepository.find({
-            where: ownershipWhere,
+            where: [
+                { photographerUserId: userId },
+                { photographerProfileId: photographerProfile.id },
+            ],
             order: {
                 createdAt: 'DESC',
             },
@@ -77,13 +81,20 @@ export class BookingService {
         userId: string,
         updateBookingStatusDto: UpdateBookingStatusDto,
     ): Promise<Booking> {
-        const ownershipWhere = await this.buildPhotographerOwnershipWhere(
-            userId,
-            bookingId,
-        );
+        const photographerProfile =
+            await this.getPhotographerWorkspaceProfile(userId);
 
         const booking = await this.bookingRepository.findOne({
-            where: ownershipWhere,
+            where: [
+                {
+                    id: bookingId,
+                    photographerUserId: userId,
+                },
+                {
+                    id: bookingId,
+                    photographerProfileId: photographerProfile.id,
+                },
+            ],
         });
 
         if (!booking) {
@@ -100,31 +111,19 @@ export class BookingService {
         return this.bookingRepository.save(booking);
     }
 
-    private async buildPhotographerOwnershipWhere(
+    private async getPhotographerWorkspaceProfile(
         userId: string,
-        bookingId?: string,
-    ): Promise<FindOptionsWhere<Booking>[]> {
-        const conditions: FindOptionsWhere<Booking>[] = bookingId
-            ? [{ id: bookingId, photographerUserId: userId }]
-            : [{ photographerUserId: userId }];
-
-        const currentPhotographerProfile =
+    ): Promise<ProfileLookupRow> {
+        const photographerProfile =
             await this.findPhotographerProfileByUserId(userId);
 
-        if (currentPhotographerProfile) {
-            conditions.push(
-                bookingId
-                    ? {
-                          id: bookingId,
-                          photographerProfileId: currentPhotographerProfile.id,
-                      }
-                    : {
-                          photographerProfileId: currentPhotographerProfile.id,
-                      },
+        if (!photographerProfile) {
+            throw new ForbiddenException(
+                'Only photographer accounts can access photographer booking inbox.',
             );
         }
 
-        return conditions;
+        return photographerProfile;
     }
 
     private async findPhotographerByProfileId(
@@ -133,7 +132,7 @@ export class BookingService {
         const rows = await this.dataSource.query(
             `
       SELECT id, user_id AS "userId", role
-      FROM profiles
+      FROM public.profiles
       WHERE id = $1
         AND role = $2
       LIMIT 1
@@ -150,7 +149,7 @@ export class BookingService {
         const rows = await this.dataSource.query(
             `
       SELECT id, user_id AS "userId", role
-      FROM profiles
+      FROM public.profiles
       WHERE user_id = $1
         AND role = $2
       LIMIT 1

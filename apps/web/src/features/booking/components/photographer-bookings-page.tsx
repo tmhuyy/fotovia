@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { isAxiosError } from "axios";
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import
     {
@@ -30,7 +30,7 @@ const getErrorMessage = (error: unknown, fallback: string): string =>
 {
     if (isAxiosError(error)) {
         const payload = error.response?.data as
-            | { message?: string | string[] }
+            | { message?: string | string[]; statusCode?: number }
             | undefined;
 
         if (typeof payload?.message === "string" && payload.message.trim()) {
@@ -39,6 +39,10 @@ const getErrorMessage = (error: unknown, fallback: string): string =>
 
         if (Array.isArray(payload?.message) && payload.message.length > 0) {
             return payload.message[0] ?? fallback;
+        }
+
+        if (error.response?.status === 403) {
+            return "Your current login session was rejected by the booking service. Please sign out, sign in again, and retry.";
         }
     }
 
@@ -210,7 +214,10 @@ export const PhotographerBookingsPage = () =>
         retry: false,
     });
 
-    const bookings = bookingsQuery.data ?? [];
+    const bookings = useMemo<BookingRequestRecord[]>(() =>
+    {
+        return bookingsQuery.data ?? [];
+    }, [bookingsQuery.data]);
 
     const counts = useMemo<Record<BookingInboxFilter, number>>(() =>
     {
@@ -280,6 +287,12 @@ export const PhotographerBookingsPage = () =>
                     ) ?? [updatedBooking],
             );
         },
+        onSettled: async () =>
+        {
+            await queryClient.invalidateQueries({
+                queryKey: bookingInboxQueryKey,
+            });
+        },
     });
 
     const listErrorMessage = bookingsQuery.error
@@ -308,6 +321,22 @@ export const PhotographerBookingsPage = () =>
         });
     };
 
+    if (!hasHydrated || isHydrating) {
+        return (
+            <>
+                <Navbar />
+                <main className="min-h-screen bg-brand-background">
+                    <Section className="pt-10 pb-16 sm:pt-14">
+                        <Container>
+                            <BookingInboxSkeleton />
+                        </Container>
+                    </Section>
+                </main>
+                <Footer />
+            </>
+        );
+    }
+
     return (
         <>
             <Navbar />
@@ -331,9 +360,10 @@ export const PhotographerBookingsPage = () =>
                                     Review and respond to incoming booking requests.
                                 </h1>
                                 <p className="max-w-2xl text-base text-brand-muted">
-                                    This inbox turns booking into a real two-sided workflow:
-                                    clients can request sessions, and photographers can now make
-                                    the first status decision from their workspace.
+                                    This inbox completes the second half of the current booking
+                                    workflow: clients can send real requests, and photographers can
+                                    now review and make the first response decision from the
+                                    workspace.
                                 </p>
                             </div>
                         </div>
@@ -354,6 +384,14 @@ export const PhotographerBookingsPage = () =>
                                     <p className="text-sm leading-7 text-brand-muted">
                                         {listErrorMessage}
                                     </p>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => bookingsQuery.refetch()}
+                                        className="inline-flex rounded-full border border-brand-border bg-brand-background px-4 py-2 text-sm font-medium text-brand-primary transition hover:bg-brand-surface"
+                                    >
+                                        Try again
+                                    </button>
                                 </CardContent>
                             </Card>
                         ) : bookings.length === 0 ? (

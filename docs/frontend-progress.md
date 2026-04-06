@@ -1489,3 +1489,46 @@ The next phase should finish this area properly with a stable backend + frontend
 ### Recommended next phase
 
 Complete Photographer Booking Inbox and Status Flow (BE + FE)
+
+## Phase: Booking Inbox E2E Flow
+
+### Status
+
+Completed
+
+### Goal
+
+Finish booking as one real end-to-end feature across both backend and frontend.
+
+### What was completed
+
+This phase completed the full current booking slice:
+
+- client starts a direct booking request from a public photographer page
+- client submits a real booking request
+- booking is stored with initial `pending` status
+- photographer opens a real inbox at `/photographer/bookings`
+- photographer reviews request details
+- photographer confirms or declines the request from the frontend
+
+### Important implementation outcomes
+
+- direct booking entry now resolves selected photographer context correctly
+- the client booking flow no longer falls into the wrong placeholder-style local success path for the tested direct-booking route
+- backend auth behavior was aligned with the frontend-authenticated booking flow
+- photographer inbox and status actions are now usable from the real frontend
+- the phase was validated as a UI-driven end-to-end booking slice
+
+### Database note
+
+This phase used a manual SQL migration approach for shared Supabase DB changes instead of relying on unsafe schema synchronization.
+
+### Important project rule reinforced
+
+From this phase onward, one phase should cover one complete testable feature slice across both backend and frontend.
+
+A phase should not be considered complete if the user flow still depends on placeholder logic, backend-only scaffolding, or mismatched test instructions.
+
+### Recommended next phase
+
+Client Booking History and Status Tracking
