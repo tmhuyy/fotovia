@@ -6,7 +6,7 @@ import { ProfilePortfolioItem } from 'src/entities/profile-portfolio-item.entity
 
 type CreateProfilePortfolioItemRecord = Omit<
     ProfilePortfolioItem,
-    'id' | 'profile' | 'createdAt' | 'updatedAt'
+    'id' | 'profile' | 'galleryImages' | 'createdAt' | 'updatedAt'
 >;
 
 @Injectable()
@@ -21,9 +21,16 @@ export class ProfilePortfolioItemRepository extends Repository<ProfilePortfolioI
     async listByProfileId(profileId: string): Promise<ProfilePortfolioItem[]> {
         return this.repo.find({
             where: { profileId },
+            relations: {
+                galleryImages: true,
+            },
             order: {
                 createdAt: 'DESC',
                 sortOrder: 'DESC',
+                galleryImages: {
+                    sortOrder: 'ASC',
+                    createdAt: 'ASC',
+                },
             },
         });
     }
@@ -33,10 +40,17 @@ export class ProfilePortfolioItemRepository extends Repository<ProfilePortfolioI
     ): Promise<ProfilePortfolioItem[]> {
         return this.repo.find({
             where: { profileId },
+            relations: {
+                galleryImages: true,
+            },
             order: {
                 isFeatured: 'DESC',
                 createdAt: 'DESC',
                 sortOrder: 'DESC',
+                galleryImages: {
+                    sortOrder: 'ASC',
+                    createdAt: 'ASC',
+                },
             },
         });
     }
@@ -49,6 +63,9 @@ export class ProfilePortfolioItemRepository extends Repository<ProfilePortfolioI
             where: {
                 id: itemId,
                 profileId,
+            },
+            relations: {
+                galleryImages: true,
             },
         });
 

@@ -179,9 +179,58 @@ The system now supports a real bridge from:
 
 ---
 
+## Phase BE-5: Portfolio Gallery Expansion + First-pass Client-side Compression Support
+
+**Status:** Completed
+
+## Goal
+
+Expand the portfolio media model from one saved primary image into:
+
+- one required cover image
+- optional gallery images
+- richer public rendering of the saved item
+
+This phase also assumes the frontend now prepares images before upload with a first-pass client-side compression step.
+
+## What was completed in BE-5
+
+### 1. Portfolio items now support cover + gallery structure
+
+The portfolio model now supports:
+
+- one cover image stored directly on the portfolio item
+- additional gallery images stored separately but linked to the same item
+
+This keeps the previous single-image model usable as the cover while enabling richer showcase content.
+
+### 2. Portfolio gallery persistence now exists in the profile domain
+
+The backend now persists gallery image records for each portfolio item instead of treating every item as a one-image entry.
+
+### 3. Asset usage mapping now supports cover and gallery cases
+
+The media usage layer now distinguishes between:
+
+- cover image usage
+- gallery image usage
+
+This keeps the asset service as the shared media lifecycle layer while letting the profile domain own portfolio business rules.
+
+### 4. Public photographer detail can now render richer saved media
+
+The public detail read model now supports:
+
+- cover image rendering
+- optional gallery image rendering for the same saved portfolio item
+
+This is the first richer multi-image public showcase slice in the system.
+
+---
+
 ## Current verified media flows
 
-The backend asset service is now part of three real product slices:
+The backend asset service is now part of four real product slices:
 
 ### Avatar flow
 
@@ -209,6 +258,14 @@ The backend asset service is now part of three real product slices:
 4. public photographer detail reads saved backend detail by slug
 5. public pages render saved avatar and saved portfolio media
 
+### Portfolio gallery flow
+
+1. signed-in photographer uploads one cover image
+2. signed-in photographer uploads optional gallery images
+3. signed-in photographer saves one portfolio item with cover + gallery
+4. backend persists cover and gallery image records
+5. public detail reads and renders richer saved portfolio media
+
 ---
 
 ## Current domain boundaries
@@ -226,12 +283,14 @@ The backend asset service is now part of three real product slices:
 
 - photographer portfolio business logic itself
 - public photographer presentation logic itself
+- client-side image compression itself
 - AI style classification results as domain source of truth
 
 ### Profile service owns
 
 - profile-facing media attachments
 - saved photographer portfolio item records
+- saved photographer portfolio gallery records
 - public photographer read model
 - photographer-owned CRUD rules for portfolio items
 
@@ -239,55 +298,68 @@ The backend asset service is now part of three real product slices:
 
 ## Current implementation limits
 
-The current system is intentionally still an early real media platform slice.
+The current system is now a stronger media platform slice, but several important issues are still open.
 
 Still pending:
 
-- multi-image gallery support per portfolio item
 - stronger upload confirmation hardening against real storage object existence
-- client-side compression or other upload-size optimization before upload
+- better-tuned client-side compression with more meaningful file-size reduction
+- snackbar/toast feedback when gallery upload exceeds the allowed limit
+- drag-and-drop gallery ordering instead of basic move controls
+- safer public portfolio presentation for large portfolios
+- dialog/lightbox viewing and carousel navigation for gallery media
+- delete confirmation before removing a portfolio item
+- safe physical asset cleanup in storage when an item is deleted and no active usages remain
 - thumbnail or derivative-image strategy if needed
 - AI classification triggered from saved portfolio uploads
 
 ## Why this phase matters
 
-The asset service is no longer only infrastructure groundwork and the profile service is no longer only an authenticated edit surface.
-
-Together they now support:
+The media layer is no longer limited to:
 
 - avatar uploads
-- photographer portfolio uploads
-- public photographer detail rendering from saved data
+- one-image portfolio items
+- public single-image showcase
 
-That means the backend now supports a meaningful signed-in to public-read content pipeline.
+It now supports a richer photographer content model with:
+
+- cover image + gallery image structure
+- first-pass image preparation before upload
+- public rendering of more realistic saved project media
+
+That makes the product feel more like a real photography marketplace instead of a simple saved-card system.
 
 ## Recommended next phase
 
-## Phase BE/FE Next: Multi-image Portfolio Gallery + Client-side Compression
+## Phase BE/FE Next: Portfolio Gallery UX Refinement + Safe Asset Cleanup
 
 ### Why this should be next
 
-The current media system now proves that single-image portfolio items work.
+The current gallery model works, but the next gaps are now usability and storage hygiene.
 
-The next practical media gap is quality and scalability:
+The main remaining issues are:
 
-- real photographer projects usually need more than one image
-- large uploads can waste Supabase free-tier storage and bandwidth
-- the current one-primary-image model is a good base, but it is not rich enough for a stronger showcase experience
+- gallery interaction is still too mechanical
+- public portfolio rendering can become too long and heavy
+- current compression still needs stronger tuning
+- deleting a portfolio item does not yet clean up storage safely enough
 
 ### Suggested goals
 
-- keep one required cover image per portfolio item
-- add optional gallery images for the same portfolio item
-- support gallery ordering
-- compress large images before upload on the client
-- keep asset upload-session flow as the shared upload path
-- expand current asset usage mapping instead of replacing it
+- add better user feedback when gallery selection exceeds the limit
+- move from left/right ordering buttons to drag-and-drop ordering
+- use cleaner thumbnail overlay actions
+- show compact public portfolio cards instead of expanding everything inline
+- open a dialog/lightbox when a portfolio item is selected
+- support carousel navigation through cover + gallery images
+- improve compression results with stronger and more visible tuning
+- add delete confirmation before removing a portfolio item
+- delete physical storage objects only when the asset no longer has active usages
 
 ## Notes for later
 
-After gallery + compression is stable, the next likely media/product steps should be:
+After gallery UX refinement and safe asset cleanup are stable, the next likely media/product steps should be:
 
-- public gallery layout polish
+- public gallery polish
 - booking flow consumption of real public photographer data
 - AI classification integration on saved uploaded works

@@ -15,8 +15,10 @@ import { CreateProfilePortfolioItemDto } from './dtos/create-profile-portfolio-i
 import { UpdateProfileAvatarDto } from './dtos/update-profile-avatar.dto';
 import { UpdateProfileDto } from './dtos/update-profile.dto';
 import { UpdateProfilePortfolioItemDto } from './dtos/update-profile-portfolio-item.dto';
+import { ProfilePortfolioItemImage } from './entities/profile-portfolio-item-image.entity';
 import { ProfilePortfolioItem } from './entities/profile-portfolio-item.entity';
 import { Profile } from './entities/profile.entity';
+import { ProfilePortfolioItemImageRepository } from './repositories/profile-portfolio-item-image.repository';
 import { ProfilePortfolioItemRepository } from './repositories/profile-portfolio-item.repository';
 import { ProfileRepository } from './repositories/profile.repository';
 
@@ -85,7 +87,8 @@ type PublicPhotographerPortfolioItem = {
     id: string;
     title: string;
     description: string;
-    imageUrl: string;
+    coverImageUrl: string;
+    galleryImages: string[];
     category: string;
     isFeatured: boolean;
 };
@@ -105,6 +108,7 @@ export class ProfileService {
     constructor(
         private readonly profileRepository: ProfileRepository,
         private readonly profilePortfolioItemRepository: ProfilePortfolioItemRepository,
+        private readonly profilePortfolioItemImageRepository: ProfilePortfolioItemImageRepository,
         @Inject(ASSET_SERVICE) private readonly assetClient: ClientProxy,
     ) {}
 
@@ -217,9 +221,10 @@ export class ProfileService {
         userId: string,
     ): Promise<ProfilePortfolioItem> {
         const profile = await this.getPhotographerProfile(userId);
-        const resolvedAsset = await this.resolvePortfolioAsset(
-            dto.assetId,
+        const coverAsset = await this.resolvePortfolioAsset(
+            dto.coverAssetId,
             userId,
+            'cover',
         );
         const sortOrder =
             await this.profilePortfolioItemRepository.getNextSortOrder(
@@ -231,12 +236,12 @@ export class ProfileService {
                 profileId: profile.id,
                 title: dto.title.trim(),
                 description: dto.description.trim(),
-                assetId: dto.assetId,
-                assetUrl: resolvedAsset.readUrl.url,
-                assetFileName: resolvedAsset.asset.originalFilename ?? null,
-                assetMimeType: resolvedAsset.asset.mimeType ?? null,
+                assetId: dto.coverAssetId,
+                assetUrl: coverAsset.readUrl.url,
+                assetFileName: coverAsset.asset.originalFilename ?? null,
+                assetMimeType: coverAsset.asset.mimeType ?? null,
                 assetSizeBytes: this.normalizeAssetSizeBytes(
-                    resolvedAsset.asset.sizeBytes,
+                    coverAsset.asset.sizeBytes,
                 ),
                 category: dto.category.trim().toLowerCase(),
                 isFeatured: dto.isFeatured ?? false,
@@ -244,13 +249,35 @@ export class ProfileService {
             });
 
         try {
-            await this.attachPortfolioAssetUsage(
+            await this.attachPortfolioCoverAssetUsage(
                 createdItem.id,
-                dto.assetId,
+                dto.coverAssetId,
                 userId,
             );
-            return createdItem;
+
+            await this.replacePortfolioGallery(
+                {
+                    ...createdItem,
+                    galleryImages: [],
+                } as ProfilePortfolioItem,
+                dto.galleryAssetIds ?? [],
+                userId,
+            );
+
+            return this.profilePortfolioItemRepository.getByIdForProfile(
+                createdItem.id,
+                profile.id,
+            );
         } catch (error) {
+            await this.cleanupPortfolioItemMedia(
+                createdItem.id,
+                dto.coverAssetId,
+                dto.galleryAssetIds ?? [],
+                userId,
+            );
+            await this.profilePortfolioItemImageRepository.deleteByPortfolioItemId(
+                createdItem.id,
+            );
             await this.profilePortfolioItemRepository.deletePortfolioItem(
                 createdItem.id,
                 profile.id,
@@ -289,32 +316,52 @@ export class ProfileService {
             nextValues.isFeatured = dto.isFeatured;
         }
 
-        if (dto.assetId && dto.assetId !== currentItem.assetId) {
-            const resolvedAsset = await this.resolvePortfolioAsset(
-                dto.assetId,
+        if (dto.coverAssetId && dto.coverAssetId !== currentItem.assetId) {
+            const coverAsset = await this.resolvePortfolioAsset(
+                dto.coverAssetId,
                 userId,
+                'cover',
             );
 
-            await this.attachPortfolioAssetUsage(
+            await this.attachPortfolioCoverAssetUsage(
                 currentItem.id,
-                dto.assetId,
+                dto.coverAssetId,
                 userId,
             );
 
-            nextValues.assetId = dto.assetId;
-            nextValues.assetUrl = resolvedAsset.readUrl.url;
+            nextValues.assetId = dto.coverAssetId;
+            nextValues.assetUrl = coverAsset.readUrl.url;
             nextValues.assetFileName =
-                resolvedAsset.asset.originalFilename ?? null;
-            nextValues.assetMimeType = resolvedAsset.asset.mimeType ?? null;
+                coverAsset.asset.originalFilename ?? null;
+            nextValues.assetMimeType = coverAsset.asset.mimeType ?? null;
             nextValues.assetSizeBytes = this.normalizeAssetSizeBytes(
-                resolvedAsset.asset.sizeBytes,
+                coverAsset.asset.sizeBytes,
             );
         }
 
-        return this.profilePortfolioItemRepository.updatePortfolioItem(
+        await this.profilePortfolioItemRepository.updatePortfolioItem(
             itemId,
             profile.id,
             nextValues,
+        );
+
+        if (dto.galleryAssetIds) {
+            const updatedItem =
+                await this.profilePortfolioItemRepository.getByIdForProfile(
+                    itemId,
+                    profile.id,
+                );
+
+            await this.replacePortfolioGallery(
+                updatedItem,
+                dto.galleryAssetIds,
+                userId,
+            );
+        }
+
+        return this.profilePortfolioItemRepository.getByIdForProfile(
+            itemId,
+            profile.id,
         );
     }
 
@@ -329,7 +376,26 @@ export class ProfileService {
                 profile.id,
             );
 
-        await this.detachPortfolioAssetUsage(currentItem, userId);
+        await this.detachPortfolioAssetUsageByField(
+            currentItem.id,
+            currentItem.assetId,
+            ['coverImage', 'primaryImage'],
+            userId,
+        );
+
+        for (const galleryImage of currentItem.galleryImages ?? []) {
+            await this.detachPortfolioAssetUsageByField(
+                currentItem.id,
+                galleryImage.assetId,
+                ['gallery'],
+                userId,
+            );
+        }
+
+        await this.profilePortfolioItemImageRepository.deleteByPortfolioItemId(
+            currentItem.id,
+        );
+
         await this.profilePortfolioItemRepository.deletePortfolioItem(
             currentItem.id,
             profile.id,
@@ -385,7 +451,11 @@ export class ProfileService {
         return this.ensurePublicSlugIfNeeded(profile);
     }
 
-    private async resolvePortfolioAsset(assetId: string, userId: string) {
+    private async resolvePortfolioAsset(
+        assetId: string,
+        userId: string,
+        target: 'cover' | 'gallery',
+    ) {
         const asset = await this.sendAssetRpc<AssetRecord>(
             ASSET_GET_BY_ID_PATTERN,
             {
@@ -394,9 +464,22 @@ export class ProfileService {
             },
         );
 
-        if (asset.purpose !== AssetPurpose.PORTFOLIO_IMAGE) {
+        const isAcceptedCoverPurpose =
+            asset.purpose === AssetPurpose.PORTFOLIO_COVER ||
+            asset.purpose === AssetPurpose.PORTFOLIO_IMAGE;
+
+        const isAcceptedGalleryPurpose =
+            asset.purpose === AssetPurpose.PORTFOLIO_IMAGE;
+
+        if (target === 'cover' && !isAcceptedCoverPurpose) {
             throw new BadRequestException(
-                'Selected asset is not a portfolio image asset.',
+                'Selected asset is not a valid portfolio cover asset.',
+            );
+        }
+
+        if (target === 'gallery' && !isAcceptedGalleryPurpose) {
+            throw new BadRequestException(
+                'Selected asset is not a valid portfolio gallery asset.',
             );
         }
 
@@ -420,7 +503,7 @@ export class ProfileService {
         };
     }
 
-    private async attachPortfolioAssetUsage(
+    private async attachPortfolioCoverAssetUsage(
         portfolioItemId: string,
         assetId: string,
         userId: string,
@@ -434,44 +517,146 @@ export class ProfileService {
                 serviceName: 'profile',
                 entityType: 'portfolio_item',
                 entityId: portfolioItemId,
-                fieldName: 'primaryImage',
+                fieldName: 'coverImage',
                 usageRole: AssetUsageRole.PRIMARY,
                 replaceExistingActiveUsage: true,
             },
         });
     }
 
-    private async detachPortfolioAssetUsage(
+    private async attachPortfolioGalleryAssetUsage(
+        portfolioItemId: string,
+        assetId: string,
+        userId: string,
+    ) {
+        await this.sendAssetRpc(ASSET_ATTACH_USAGE_PATTERN, <
+            AttachAssetUsagePayload
+        >{
+            userId,
+            dto: {
+                assetId,
+                serviceName: 'profile',
+                entityType: 'portfolio_item',
+                entityId: portfolioItemId,
+                fieldName: 'gallery',
+                usageRole: AssetUsageRole.PRIMARY,
+                replaceExistingActiveUsage: false,
+            },
+        });
+    }
+
+    private async replacePortfolioGallery(
         portfolioItem: ProfilePortfolioItem,
+        galleryAssetIds: string[],
+        userId: string,
+    ) {
+        const nextGalleryAssetIds = Array.from(
+            new Set(
+                (galleryAssetIds ?? [])
+                    .map((value) => value?.trim())
+                    .filter(Boolean),
+            ),
+        );
+
+        for (const galleryImage of portfolioItem.galleryImages ?? []) {
+            await this.detachPortfolioAssetUsageByField(
+                portfolioItem.id,
+                galleryImage.assetId,
+                ['gallery'],
+                userId,
+            );
+        }
+
+        await this.profilePortfolioItemImageRepository.deleteByPortfolioItemId(
+            portfolioItem.id,
+        );
+
+        if (nextGalleryAssetIds.length === 0) {
+            return;
+        }
+
+        const resolvedGalleryAssets = await Promise.all(
+            nextGalleryAssetIds.map((assetId) =>
+                this.resolvePortfolioAsset(assetId, userId, 'gallery'),
+            ),
+        );
+
+        for (const assetId of nextGalleryAssetIds) {
+            await this.attachPortfolioGalleryAssetUsage(
+                portfolioItem.id,
+                assetId,
+                userId,
+            );
+        }
+
+        await this.profilePortfolioItemImageRepository.replaceGalleryImages(
+            portfolioItem.id,
+            resolvedGalleryAssets.map(({ asset, readUrl }, index) => ({
+                portfolioItemId: portfolioItem.id,
+                assetId: asset.id,
+                assetUrl: readUrl.url,
+                assetFileName: asset.originalFilename ?? null,
+                assetMimeType: asset.mimeType ?? null,
+                assetSizeBytes: this.normalizeAssetSizeBytes(asset.sizeBytes),
+                sortOrder: index + 1,
+            })),
+        );
+    }
+
+    private async cleanupPortfolioItemMedia(
+        portfolioItemId: string,
+        coverAssetId: string,
+        galleryAssetIds: string[],
+        userId: string,
+    ) {
+        await this.detachPortfolioAssetUsageByField(
+            portfolioItemId,
+            coverAssetId,
+            ['coverImage', 'primaryImage'],
+            userId,
+        );
+
+        for (const galleryAssetId of galleryAssetIds ?? []) {
+            await this.detachPortfolioAssetUsageByField(
+                portfolioItemId,
+                galleryAssetId,
+                ['gallery'],
+                userId,
+            );
+        }
+    }
+
+    private async detachPortfolioAssetUsageByField(
+        portfolioItemId: string,
+        assetId: string,
+        fieldNames: string[],
         userId: string,
     ) {
         const usages = await this.sendAssetRpc<AssetUsageRecord[]>(
             ASSET_GET_USAGES_PATTERN,
             {
-                assetId: portfolioItem.assetId,
+                assetId,
                 userId,
             },
         );
 
-        const activeUsage = usages.find((usage) => {
+        const matchingUsages = usages.filter((usage) => {
             return (
                 usage.entityType === 'portfolio_item' &&
-                usage.entityId === portfolioItem.id &&
-                usage.fieldName === 'primaryImage' &&
+                usage.entityId === portfolioItemId &&
+                fieldNames.includes(usage.fieldName) &&
                 !usage.detachedAt
             );
         });
 
-        if (!activeUsage) {
-            return;
+        for (const usage of matchingUsages) {
+            await this.sendAssetRpc(ASSET_DETACH_USAGE_PATTERN, <
+                DetachAssetUsagePayload
+            >{
+                userId,
+                usageId: usage.id,
+            });
         }
-
-        await this.sendAssetRpc(ASSET_DETACH_USAGE_PATTERN, <
-            DetachAssetUsagePayload
-        >{
-            userId,
-            usageId: activeUsage.id,
-        });
     }
 
     private async ensurePublicSlugIfNeeded(profile: Profile): Promise<Profile> {
@@ -587,7 +772,10 @@ export class ProfileService {
                 id: item.id,
                 title: item.title,
                 description: item.description,
-                imageUrl: item.assetUrl,
+                coverImageUrl: item.assetUrl,
+                galleryImages: (item.galleryImages ?? []).map(
+                    (galleryImage) => galleryImage.assetUrl,
+                ),
                 category: this.toDisplayLabel(item.category),
                 isFeatured: item.isFeatured,
             })),

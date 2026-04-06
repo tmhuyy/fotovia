@@ -12,7 +12,11 @@ import { Container } from "../../../components/layout/container";
 import { Badge } from "../../../components/ui/badge";
 import { Button, buttonVariants } from "../../../components/ui/button";
 import { Card, CardContent } from "../../../components/ui/card";
-import { assetService } from "../../../services/asset.service";
+import
+  {
+    assetService,
+    type AssetPurpose,
+  } from "../../../services/asset.service";
 import { photographerService } from "../../../services/photographer.service";
 import { useAuthStore } from "../../../store/auth.store";
 import type { AssetPreview } from "../../asset/types/asset.types";
@@ -49,7 +53,8 @@ const mapItemToDraft = (
   return {
     title: item.title,
     description: item.description,
-    asset: item.asset,
+    coverAsset: item.coverAsset,
+    galleryAssets: item.galleryAssets,
     category: item.category,
     isFeatured: item.isFeatured,
   };
@@ -77,7 +82,7 @@ const PortfolioPageSkeleton = () =>
             ))}
           </div>
 
-          <div className="h-[32rem] animate-pulse rounded-[2rem] border border-border bg-surface/60" />
+          <div className="h-[40rem] animate-pulse rounded-[2rem] border border-border bg-surface/60" />
           <div className="h-[24rem] animate-pulse rounded-[2rem] border border-border bg-surface/60" />
         </Container>
       </main>
@@ -86,10 +91,14 @@ const PortfolioPageSkeleton = () =>
   );
 };
 
-const resolvePortfolioAssetId = async (asset: AssetPreview | null) =>
+const resolveUploadedAssetId = async (
+  asset: AssetPreview | null,
+  purpose: AssetPurpose,
+  metadataSource: string,
+) =>
 {
   if (!asset) {
-    throw new Error("Please upload an image for this portfolio work.");
+    throw new Error("Please upload an image before saving this portfolio item.");
   }
 
   if (asset.source === "uploaded-remote" && asset.assetId) {
@@ -101,7 +110,7 @@ const resolvePortfolioAssetId = async (asset: AssetPreview | null) =>
   }
 
   const uploadSession = await assetService.createUploadSession({
-    purpose: "PORTFOLIO_IMAGE",
+    purpose,
     visibility: "PUBLIC",
     resourceType: "IMAGE",
     originalFilename: asset.file.name,
@@ -122,8 +131,9 @@ const resolvePortfolioAssetId = async (asset: AssetPreview | null) =>
     uploadSession.uploadSession.id,
     {
       metadataJson: {
-        source: "web-portfolio-item-upload",
+        source: metadataSource,
         originalFilename: asset.file.name,
+        originalSizeInBytes: asset.originalSizeInBytes,
       },
     },
   );
@@ -140,7 +150,20 @@ const buildPortfolioMutationPayload = async (
     description: draft.description.trim(),
     category: draft.category,
     isFeatured: draft.isFeatured,
-    assetId: await resolvePortfolioAssetId(draft.asset),
+    coverAssetId: await resolveUploadedAssetId(
+      draft.coverAsset,
+      "PORTFOLIO_COVER",
+      "web-portfolio-cover-upload",
+    ),
+    galleryAssetIds: await Promise.all(
+      draft.galleryAssets.map((galleryAsset) =>
+        resolveUploadedAssetId(
+          galleryAsset,
+          "PORTFOLIO_IMAGE",
+          "web-portfolio-gallery-upload",
+        ),
+      ),
+    ),
   };
 };
 
@@ -177,13 +200,14 @@ export const PhotographerPortfolioPage = () =>
       );
 
       toast.success("Portfolio item saved", {
-        description: "Your work is now persisted through the real backend flow.",
+        description:
+          "Your cover image and gallery are now persisted through the real backend flow.",
       });
     },
     onError: () =>
     {
       toast.error("We couldn’t save this portfolio item", {
-        description: "Please try again after checking the selected image.",
+        description: "Please try again after checking the selected images.",
       });
     },
   });
@@ -215,7 +239,8 @@ export const PhotographerPortfolioPage = () =>
       setEditingItemId(null);
 
       toast.success("Portfolio item updated", {
-        description: "Your latest portfolio changes are now saved.",
+        description:
+          "Your latest cover and gallery changes are now saved.",
       });
     },
     onError: () =>
@@ -227,7 +252,8 @@ export const PhotographerPortfolioPage = () =>
   });
 
   const deletePortfolioItemMutation = useMutation({
-    mutationFn: (itemId: string) => photographerService.deleteMyPortfolioItem(itemId),
+    mutationFn: (itemId: string) =>
+      photographerService.deleteMyPortfolioItem(itemId),
     onSuccess: (_, deletedItemId) =>
     {
       queryClient.setQueryData<PhotographerPortfolioItem[]>(
@@ -254,8 +280,8 @@ export const PhotographerPortfolioPage = () =>
   const toggleFeaturedMutation = useMutation({
     mutationFn: (item: PhotographerPortfolioItem) =>
     {
-      if (!item.asset.assetId) {
-        throw new Error("Missing uploaded asset reference.");
+      if (!item.coverAsset.assetId) {
+        throw new Error("Missing uploaded cover asset reference.");
       }
 
       return photographerService.updateMyPortfolioItem(item.id, {
@@ -263,7 +289,10 @@ export const PhotographerPortfolioPage = () =>
         description: item.description,
         category: item.category,
         isFeatured: !item.isFeatured,
-        assetId: item.asset.assetId,
+        coverAssetId: item.coverAsset.assetId,
+        galleryAssetIds: item.galleryAssets
+          .map((galleryAsset) => galleryAsset.assetId)
+          .filter((assetId): assetId is string => typeof assetId === "string"),
       });
     },
     onSuccess: (updatedItem) =>
@@ -302,8 +331,16 @@ export const PhotographerPortfolioPage = () =>
 
   const uploadedCount = useMemo(() =>
   {
-    return sortedItems.filter((item) => item.asset.source === "uploaded-remote")
-      .length;
+    return sortedItems.reduce((count, item) =>
+    {
+      const coverCount =
+        item.coverAsset.source === "uploaded-remote" ? 1 : 0;
+      const galleryCount = item.galleryAssets.filter(
+        (galleryAsset) => galleryAsset.source === "uploaded-remote",
+      ).length;
+
+      return count + coverCount + galleryCount;
+    }, 0);
   }, [sortedItems]);
 
   const editingItem = useMemo(() =>
@@ -451,9 +488,9 @@ export const PhotographerPortfolioPage = () =>
                 </h1>
 
                 <p className="max-w-3xl text-sm leading-7 text-muted sm:text-base">
-                  This phase replaces browser-local portfolio state with real
-                  backend persistence while keeping the asset-first upload flow
-                  and newest-first ordering.
+                  This phase expands your portfolio from a single-image item into
+                  a cover image plus optional gallery, while compressing images
+                  on the client before upload.
                 </p>
               </div>
             </div>
@@ -531,8 +568,8 @@ export const PhotographerPortfolioPage = () =>
 
                 <p className="text-sm leading-7 text-muted">
                   These works now come from the real backend source of truth.
-                  New items appear first, and edits or featured changes persist
-                  across refresh.
+                  Each item supports one cover image and optional gallery images,
+                  and local image preparation now compresses before upload.
                 </p>
               </div>
 

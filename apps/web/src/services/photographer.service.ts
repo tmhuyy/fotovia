@@ -3,15 +3,14 @@ import { isAxiosError } from "axios";
 import type { AssetPreview } from "../features/asset/types/asset.types";
 import type {
     PhotographerDetail,
-    PhotographerPortfolioEntry,
     PhotographerPortfolioShowcaseItem,
     PhotographerService as PhotographerServiceItem,
     PhotographerTestimonial,
 } from "../features/photographer/types/photographer-detail.types";
+import type { PhotographerProfile } from "../features/photographer/types/photographer.types";
 import {
     PORTFOLIO_CATEGORIES,
     type PhotographerPortfolioItem,
-    type PhotographerProfile,
     type PortfolioCategory,
     type PortfolioItemMutationPayload,
 } from "../features/photographer/types/portfolio.types";
@@ -87,7 +86,7 @@ const normalizeCategory = (value: unknown): PortfolioCategory => {
     return "wedding";
 };
 
-const normalizeAssetPreview = (payload: AnyRecord): AssetPreview => {
+const normalizeUploadedAssetPreview = (payload: AnyRecord): AssetPreview => {
     const assetId = normalizeString(payload.assetId);
     const assetUrl = normalizeString(payload.assetUrl);
     const assetFileName =
@@ -110,6 +109,16 @@ const normalizeAssetPreview = (payload: AnyRecord): AssetPreview => {
     });
 };
 
+const normalizeGalleryAssets = (value: unknown): AssetPreview[] => {
+    if (!Array.isArray(value)) {
+        return [];
+    }
+
+    return value.map((item) =>
+        normalizeUploadedAssetPreview((item as AnyRecord | undefined) ?? {}),
+    );
+};
+
 const normalizePortfolioItem = (
     payload: AnyRecord,
 ): PhotographerPortfolioItem => {
@@ -117,7 +126,15 @@ const normalizePortfolioItem = (
         id: normalizeString(payload.id),
         title: normalizeString(payload.title),
         description: normalizeString(payload.description),
-        asset: normalizeAssetPreview(payload),
+        coverAsset: normalizeUploadedAssetPreview({
+            assetId: payload.assetId,
+            assetUrl: payload.assetUrl,
+            assetFileName: payload.assetFileName,
+            assetMimeType: payload.assetMimeType,
+            assetSizeBytes: payload.assetSizeBytes,
+            createdAt: payload.createdAt,
+        }),
+        galleryAssets: normalizeGalleryAssets(payload.galleryImages),
         category: normalizeCategory(payload.category),
         isFeatured: normalizeBoolean(payload.isFeatured),
         sortOrder: normalizeNumber(payload.sortOrder) ?? 0,
@@ -153,27 +170,6 @@ const normalizePhotographerProfile = (
     };
 };
 
-const normalizePortfolioEntry = (
-    payload: unknown,
-): PhotographerPortfolioEntry => {
-    if (typeof payload === "string") {
-        return payload;
-    }
-
-    const record = (payload as AnyRecord | undefined) ?? {};
-
-    const entry: PhotographerPortfolioShowcaseItem = {
-        id: normalizeString(record.id),
-        title: normalizeString(record.title) || "Saved portfolio work",
-        description: normalizeString(record.description),
-        imageUrl: normalizeString(record.imageUrl),
-        category: normalizeString(record.category) || "Photography",
-        isFeatured: normalizeBoolean(record.isFeatured),
-    };
-
-    return entry;
-};
-
 const normalizeServices = (value: unknown): PhotographerServiceItem[] => {
     if (!Array.isArray(value)) {
         return [];
@@ -207,6 +203,24 @@ const normalizeTestimonials = (value: unknown): PhotographerTestimonial[] => {
     });
 };
 
+const normalizePortfolioShowcaseItem = (
+    payload: AnyRecord,
+): PhotographerPortfolioShowcaseItem => {
+    return {
+        id: normalizeString(payload.id),
+        title: normalizeString(payload.title) || "Saved portfolio work",
+        description: normalizeString(payload.description),
+        coverImageUrl: normalizeString(payload.coverImageUrl),
+        galleryImages: Array.isArray(payload.galleryImages)
+            ? payload.galleryImages.filter(
+                  (item): item is string => typeof item === "string",
+              )
+            : [],
+        category: normalizeString(payload.category) || "Photography",
+        isFeatured: normalizeBoolean(payload.isFeatured),
+    };
+};
+
 const normalizePhotographerDetail = (
     payload: AnyRecord,
 ): PhotographerDetail => {
@@ -226,7 +240,11 @@ const normalizePhotographerDetail = (
             normalizeString(payload.availability) ||
             "Open to booking requests on Fotovia",
         services: normalizeServices(payload.services),
-        portfolio: portfolioRaw.map((item) => normalizePortfolioEntry(item)),
+        portfolio: portfolioRaw.map((item) =>
+            normalizePortfolioShowcaseItem(
+                (item as AnyRecord | undefined) ?? {},
+            ),
+        ),
         testimonials: normalizeTestimonials(payload.testimonials),
         specialties: normalizeStringArray(payload.specialties),
     };
@@ -243,7 +261,9 @@ export const photographerService = {
             return [];
         }
 
-        return data.map((item) => normalizePortfolioItem(item as AnyRecord));
+        return data.map((item) =>
+            normalizePortfolioItem((item as AnyRecord | undefined) ?? {}),
+        );
     },
 
     async createMyPortfolioItem(

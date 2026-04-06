@@ -6,11 +6,13 @@ import { ASSET_SERVICE, AUTH_SERVICE } from '@repo/common';
 
 import { ConfigSchemaValidation } from './config.schema';
 import { ProfileController } from './profile.controller';
-import { Profile } from './entities/profile.entity';
+import { ProfilePortfolioItemImage } from './entities/profile-portfolio-item-image.entity';
 import { ProfilePortfolioItem } from './entities/profile-portfolio-item.entity';
-import { ProfileService } from './profile.service';
+import { Profile } from './entities/profile.entity';
+import { ProfilePortfolioItemImageRepository } from './repositories/profile-portfolio-item-image.repository';
 import { ProfilePortfolioItemRepository } from './repositories/profile-portfolio-item.repository';
 import { ProfileRepository } from './repositories/profile.repository';
+import { ProfileService } from './profile.service';
 
 @Module({
     imports: [
@@ -39,7 +41,11 @@ import { ProfileRepository } from './repositories/profile.repository';
             },
         }),
 
-        TypeOrmModule.forFeature([Profile, ProfilePortfolioItem]),
+        TypeOrmModule.forFeature([
+            Profile,
+            ProfilePortfolioItem,
+            ProfilePortfolioItemImage,
+        ]),
 
         ClientsModule.registerAsync([
             {
@@ -76,6 +82,7 @@ import { ProfileRepository } from './repositories/profile.repository';
         ProfileService,
         ProfileRepository,
         ProfilePortfolioItemRepository,
+        ProfilePortfolioItemImageRepository,
     ],
     controllers: [ProfileController],
 })

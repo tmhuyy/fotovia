@@ -16,6 +16,10 @@ type AnyRecord = Record<string, unknown>;
 export type AssetPurpose = "AVATAR" | "PORTFOLIO_IMAGE" | "PORTFOLIO_COVER";
 export type AssetVisibility = "PUBLIC" | "PRIVATE";
 export type AssetResourceType = "IMAGE" | "VIDEO" | "DOCUMENT";
+export type ImageCompressionTarget =
+    | "avatar"
+    | "portfolio-cover"
+    | "portfolio-gallery";
 
 export interface CreateUploadSessionPayload {
     purpose: AssetPurpose;
@@ -78,9 +82,34 @@ interface UploadToSignedUrlParams {
     signedUrl?: string | null;
 }
 
+type CompressionProfile = {
+    maxWidthOrHeight: number;
+    quality: number;
+    skipIfSmallerThanBytes: number;
+};
+
 const ASSET_ENDPOINTS = {
     uploadSessions: "/assets/upload-sessions",
 };
+
+const COMPRESSION_PROFILES: Record<ImageCompressionTarget, CompressionProfile> =
+    {
+        avatar: {
+            maxWidthOrHeight: 1600,
+            quality: 0.8,
+            skipIfSmallerThanBytes: 350 * 1024,
+        },
+        "portfolio-cover": {
+            maxWidthOrHeight: 2400,
+            quality: 0.82,
+            skipIfSmallerThanBytes: 500 * 1024,
+        },
+        "portfolio-gallery": {
+            maxWidthOrHeight: 2000,
+            quality: 0.78,
+            skipIfSmallerThanBytes: 450 * 1024,
+        },
+    };
 
 const generateAssetId = () => {
     if (
@@ -113,6 +142,78 @@ const readFileAsDataUrl = (file: File) =>
         };
 
         reader.readAsDataURL(file);
+    });
+
+const loadImageFromFile = (file: File) =>
+    new Promise<{
+        image: HTMLImageElement;
+        width: number;
+        height: number;
+        cleanup: () => void;
+    }>((resolve, reject) => {
+        const objectUrl = URL.createObjectURL(file);
+        const image = new Image();
+
+        image.onload = () => {
+            resolve({
+                image,
+                width: image.naturalWidth,
+                height: image.naturalHeight,
+                cleanup: () => URL.revokeObjectURL(objectUrl),
+            });
+        };
+
+        image.onerror = () => {
+            URL.revokeObjectURL(objectUrl);
+            reject(new Error("We couldn’t process this image."));
+        };
+
+        image.src = objectUrl;
+    });
+
+const replaceFileExtension = (fileName: string, nextExtension: string) => {
+    const normalizedExtension = nextExtension.replace(/^\./, "");
+
+    if (!fileName.includes(".")) {
+        return `${fileName}.${normalizedExtension}`;
+    }
+
+    return fileName.replace(/\.[^.]+$/, `.${normalizedExtension}`);
+};
+
+const getCompressedOutputType = (mimeType: string) => {
+    if (mimeType === "image/png") {
+        return "image/webp";
+    }
+
+    if (mimeType === "image/webp") {
+        return "image/webp";
+    }
+
+    return "image/jpeg";
+};
+
+const getCompressedFileName = (fileName: string, mimeType: string) => {
+    if (mimeType === "image/webp") {
+        return replaceFileExtension(fileName, "webp");
+    }
+
+    return replaceFileExtension(fileName, "jpg");
+};
+
+const createCanvasBlob = (
+    canvas: HTMLCanvasElement,
+    outputType: string,
+    quality: number,
+) =>
+    new Promise<Blob | null>((resolve) => {
+        canvas.toBlob(
+            (blob) => {
+                resolve(blob);
+            },
+            outputType,
+            quality,
+        );
     });
 
 const normalizeString = (value: unknown): string => {
@@ -259,7 +360,94 @@ export const assetService = {
         };
     },
 
-    async createLocalAssetPreview(file: File): Promise<AssetPreview> {
+    async compressImageFile(
+        file: File,
+        target: ImageCompressionTarget,
+    ): Promise<File> {
+        const validation = this.validateImageFile(file);
+
+        if (!validation.isValid) {
+            throw new Error(validation.message ?? "Invalid image file.");
+        }
+
+        const profile = COMPRESSION_PROFILES[target];
+
+        if (
+            typeof window === "undefined" ||
+            typeof document === "undefined" ||
+            file.size <= profile.skipIfSmallerThanBytes
+        ) {
+            return file;
+        }
+
+        const { image, width, height, cleanup } = await loadImageFromFile(file);
+
+        try {
+            const longestEdge = Math.max(width, height);
+            const scale =
+                longestEdge > profile.maxWidthOrHeight
+                    ? profile.maxWidthOrHeight / longestEdge
+                    : 1;
+
+            const targetWidth = Math.max(1, Math.round(width * scale));
+            const targetHeight = Math.max(1, Math.round(height * scale));
+
+            if (
+                scale === 1 &&
+                file.size <= profile.skipIfSmallerThanBytes * 1.2
+            ) {
+                return file;
+            }
+
+            const canvas = document.createElement("canvas");
+            canvas.width = targetWidth;
+            canvas.height = targetHeight;
+
+            const context = canvas.getContext("2d");
+
+            if (!context) {
+                return file;
+            }
+
+            context.drawImage(image, 0, 0, targetWidth, targetHeight);
+
+            const outputType = getCompressedOutputType(file.type);
+            const blob = await createCanvasBlob(
+                canvas,
+                outputType,
+                profile.quality,
+            );
+
+            if (!blob) {
+                return file;
+            }
+
+            const didResize = targetWidth !== width || targetHeight !== height;
+            const isMeaningfullySmaller = blob.size < file.size * 0.95;
+
+            if (!didResize && !isMeaningfullySmaller) {
+                return file;
+            }
+
+            return new File(
+                [blob],
+                getCompressedFileName(file.name, outputType),
+                {
+                    type: outputType,
+                    lastModified: Date.now(),
+                },
+            );
+        } finally {
+            cleanup();
+        }
+    },
+
+    async createLocalAssetPreview(
+        file: File,
+        options?: {
+            originalSizeInBytes?: number | null;
+        },
+    ): Promise<AssetPreview> {
         const previewUrl = await readFileAsDataUrl(file);
 
         return {
@@ -270,10 +458,23 @@ export const assetService = {
             fileName: file.name,
             mimeType: file.type,
             sizeInBytes: file.size,
+            originalSizeInBytes: options?.originalSizeInBytes ?? null,
             previewUrl,
             createdAt: new Date().toISOString(),
             file,
         };
+    },
+
+    async prepareImageAsset(
+        file: File,
+        target: ImageCompressionTarget,
+    ): Promise<AssetPreview> {
+        const compressedFile = await this.compressImageFile(file, target);
+
+        return this.createLocalAssetPreview(compressedFile, {
+            originalSizeInBytes:
+                compressedFile.size !== file.size ? file.size : null,
+        });
     },
 
     createSeededAssetPreview({
@@ -295,6 +496,7 @@ export const assetService = {
             fileName,
             mimeType,
             sizeInBytes,
+            originalSizeInBytes: null,
             previewUrl,
             createdAt: new Date().toISOString(),
             file: null,
@@ -324,6 +526,7 @@ export const assetService = {
             fileName,
             mimeType,
             sizeInBytes,
+            originalSizeInBytes: null,
             previewUrl,
             createdAt: createdAt ?? new Date().toISOString(),
             file: null,

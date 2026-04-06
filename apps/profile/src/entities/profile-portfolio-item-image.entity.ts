@@ -4,33 +4,29 @@ import {
     Entity,
     JoinColumn,
     ManyToOne,
-    OneToMany,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
 } from 'typeorm';
 
-import { ProfilePortfolioItemImage } from './profile-portfolio-item-image.entity';
-import { Profile } from './profile.entity';
+import { ProfilePortfolioItem } from './profile-portfolio-item.entity';
 
-@Entity('profile_portfolio_items')
-export class ProfilePortfolioItem {
+@Entity('profile_portfolio_item_images')
+export class ProfilePortfolioItemImage {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
-    @Column({ name: 'profile_id', type: 'uuid' })
-    profileId: string;
+    @Column({ name: 'portfolio_item_id', type: 'uuid' })
+    portfolioItemId: string;
 
-    @ManyToOne(() => Profile, {
-        onDelete: 'CASCADE',
-    })
-    @JoinColumn({ name: 'profile_id' })
-    profile: Profile;
-
-    @Column({ type: 'varchar', length: 255 })
-    title: string;
-
-    @Column({ type: 'text' })
-    description: string;
+    @ManyToOne(
+        () => ProfilePortfolioItem,
+        (portfolioItem) => portfolioItem.galleryImages,
+        {
+            onDelete: 'CASCADE',
+        },
+    )
+    @JoinColumn({ name: 'portfolio_item_id' })
+    portfolioItem: ProfilePortfolioItem;
 
     @Column({ name: 'asset_id', type: 'uuid' })
     assetId: string;
@@ -57,20 +53,8 @@ export class ProfilePortfolioItem {
     @Column({ name: 'asset_size_bytes', type: 'int', nullable: true })
     assetSizeBytes: number | null;
 
-    @Column({ type: 'varchar', length: 50 })
-    category: string;
-
-    @Column({ name: 'is_featured', type: 'boolean', default: false })
-    isFeatured: boolean;
-
     @Column({ name: 'sort_order', type: 'int', default: 0 })
     sortOrder: number;
-
-    @OneToMany(
-        () => ProfilePortfolioItemImage,
-        (galleryImage) => galleryImage.portfolioItem,
-    )
-    galleryImages: ProfilePortfolioItemImage[];
 
     @CreateDateColumn({ name: 'created_at' })
     createdAt: Date;

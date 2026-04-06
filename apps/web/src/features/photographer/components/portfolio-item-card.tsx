@@ -34,18 +34,20 @@ export const PortfolioItemCard = ({
     actions,
 }: PortfolioItemCardProps) =>
 {
-    const isLocalPreview = item.asset.source === "local-preview";
+    const isLocalPreview = item.coverAsset.source === "local-preview";
 
     return (
-        <article className="overflow-hidden rounded-[1.5rem] border border-border bg-surface shadow-sm">
-            <div className="relative aspect-[4/3] w-full overflow-hidden bg-background">
+        <div className="overflow-hidden rounded-[2rem] border border-border bg-surface shadow-sm">
+            <div className="aspect-[4/3] overflow-hidden bg-brand-background">
                 <img
-                    src={item.asset.previewUrl}
+                    src={item.coverAsset.previewUrl}
                     alt={item.title}
                     className="h-full w-full object-cover"
                 />
+            </div>
 
-                <div className="absolute left-4 top-4 flex flex-wrap gap-2">
+            <div className="space-y-4 p-6">
+                <div className="flex flex-wrap gap-2">
                     <Badge variant="neutral">
                         {PORTFOLIO_CATEGORY_LABELS[item.category]}
                     </Badge>
@@ -53,38 +55,41 @@ export const PortfolioItemCard = ({
                     {item.isFeatured ? <Badge variant="accent">Featured</Badge> : null}
 
                     {isLocalPreview ? <Badge variant="neutral">Local preview</Badge> : null}
-                </div>
-            </div>
 
-            <div className="space-y-3 p-5">
-                <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                        <h3 className="text-lg font-semibold text-foreground">
-                            {item.title}
-                        </h3>
-                        <p className="mt-1 text-xs uppercase tracking-[0.22em] text-muted">
-                            Added {formatCreatedAt(item.createdAt)}
-                        </p>
-                    </div>
+                    {item.galleryAssets.length ? (
+                        <Badge variant="neutral">
+                            +{item.galleryAssets.length} gallery
+                        </Badge>
+                    ) : null}
+                </div>
+
+                <div className="space-y-2">
+                    <h3 className="font-serif text-2xl text-foreground">{item.title}</h3>
+
+                    <p className="text-sm text-muted">
+                        Added {formatCreatedAt(item.createdAt)}
+                    </p>
                 </div>
 
                 <p className="text-sm leading-7 text-muted">{item.description}</p>
 
-                <div className="rounded-2xl border border-border bg-background px-4 py-3">
+                <div className="rounded-[1.5rem] border border-border bg-background px-4 py-4">
                     <p className="text-xs uppercase tracking-[0.22em] text-muted">
-                        Asset metadata
+                        Cover image metadata
                     </p>
-                    <p className="mt-2 break-all text-sm font-medium text-foreground">
-                        {item.asset.fileName}
+
+                    <p className="mt-2 text-sm font-medium text-foreground">
+                        {item.coverAsset.fileName}
                     </p>
+
                     <p className="mt-1 text-sm text-muted">
-                        {item.asset.mimeType} ·{" "}
-                        {assetService.formatFileSize(item.asset.sizeInBytes)}
+                        {item.coverAsset.mimeType} ·{" "}
+                        {assetService.formatFileSize(item.coverAsset.sizeInBytes)}
                     </p>
                 </div>
 
-                {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
+                {actions ? <div className="flex flex-wrap gap-3">{actions}</div> : null}
             </div>
-        </article>
+        </div>
     );
 };

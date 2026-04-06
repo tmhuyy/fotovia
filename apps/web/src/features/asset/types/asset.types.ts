@@ -10,6 +10,7 @@ export interface AssetPreview {
     fileName: string;
     mimeType: string;
     sizeInBytes: number;
+    originalSizeInBytes?: number | null;
     previewUrl: string;
     createdAt: string;
     file?: File | null;

@@ -17,21 +17,18 @@ export interface PhotographerPortfolioShowcaseItem {
     id: string;
     title: string;
     description: string;
-    imageUrl: string;
+    coverImageUrl: string;
+    galleryImages: string[];
     category: string;
     isFeatured: boolean;
 }
-
-export type PhotographerPortfolioEntry =
-    | string
-    | PhotographerPortfolioShowcaseItem;
 
 export interface PhotographerDetail extends PhotographerProfile {
     intro: string;
     experienceYears: number | null;
     availability: string;
     services: PhotographerService[];
-    portfolio: PhotographerPortfolioEntry[];
+    portfolio: PhotographerPortfolioShowcaseItem[];
     testimonials: PhotographerTestimonial[];
     specialties: string[];
 }

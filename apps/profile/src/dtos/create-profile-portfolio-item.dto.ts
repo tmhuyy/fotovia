@@ -1,5 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+    ArrayMaxSize,
+    ArrayUnique,
+    IsArray,
     IsBoolean,
     IsNotEmpty,
     IsOptional,
@@ -28,9 +31,25 @@ export class CreateProfilePortfolioItemDto {
     @ApiProperty({
         format: 'uuid',
         example: '5fa9cc8c-e71c-4746-b427-da36b06030e2',
+        description: 'Required cover image asset id.',
     })
     @IsUUID()
-    assetId: string;
+    coverAssetId: string;
+
+    @ApiPropertyOptional({
+        type: [String],
+        example: [
+            '5fa9cc8c-e71c-4746-b427-da36b06030e2',
+            '36a6b5e0-9d64-4f1f-8b15-5a6b8d6bfe71',
+        ],
+        description: 'Optional additional gallery image asset ids.',
+    })
+    @IsOptional()
+    @IsArray()
+    @ArrayUnique()
+    @ArrayMaxSize(8)
+    @IsUUID('4', { each: true })
+    galleryAssetIds?: string[] = [];
 
     @ApiProperty({
         example: 'wedding',

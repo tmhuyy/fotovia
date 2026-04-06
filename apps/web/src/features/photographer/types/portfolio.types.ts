@@ -32,7 +32,8 @@ export interface PhotographerPortfolioItem {
     id: string;
     title: string;
     description: string;
-    asset: AssetPreview;
+    coverAsset: AssetPreview;
+    galleryAssets: AssetPreview[];
     category: PortfolioCategory;
     isFeatured: boolean;
     sortOrder: number;
@@ -43,7 +44,8 @@ export interface PhotographerPortfolioItem {
 export interface PortfolioItemDraft {
     title: string;
     description: string;
-    asset: AssetPreview | null;
+    coverAsset: AssetPreview | null;
+    galleryAssets: AssetPreview[];
     category: PortfolioCategory;
     isFeatured: boolean;
 }
@@ -51,7 +53,8 @@ export interface PortfolioItemDraft {
 export interface PortfolioItemMutationPayload {
     title: string;
     description: string;
-    assetId: string;
+    coverAssetId: string;
+    galleryAssetIds: string[];
     category: PortfolioCategory;
     isFeatured: boolean;
 }
