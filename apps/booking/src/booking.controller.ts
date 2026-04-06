@@ -47,6 +47,20 @@ export class BookingController {
     }
 
     @UseGuards(JwtAuthGuard)
+    @Get('/client/me')
+    @ApiOperation({
+        summary: 'Get booking requests created by the current client account',
+    })
+    @ApiOkResponse({
+        description: 'Client booking history fetched successfully',
+        type: Booking,
+        isArray: true,
+    })
+    async getMyClientBookings(@GetUser() user: IUser): Promise<Booking[]> {
+        return this.bookingService.getMyClientBookings(user.id);
+    }
+
+    @UseGuards(JwtAuthGuard)
     @Get('/photographer/me')
     @ApiOperation({
         summary: 'Get incoming booking requests for my photographer account',

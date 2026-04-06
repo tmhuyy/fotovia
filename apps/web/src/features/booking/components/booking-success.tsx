@@ -55,8 +55,8 @@ export const BookingSuccess = ({
             Booking request received
           </h2>
           <p className="max-w-2xl text-base text-brand-muted">
-            {booking.photographerName} will review your request and respond with
-            availability.
+            {booking.photographerName} will review your request and
+            respond with availability.
           </p>
         </div>
 
@@ -89,7 +89,10 @@ export const BookingSuccess = ({
                 Session type
               </p>
               <p className="mt-2 text-sm text-brand-primary">
-                {resolveLabel(booking.sessionType, sessionTypeOptions)}
+                {resolveLabel(
+                  booking.sessionType,
+                  sessionTypeOptions,
+                )}
               </p>
             </div>
 
@@ -107,7 +110,10 @@ export const BookingSuccess = ({
                 Duration
               </p>
               <p className="mt-2 text-sm text-brand-primary">
-                {resolveLabel(booking.duration, durationOptions)}
+                {resolveLabel(
+                  booking.duration,
+                  durationOptions,
+                )}
               </p>
             </div>
 
@@ -133,23 +139,32 @@ export const BookingSuccess = ({
 
         <div className="flex flex-wrap gap-3">
           <Link
-            href={`/photographers/${booking.photographerSlug}`}
-            className={buttonVariants({ variant: "secondary", size: "md" })}
+            href="/my-bookings"
+            className={buttonVariants({
+              variant: "secondary",
+              size: "md",
+            })}
           >
-            Back to profile
+            View my bookings
           </Link>
 
           <Link
-            href="/photographers"
-            className={buttonVariants({ variant: "secondary", size: "md" })}
+            href={`/photographers/${booking.photographerSlug}`}
+            className={buttonVariants({
+              variant: "secondary",
+              size: "md",
+            })}
           >
-            Explore more photographers
+            Back to photographer
           </Link>
 
           <button
             type="button"
             onClick={onReset}
-            className={buttonVariants({ variant: "primary", size: "md" })}
+            className={buttonVariants({
+              variant: "primary",
+              size: "md",
+            })}
           >
             Send another request
           </button>

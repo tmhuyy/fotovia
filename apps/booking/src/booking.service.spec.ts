@@ -134,6 +134,23 @@ describe('BookingService', () => {
         });
     });
 
+    it('should get booking history for the current client account', async () => {
+        bookingRepository.find.mockResolvedValue([]);
+
+        await service.getMyClientBookings(
+            '22222222-2222-2222-2222-222222222222',
+        );
+
+        expect(bookingRepository.find).toHaveBeenCalledWith({
+            where: {
+                clientUserId: '22222222-2222-2222-2222-222222222222',
+            },
+            order: {
+                createdAt: 'DESC',
+            },
+        });
+    });
+
     it('should reject non-photographer access to the inbox', async () => {
         dataSource.query.mockResolvedValueOnce([]);
 

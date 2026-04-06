@@ -1532,3 +1532,47 @@ A phase should not be considered complete if the user flow still depends on plac
 ### Recommended next phase
 
 Client Booking History and Status Tracking
+
+## Phase: Client Booking History and Status Tracking
+
+### Status
+
+Completed
+
+### Goal
+
+Complete the client-side visibility loop after booking request submission.
+
+### What was completed
+
+This phase added a real client booking history feature across backend and frontend.
+
+Completed results:
+
+- backend endpoint for the current client booking history
+- authenticated frontend route at `/my-bookings`
+- client booking list and detail UI
+- real status tracking from the frontend
+- account menu entry for `My bookings`
+- booking success flow integration into the new history page
+
+### Why this phase matters
+
+Booking is no longer only visible to photographers after request creation.
+
+Clients can now:
+
+- review their own submitted booking requests
+- track whether each request is pending, confirmed, or declined
+- revisit request details later from the real UI
+
+### Product state after this phase
+
+Fotovia now has a practical two-sided booking workflow:
+
+- clients can send and track booking requests
+- photographers can review and respond to them
+
+### Recommended next phase
+
+Booking Lifecycle Actions (Client Cancel + Photographer Complete)

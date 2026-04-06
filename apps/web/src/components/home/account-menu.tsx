@@ -7,7 +7,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { AuthRole } from "../../types/auth.types";
 import { Button } from "../ui/button";
 
-interface AccountMenuProps {
+interface AccountMenuProps
+{
     email?: string;
     userRole?: AuthRole;
     isSigningOut: boolean;
@@ -19,30 +20,36 @@ export const AccountMenu = ({
     userRole,
     isSigningOut,
     onSignOut,
-}: AccountMenuProps) => {
+}: AccountMenuProps) =>
+{
     const pathname = usePathname();
     const rootRef = useRef<HTMLDivElement | null>(null);
     const [isOpen, setIsOpen] = useState(false);
 
-    const initials = useMemo(() => {
+    const initials = useMemo(() =>
+    {
         if (!email) return "FV";
         return email.slice(0, 2).toUpperCase();
     }, [email]);
 
     const isPhotographer = userRole === "photographer";
 
-    useEffect(() => {
+    useEffect(() =>
+    {
         setIsOpen(false);
     }, [pathname]);
 
-    useEffect(() => {
-        const handlePointerDown = (event: MouseEvent) => {
+    useEffect(() =>
+    {
+        const handlePointerDown = (event: MouseEvent) =>
+        {
             if (!rootRef.current?.contains(event.target as Node)) {
                 setIsOpen(false);
             }
         };
 
-        const handleEscape = (event: KeyboardEvent) => {
+        const handleEscape = (event: KeyboardEvent) =>
+        {
             if (event.key === "Escape") {
                 setIsOpen(false);
             }
@@ -51,7 +58,8 @@ export const AccountMenu = ({
         document.addEventListener("mousedown", handlePointerDown);
         document.addEventListener("keydown", handleEscape);
 
-        return () => {
+        return () =>
+        {
             document.removeEventListener("mousedown", handlePointerDown);
             document.removeEventListener("keydown", handleEscape);
         };
@@ -98,6 +106,14 @@ export const AccountMenu = ({
                                 <span className="text-muted">→</span>
                             </Link>
                         ) : null}
+
+                        <Link
+                            href="/my-bookings"
+                            className="flex w-full items-center justify-between rounded-2xl px-4 py-3 text-sm text-foreground transition hover:bg-background"
+                        >
+                            <span>My bookings</span>
+                            <span className="text-muted">→</span>
+                        </Link>
 
                         <Link
                             href="/profile"

@@ -6,6 +6,7 @@ export type PhotographerBookingActionStatus = Extract<
 >;
 
 export type BookingInboxFilter = "all" | BookingStatus;
+export type ClientBookingFilter = "all" | BookingStatus;
 
 export interface CreateBookingPayload {
     photographerProfileId: string;

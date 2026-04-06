@@ -12,6 +12,7 @@ type AnyRecord = Record<string, unknown>;
 
 const BOOKING_ENDPOINTS = {
     create: "/booking",
+    clientMine: "/booking/client/me",
     photographerMine: "/booking/photographer/me",
     photographerStatus: (bookingId: string) =>
         `/booking/photographer/me/${bookingId}/status`,
@@ -97,6 +98,15 @@ export const bookingService = {
 
         const data = unwrapResponse<AnyRecord>(response.data);
         return normalizeBooking(data);
+    },
+
+    async getMyClientBookings(): Promise<BookingRequestRecord[]> {
+        const response = await bookingClient.get<
+            ApiResponse<unknown> | unknown
+        >(BOOKING_ENDPOINTS.clientMine);
+
+        const data = unwrapResponse<unknown>(response.data);
+        return normalizeBookingArray(data);
     },
 
     async getMyPhotographerBookings(): Promise<BookingRequestRecord[]> {

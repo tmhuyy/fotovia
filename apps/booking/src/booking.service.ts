@@ -61,6 +61,17 @@ export class BookingService {
         return this.bookingRepository.save(booking);
     }
 
+    async getMyClientBookings(userId: string): Promise<Booking[]> {
+        return this.bookingRepository.find({
+            where: {
+                clientUserId: userId,
+            },
+            order: {
+                createdAt: 'DESC',
+            },
+        });
+    }
+
     async getMyPhotographerBookings(userId: string): Promise<Booking[]> {
         const photographerProfile =
             await this.getPhotographerWorkspaceProfile(userId);
