@@ -27,7 +27,7 @@ import { SupabaseModule } from './infrastructure/supabase/supabase.module';
                 return {
                     type: 'postgres',
                     autoLoadEntities: true,
-                    synchronize: configService.get('ENV') === 'DEV',
+                    synchronize: false,
                     host: configService.get('DB_HOST'),
                     port: Number(configService.get('DB_PORT')),
                     username: configService.get('DB_USERNAME'),

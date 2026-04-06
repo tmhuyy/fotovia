@@ -19,9 +19,17 @@ export class Booking {
     @Column({ type: 'uuid' })
     clientUserId: string;
 
+    @ApiPropertyOptional()
+    @Column({ type: 'varchar', length: 255, nullable: true })
+    clientEmail: string | null;
+
     @ApiProperty({ format: 'uuid' })
     @Column({ type: 'uuid' })
     photographerProfileId: string;
+
+    @ApiPropertyOptional({ format: 'uuid' })
+    @Column({ type: 'uuid', nullable: true })
+    photographerUserId: string | null;
 
     @ApiProperty()
     @Column({ type: 'varchar', length: 255 })

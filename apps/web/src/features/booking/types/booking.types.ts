@@ -1,5 +1,12 @@
 export type BookingStatus = "pending" | "confirmed" | "declined" | "completed";
 
+export type PhotographerBookingActionStatus = Extract<
+    BookingStatus,
+    "confirmed" | "declined"
+>;
+
+export type BookingInboxFilter = "all" | BookingStatus;
+
 export interface CreateBookingPayload {
     photographerProfileId: string;
     photographerSlug: string;
@@ -19,6 +26,8 @@ export interface CreateBookingPayload {
 export interface BookingRequestRecord extends CreateBookingPayload {
     id: string;
     clientUserId: string;
+    clientEmail?: string;
+    photographerUserId?: string;
     status: BookingStatus;
     createdAt: string;
     updatedAt: string;

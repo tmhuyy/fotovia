@@ -42,7 +42,7 @@ import { LoggerModule } from 'nestjs-pino';
                 return {
                     type: 'postgres',
                     autoLoadEntities: true,
-                    synchronize: configService.get('ENV') === 'DEV', // for data migration,
+                    synchronize: false,
                     host: configService.get('DB_HOST'),
                     port: configService.get('DB_PORT'),
                     username: configService.get('DB_USERNAME'),

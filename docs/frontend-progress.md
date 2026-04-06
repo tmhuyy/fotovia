@@ -1451,3 +1451,41 @@ Still missing:
 ### Recommended next phase
 
 Photographer Booking Inbox and Status Foundation
+
+## Phase: Photographer Booking Inbox and Status Foundation
+
+### Status
+
+In progress
+
+### Goal
+
+Start the second half of the booking workflow after real booking request creation.
+
+This phase was intended to add photographer-side booking inbox and first-response status management.
+
+### Intended scope
+
+- photographer inbox route
+- incoming request list
+- request detail view
+- initial confirm / decline status actions
+- dashboard entry into booking workspace
+
+### What was learned
+
+This phase exposed an important infrastructure rule for the project:
+
+The shared Supabase database should not rely on TypeORM `synchronize` for schema evolution across multiple services.
+
+A partial lookup entity for the shared `profiles` table created schema-sync risk and should not be treated as a safe direction for shared-table access.
+
+### Current outcome
+
+The phase helped define the intended booking inbox/status architecture, but it is not yet treated as a completed end-to-end product slice.
+
+The next phase should finish this area properly with a stable backend + frontend implementation and full flow testing together.
+
+### Recommended next phase
+
+Complete Photographer Booking Inbox and Status Flow (BE + FE)

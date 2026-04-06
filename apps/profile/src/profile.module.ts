@@ -28,7 +28,7 @@ import { ProfileService } from './profile.service';
                 return {
                     type: 'postgres',
                     autoLoadEntities: true,
-                    synchronize: configService.get('ENV') === 'DEV',
+                    synchronize: false,
                     host: configService.get('DB_HOST'),
                     port: configService.get('DB_PORT'),
                     username: configService.get('DB_USERNAME'),

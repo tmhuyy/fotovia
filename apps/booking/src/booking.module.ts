@@ -1,14 +1,15 @@
 import { Module } from '@nestjs/common';
-import { BookingService } from './booking.service';
-import { BookingController } from './booking.controller';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { ConfigSchemaValidation } from './config.schema';
-import { LoggerModule } from 'nestjs-pino';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { BookingRepository } from './repositories/booking.repository';
-import { Booking } from './entities/booking.entity';
 import { ClientsModule, Transport } from '@nestjs/microservices';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+
 import { AUTH_SERVICE } from '@repo/common';
+
+import { BookingController } from './booking.controller';
+import { BookingService } from './booking.service';
+import { ConfigSchemaValidation } from './config.schema';
+import { Booking } from './entities/booking.entity';
+import { BookingRepository } from './repositories/booking.repository';
 
 @Module({
     imports: [
@@ -16,7 +17,6 @@ import { AUTH_SERVICE } from '@repo/common';
             envFilePath: [`.env`],
             validationSchema: ConfigSchemaValidation,
         }),
-        // LoggerModule,
         TypeOrmModule.forRootAsync({
             imports: [ConfigModule],
             inject: [ConfigService],
@@ -24,7 +24,7 @@ import { AUTH_SERVICE } from '@repo/common';
                 return {
                     type: 'postgres',
                     autoLoadEntities: true,
-                    synchronize: configService.get('ENV') === 'DEV', // for data migration,
+                    synchronize: false,
                     host: configService.get('DB_HOST'),
                     port: configService.get('DB_PORT'),
                     username: configService.get('DB_USERNAME'),
