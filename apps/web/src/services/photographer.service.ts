@@ -8,7 +8,10 @@ import type {
     PhotographerService as PhotographerServiceItem,
     PhotographerTestimonial,
 } from "../features/photographer/types/photographer-detail.types";
-import type { PhotographerProfile } from "../features/photographer/types/photographer.types";
+import type {
+    PhotographerDiscoveryStyleSource,
+    PhotographerProfile,
+} from "../features/photographer/types/photographer.types";
 import {
     PORTFOLIO_ITEM_CLASSIFICATION_STATUSES,
     type PhotographerPortfolioItem,
@@ -22,6 +25,12 @@ import { unwrapResponse } from "./api/response";
 import type { ApiResponse } from "./api/types";
 
 type AnyRecord = Record<string, unknown>;
+
+export interface GetPublicPhotographersOptions {
+    search?: string;
+    style?: string;
+    limit?: number;
+}
 
 const PHOTOGRAPHER_ENDPOINTS = {
     portfolioItems: "/profiles/me/portfolio-items",
@@ -54,6 +63,16 @@ const normalizeNumber = (value: unknown): number | null => {
     }
 
     return null;
+};
+
+const normalizeInteger = (value: unknown): number | null => {
+    const numericValue = normalizeNumber(value);
+
+    if (numericValue === null) {
+        return null;
+    }
+
+    return Math.trunc(numericValue);
 };
 
 const normalizeBoolean = (value: unknown): boolean => {
@@ -98,6 +117,17 @@ const normalizePortfolioStyleSource = (
     value: unknown,
     fallback: PhotographerPortfolioStyleSource = "none",
 ): PhotographerPortfolioStyleSource => {
+    if (value === "ai" || value === "legacy" || value === "none") {
+        return value;
+    }
+
+    return fallback;
+};
+
+const normalizeDiscoveryStyleSource = (
+    value: unknown,
+    fallback: PhotographerDiscoveryStyleSource = "none",
+): PhotographerDiscoveryStyleSource => {
     if (value === "ai" || value === "legacy" || value === "none") {
         return value;
     }
@@ -248,12 +278,22 @@ const normalizePortfolioItem = (
 const normalizePhotographerProfile = (
     payload: AnyRecord,
 ): PhotographerProfile => {
+    const discoveryStyles = normalizeStringArray(payload.discoveryStyles);
+    const profileStyles = normalizeStringArray(payload.styles);
+    const primaryDiscoveryStyle = normalizeNullableString(
+        payload.primaryDiscoveryStyle,
+    );
+    const tags = normalizeStringArray(payload.tags);
+
     return {
         id: normalizeString(payload.id),
         slug: normalizeString(payload.slug),
         name: normalizeString(payload.name) || "Photographer",
-        specialty: normalizeString(payload.specialty) || "Photography",
-        styles: normalizeStringArray(payload.styles),
+        specialty:
+            normalizeString(payload.specialty) ||
+            primaryDiscoveryStyle ||
+            "Photography",
+        styles: profileStyles.length ? profileStyles : discoveryStyles,
         location: normalizeString(payload.location) || "Location updating soon",
         bio:
             normalizeString(payload.bio) ||
@@ -262,7 +302,16 @@ const normalizePhotographerProfile = (
         rating: normalizeNumber(payload.rating),
         reviewCount: normalizeNumber(payload.reviewCount),
         startingPrice: normalizeNumber(payload.startingPrice),
-        tags: normalizeStringArray(payload.tags),
+        tags: tags.length ? tags : discoveryStyles.slice(0, 3),
+        primaryDiscoveryStyle,
+        discoveryStyles,
+        discoveryStyleSource: normalizeDiscoveryStyleSource(
+            payload.discoveryStyleSource,
+        ),
+        portfolioItemCount: normalizeInteger(payload.portfolioItemCount) ?? 0,
+        classifiedPortfolioCount:
+            normalizeInteger(payload.classifiedPortfolioCount) ?? 0,
+        hasFeaturedWork: normalizeBoolean(payload.hasFeaturedWork),
     };
 };
 
@@ -415,10 +464,21 @@ export const photographerService = {
         );
     },
 
-    async getPublicPhotographers(): Promise<PhotographerProfile[]> {
+    async getPublicPhotographers(
+        options?: GetPublicPhotographersOptions,
+    ): Promise<PhotographerProfile[]> {
         const response = await profileClient.get<
             ApiResponse<unknown> | unknown
-        >(PHOTOGRAPHER_ENDPOINTS.publicPhotographers);
+        >(PHOTOGRAPHER_ENDPOINTS.publicPhotographers, {
+            params: {
+                search: options?.search?.trim() || undefined,
+                style: options?.style?.trim() || undefined,
+                limit:
+                    typeof options?.limit === "number" && options.limit > 0
+                        ? options.limit
+                        : undefined,
+            },
+        });
         const data = unwrapResponse<unknown>(response.data);
 
         if (!Array.isArray(data)) {

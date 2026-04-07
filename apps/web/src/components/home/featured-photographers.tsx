@@ -1,65 +1,147 @@
+"use client";
+
 import Link from "next/link";
-import { Card, CardContent } from "../ui/card";
+
+import { useQuery } from "@tanstack/react-query";
+
+import { Container } from "../layout/container";
 import { Badge } from "../ui/badge";
 import { buttonVariants } from "../ui/button";
-import { Section } from "../common/section";
-import { SectionHeading } from "../common/section-heading";
-import { Container } from "../layout/container";
-import { mockPhotographers } from "../../features/photographer/data/mock-photographers";
+import { Card, CardContent } from "../ui/card";
+import { photographerService } from "../../services/photographer.service";
 
-const featuredPhotographers = [...mockPhotographers]
-  .sort((a, b) => b.rating - a.rating)
-  .slice(0, 3);
-
-export const FeaturedPhotographers = () => {
+const FeaturedPhotographersSkeleton = () =>
+{
   return (
-    <Section>
-      <Container className="space-y-10">
-        <SectionHeading
-          eyebrow="Featured"
-          title="Photographers with a signature point of view"
-          description="A curated selection of talent known for refined storytelling, light, and composition."
+    <div className="grid gap-6 md:grid-cols-3">
+      {Array.from({ length: 3 }).map((_, index) => (
+        <div
+          key={index}
+          className="h-[20rem] animate-pulse rounded-[2rem] border border-border bg-surface/70"
         />
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {featuredPhotographers.map((photographer) => (
-            <Card key={photographer.id} className="overflow-hidden">
-              <div className="aspect-[4/3] w-full bg-gradient-to-br from-background to-surface">
-                <div className="h-full w-full border-b border-border bg-background/40" />
-              </div>
-              <CardContent className="space-y-4 pt-5">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="font-display text-xl text-foreground">
+      ))}
+    </div>
+  );
+};
+
+export const FeaturedPhotographers = () =>
+{
+  const featuredQuery = useQuery({
+    queryKey: ["home-featured-photographers"],
+    queryFn: () => photographerService.getPublicPhotographers({ limit: 3 }),
+    retry: false,
+  });
+
+  const photographers = featuredQuery.data ?? [];
+
+  return (
+    <section className="pb-16 pt-6">
+      <Container className="space-y-8">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div className="space-y-3">
+            <Badge variant="neutral">Featured discovery</Badge>
+
+            <div className="space-y-2">
+              <h2 className="font-serif text-4xl text-foreground">
+                Public photographers ready to compare
+              </h2>
+
+              <p className="max-w-2xl text-sm leading-7 text-muted">
+                Real public profiles, AI-detected style signals,
+                and faster entry into the photographers list.
+              </p>
+            </div>
+          </div>
+
+          <Link
+            href="/photographers"
+            className={buttonVariants({
+              variant: "secondary",
+              className: "rounded-full",
+            })}
+          >
+            See all photographers
+          </Link>
+        </div>
+
+        {featuredQuery.isLoading ? (
+          <FeaturedPhotographersSkeleton />
+        ) : featuredQuery.isError ? (
+          <Card className="rounded-[2rem] border-border bg-surface shadow-sm">
+            <CardContent className="space-y-4 p-8">
+              <h3 className="font-serif text-2xl text-foreground">
+                We couldn’t load featured photographers
+              </h3>
+
+              <p className="text-sm leading-6 text-muted">
+                Please try again in a moment.
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid gap-6 md:grid-cols-3">
+            {photographers.map((photographer) => (
+              <Card
+                key={photographer.id}
+                className="rounded-[2rem] border-border bg-surface shadow-sm"
+              >
+                <CardContent className="space-y-5 p-6">
+                  <div className="flex flex-wrap gap-2">
+                    {photographer.primaryDiscoveryStyle ? (
+                      <Badge variant="ai">
+                        {photographer.primaryDiscoveryStyle}
+                      </Badge>
+                    ) : null}
+
+                    {photographer.hasFeaturedWork ? (
+                      <Badge variant="accent">
+                        Featured work
+                      </Badge>
+                    ) : null}
+                  </div>
+
+                  <div className="space-y-2">
+                    <h3 className="font-serif text-3xl text-foreground">
                       {photographer.name}
-                    </p>
+                    </h3>
+
                     <p className="text-sm text-muted">
-                      {photographer.specialty}
+                      {photographer.location}
                     </p>
                   </div>
-                  <Badge variant="accent">
-                    {photographer.tags[0] ?? photographer.styles[0]}
-                  </Badge>
-                </div>
-                <p className="text-xs uppercase tracking-[0.2em] text-muted">
-                  {photographer.location}
-                </p>
-                <div className="flex items-center justify-between text-xs text-muted">
-                  <span>
-                    {photographer.rating.toFixed(1)} rating · {photographer.reviewCount} reviews
-                  </span>
-                  <span>From ${photographer.startingPrice}</span>
-                </div>
-                <Link
-                  href={`/photographers/${encodeURIComponent(photographer.slug)}`}
-                  className={buttonVariants({ variant: "secondary", size: "sm" })}
-                >
-                  View profile
-                </Link>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+
+                  <p className="text-sm leading-7 text-muted">
+                    {photographer.bio}
+                  </p>
+
+                  <div className="flex flex-wrap gap-2">
+                    {(photographer.discoveryStyles.length
+                      ? photographer.discoveryStyles
+                      : photographer.styles
+                    )
+                      .slice(0, 3)
+                      .map((style) => (
+                        <Badge key={style} variant="neutral">
+                          {style}
+                        </Badge>
+                      ))}
+                  </div>
+
+                  <Link
+                    href={`/photographers/${photographer.slug}`}
+                    className={buttonVariants({
+                      size: "lg",
+                      className: "w-full rounded-full",
+                    })}
+                  >
+                    View profile
+                  </Link>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
       </Container>
-    </Section>
+    </section>
   );
 };

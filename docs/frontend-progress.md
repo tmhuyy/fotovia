@@ -1665,3 +1665,95 @@ Next:
 
 - expose classification status and detected style clearly in the photographer portfolio frontend
 - add manual retry flow for failed classification jobs
+
+## Phase: Public AI Style Discovery and Minimal Homepage
+**Status:** Completed
+
+### Scope
+- Extend public photographer discovery with AI-style-oriented data.
+- Simplify the homepage so the entry flow is shorter and easier to understand.
+- Replace leftover mock-style public discovery entry points with real public source data.
+- Reduce instruction-heavy UX in favor of faster browse-first behavior.
+
+### Delivered
+- Public photographer discovery now surfaces AI-oriented metadata for listing and filtering, including:
+  - `primaryDiscoveryStyle`
+  - `discoveryStyles`
+  - `discoveryStyleSource`
+  - `portfolioItemCount`
+  - `classifiedPortfolioCount`
+  - `hasFeaturedWork`
+- Public photographer listing now supports discovery-oriented query behavior such as:
+  - `search`
+  - `style`
+  - `limit`
+- `/photographers` is now oriented around AI style discovery instead of older generic/mock listing behavior.
+- Photographer cards now communicate discovery value more clearly through:
+  - primary AI style badge
+  - featured-work badge
+  - classified portfolio count
+  - cleaner public bio / location / price summary
+- Homepage was simplified into a shorter public entry flow:
+  - hero
+  - compact value strip
+  - featured photographers
+- Featured photographers now use real public photographer data instead of mock-only homepage content.
+- Public discovery and public detail flow remain compatible with the AI-first portfolio model completed in the previous phase.
+
+### Decisions
+- Public AI-discovered style is now a meaningful part of the browse experience, not only an internal portfolio workspace result.
+- Homepage should remain short and directional rather than explaining each feature in many separate blocks.
+- Discovery should prioritize a fast browse → compare → request flow.
+- For frontend documentation going forward, FE phase notes should be consolidated into `docs/frontend-progress.md` instead of creating more standalone FE phase documents unless a phase is strongly cross-cutting or backend-heavy.
+
+### Notes
+- This phase was tested through the real frontend flow and confirmed as working.
+- The discovery UI is now much closer to the intended product direction:
+  - shorter homepage
+  - clearer public discovery
+  - stronger AI-first positioning
+- Booking timeline / activity history already exists from earlier phases, so that is not the immediate gap now.
+- The larger remaining product gap is the handoff from discovery into booking action with less friction and less placeholder copy.
+
+### Key Files
+- `apps/profile/src/dtos/get-public-photographers-query.dto.ts`
+- `apps/profile/src/profile.controller.ts`
+- `apps/profile/src/profile.service.ts`
+- `apps/web/src/features/photographer/types/photographer.types.ts`
+- `apps/web/src/services/photographer.service.ts`
+- `apps/web/src/features/photographer/components/photographer-card.tsx`
+- `apps/web/src/features/photographer/components/photographer-filters.tsx`
+- `apps/web/src/features/photographer/components/photographers-page.tsx`
+- `apps/web/src/components/home/home-page.tsx`
+- `apps/web/src/components/home/hero-section.tsx`
+- `apps/web/src/components/home/featured-photographers.tsx`
+- `apps/web/src/components/home/home-value-strip.tsx`
+
+### Recommended Next Phase
+**Discovery-to-Booking Handoff Simplification**
+
+### Why this should be next
+The product now does a better job of helping users discover photographers through AI-oriented public browsing, but the next important UX step is making the transition from discovery into booking feel more direct and less instructional.
+
+The strongest next improvement is not booking timeline/history, because that tracking layer already exists. The bigger product opportunity is reducing friction between:
+- homepage
+- photographers list
+- photographer detail
+- booking entry
+
+### Suggested next-phase scope
+- simplify remaining placeholder / instructional copy in discovery and detail pages
+- make the booking entry path more direct from public discovery
+- improve CTA hierarchy on `/photographers` and `/photographers/[slug]`
+- make it easier for a user to move from:
+  - browse photographers
+  - open detail
+  - send booking request
+- optionally tighten any lightweight backend/public payload contract needed to support a smoother discovery-to-booking handoff
+
+### Product direction after this phase
+Fotovia is now moving into a clearer public shape:
+- AI helps users discover relevant photographers
+- homepage becomes shorter and more purposeful
+- public portfolio work carries more of the explanation
+- the next refinement should focus on turning discovery into action more cleanly

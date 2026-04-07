@@ -7,144 +7,136 @@ import { Badge } from "../ui/badge";
 import { buttonVariants } from "../ui/button";
 import { useAuthStore } from "../../store/auth.store";
 
-export const HeroSection = () => {
-    const { user, isAuthenticated, isHydrating, hasHydrated } = useAuthStore();
+const quickStyleLinks = [
+    { label: "Wedding", href: "/photographers?style=Wedding" },
+    { label: "Fashion", href: "/photographers?style=Fashion" },
+    { label: "Street", href: "/photographers?style=Street" },
+    { label: "Food", href: "/photographers?style=Food" },
+];
 
-    const isAuthReady = hasHydrated && !isHydrating;
-    const role = user?.role;
+export const HeroSection = () =>
+{
+    const { user, isAuthenticated, hasHydrated, isHydrating } = useAuthStore();
 
-    const showSignedOutActions = isAuthReady && !isAuthenticated;
-    const showClientActions =
-        isAuthReady && isAuthenticated && role === "client";
-    const showPhotographerActions =
-        isAuthReady && isAuthenticated && role === "photographer";
-    const showActionSkeleton = !isAuthReady;
+    const showWorkspaceAction =
+        hasHydrated &&
+        !isHydrating &&
+        isAuthenticated &&
+        user?.role === "photographer";
 
     return (
-        <section className="relative overflow-hidden">
-            <Container className="grid gap-12 py-16 sm:py-20 md:grid-cols-[1.1fr_0.9fr] md:items-center md:py-28">
+        <section className="pb-10 pt-10 sm:pt-14">
+            <Container className="grid gap-10 lg:grid-cols-[minmax(0,1.2fr)_420px] lg:items-center">
                 <div className="space-y-6">
-                    <Badge variant="accent">Premium Photography Booking</Badge>
-                    <h1 className="font-display text-4xl leading-tight text-foreground md:text-6xl">
-                        Book photographers who match your vision, instantly.
-                    </h1>
-                    <p className="text-base leading-relaxed text-muted md:text-lg">
-                        Discover curated talent, explore portfolios, and use AI
-                        style matching to find the perfect photographer for your
-                        next moment.
-                    </p>
+                    <Badge variant="ai">AI-first photographer discovery</Badge>
 
-                    <div className="flex flex-wrap gap-4">
-                        {showActionSkeleton ? (
-                            <>
-                                <div className="h-11 w-48 animate-pulse rounded-full border border-border bg-surface/60" />
-                                <div className="h-11 w-56 animate-pulse rounded-full border border-border bg-surface/60" />
-                            </>
-                        ) : null}
+                    <div className="space-y-4">
+                        <h1 className="font-serif text-5xl leading-tight text-foreground sm:text-6xl">
+                            Find the right photographer without the clutter.
+                        </h1>
 
-                        {showSignedOutActions ? (
-                            <>
-                                <Link
-                                    href="/photographers"
-                                    className={buttonVariants({ size: "lg" })}
-                                >
-                                    Explore photographers
-                                </Link>
-                                <Link
-                                    href="/bookings/new"
-                                    className={buttonVariants({
-                                        size: "lg",
-                                        variant: "secondary",
-                                    })}
-                                >
-                                    Start a booking request
-                                </Link>
-                            </>
-                        ) : null}
-
-                        {showClientActions ? (
-                            <>
-                                <Link
-                                    href="/photographers"
-                                    className={buttonVariants({ size: "lg" })}
-                                >
-                                    Explore photographers
-                                </Link>
-                                <Link
-                                    href="/bookings/new"
-                                    className={buttonVariants({
-                                        size: "lg",
-                                        variant: "secondary",
-                                    })}
-                                >
-                                    Start a booking request
-                                </Link>
-                            </>
-                        ) : null}
-
-                        {showPhotographerActions ? (
-                            <>
-                                <Link
-                                    href="/photographer/dashboard"
-                                    className={buttonVariants({ size: "lg" })}
-                                >
-                                    Open workspace
-                                </Link>
-                                <Link
-                                    href="/profile"
-                                    className={buttonVariants({
-                                        size: "lg",
-                                        variant: "secondary",
-                                    })}
-                                >
-                                    View profile
-                                </Link>
-                            </>
-                        ) : null}
+                        <p className="max-w-2xl text-base leading-8 text-muted sm:text-lg">
+                            Fotovia keeps the entry simple: browse public
+                            portfolios, use AI-detected style signals, then book
+                            once the visual fit is clear.
+                        </p>
                     </div>
 
-                    {showSignedOutActions ? (
+                    <div className="flex flex-wrap gap-3">
                         <Link
-                            href="/sign-up?role=photographer"
-                            className="text-sm font-medium text-foreground"
+                            href="/photographers"
+                            className={buttonVariants({
+                                size: "lg",
+                                className: "rounded-full",
+                            })}
                         >
-                            Are you a photographer? Join the platform.
+                            Browse photographers
                         </Link>
-                    ) : null}
 
-                    <div className="flex items-center gap-6 text-xs uppercase tracking-[0.3em] text-muted">
-                        <span>Editorial</span>
-                        <span>Portrait</span>
-                        <span>Luxury Events</span>
+                        {showWorkspaceAction ? (
+                            <Link
+                                href="/photographer/portfolio"
+                                className={buttonVariants({
+                                    size: "lg",
+                                    variant: "secondary",
+                                    className: "rounded-full",
+                                })}
+                            >
+                                Open workspace
+                            </Link>
+                        ) : (
+                            <Link
+                                href="/photographers"
+                                className={buttonVariants({
+                                    size: "lg",
+                                    variant: "secondary",
+                                    className: "rounded-full",
+                                })}
+                            >
+                                Explore AI styles
+                            </Link>
+                        )}
+                    </div>
+
+                    <div className="space-y-3">
+                        <p className="text-xs uppercase tracking-[0.22em] text-muted">
+                            Popular discovery paths
+                        </p>
+
+                        <div className="flex flex-wrap gap-2">
+                            {quickStyleLinks.map((entry) => (
+                                <Link
+                                    key={entry.label}
+                                    href={entry.href}
+                                    className="rounded-full border border-border bg-surface px-4 py-2 text-sm text-foreground transition hover:border-accent"
+                                >
+                                    {entry.label}
+                                </Link>
+                            ))}
+                        </div>
                     </div>
                 </div>
 
-                <div className="relative">
-                    <div className="aspect-[4/5] w-full rounded-3xl border border-border bg-surface p-4 shadow-sm">
-                        <div className="flex h-full flex-col justify-between rounded-2xl bg-gradient-to-br from-surface to-background p-6">
-                            <div className="space-y-2">
-                                <p className="text-xs uppercase tracking-[0.3em] text-muted">
-                                    Featured Portfolio
+                <div className="grid gap-4">
+                    <div className="rounded-[2rem] border border-border bg-surface p-6 shadow-sm">
+                        <p className="text-xs uppercase tracking-[0.22em] text-muted">
+                            What changes now
+                        </p>
+
+                        <div className="mt-4 space-y-3">
+                            <div className="rounded-[1.5rem] border border-border bg-background px-4 py-4">
+                                <p className="text-sm font-medium text-foreground">
+                                    Discovery starts from visual style
                                 </p>
-                                <p className="font-display text-2xl text-foreground">
-                                    Studio Reverie
+
+                                <p className="mt-1 text-sm leading-6 text-muted">
+                                    AI-detected portfolio styles now guide the public
+                                    discovery experience.
                                 </p>
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="h-28 rounded-2xl border border-border bg-background" />
-                                <div className="h-28 rounded-2xl border border-border bg-background" />
-                                <div className="h-28 rounded-2xl border border-border bg-background" />
-                                <div className="h-28 rounded-2xl border border-border bg-background" />
+
+                            <div className="rounded-[1.5rem] border border-border bg-background px-4 py-4">
+                                <p className="text-sm font-medium text-foreground">
+                                    Homepage stays short
+                                </p>
+
+                                <p className="mt-1 text-sm leading-6 text-muted">
+                                    Less placeholder explanation, more direct entry
+                                    into browse and booking.
+                                </p>
+                            </div>
+
+                            <div className="rounded-[1.5rem] border border-border bg-background px-4 py-4">
+                                <p className="text-sm font-medium text-foreground">
+                                    Public portfolios carry the proof
+                                </p>
+
+                                <p className="mt-1 text-sm leading-6 text-muted">
+                                    Users can compare real portfolio work before
+                                    moving into the booking flow.
+                                </p>
                             </div>
                         </div>
-                    </div>
-                    <div className="absolute -right-6 bottom-10 hidden rounded-2xl border border-border bg-surface px-5 py-4 text-sm shadow-sm md:block">
-                        <p className="font-medium text-foreground">
-                            92% style match rate
-                        </p>
-                        <p className="text-xs text-muted">
-                            Based on AI recommendations
-                        </p>
                     </div>
                 </div>
             </Container>

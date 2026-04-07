@@ -1,28 +1,21 @@
-import { Navbar } from "./navbar";
-import { HeroSection } from "./hero-section";
-import { BookingEntrySection } from "./booking-entry-section";
-import { RoleIntro } from "./role-intro";
 import { FeaturedPhotographers } from "./featured-photographers";
-import { AiFeatureIntro } from "./ai-feature-intro";
-import { HowItWorks } from "./how-it-works";
-import { PortfolioShowcase } from "./portfolio-showcase";
-import { CtaSection } from "./cta-section";
 import { Footer } from "./footer";
+import { HeroSection } from "./hero-section";
+import { HomeValueStrip } from "./home-value-strip";
+import { Navbar } from "./navbar";
 
-export const HomePage = () => {
+export const HomePage = () =>
+{
     return (
         <div className="min-h-screen bg-background">
             <Navbar />
+
             <main>
                 <HeroSection />
-                <CtaSection />
-                <BookingEntrySection />
-                <RoleIntro />
+                <HomeValueStrip />
                 <FeaturedPhotographers />
-                <AiFeatureIntro />
-                <HowItWorks />
-                <PortfolioShowcase />
             </main>
+
             <Footer />
         </div>
     );

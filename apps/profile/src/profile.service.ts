@@ -23,6 +23,7 @@ import { ProfilePortfolioItemImageRepository } from './repositories/profile-port
 import { ProfilePortfolioItemRepository } from './repositories/profile-portfolio-item.repository';
 import { ProfileRepository } from './repositories/profile.repository';
 import { PortfolioItemClassificationService } from './classification/portfolio-item-classification.service';
+import { GetPublicPhotographersQueryDto } from './dtos/get-public-photographers-query.dto';
 
 const ASSET_GET_BY_ID_PATTERN = 'asset.get_by_id';
 const ASSET_GET_READ_URL_PATTERN = 'asset.get_read_url';
@@ -84,6 +85,12 @@ type PublicPhotographerSummary = {
     reviewCount: number | null;
     startingPrice: number | null;
     tags: string[];
+    primaryDiscoveryStyle: string | null;
+    discoveryStyles: string[];
+    discoveryStyleSource: 'ai' | 'legacy' | 'none';
+    portfolioItemCount: number;
+    classifiedPortfolioCount: number;
+    hasFeaturedWork: boolean;
 };
 
 type PublicPhotographerPortfolioItem = {
@@ -95,6 +102,15 @@ type PublicPhotographerPortfolioItem = {
     styleLabel: string | null;
     styleSource: 'ai' | 'legacy' | 'none';
     isFeatured: boolean;
+};
+
+type PublicPhotographerDiscoverySummary = {
+    primaryDiscoveryStyle: string | null;
+    discoveryStyles: string[];
+    discoveryStyleSource: 'ai' | 'legacy' | 'none';
+    portfolioItemCount: number;
+    classifiedPortfolioCount: number;
+    hasFeaturedWork: boolean;
 };
 
 type PublicPhotographerDetail = PublicPhotographerSummary & {
@@ -474,18 +490,56 @@ export class ProfileService {
         return { deleted: true };
     }
 
-    async getPublicPhotographers(): Promise<PublicPhotographerSummary[]> {
+    async getPublicPhotographers(
+        query: GetPublicPhotographersQueryDto = {},
+    ): Promise<PublicPhotographerSummary[]> {
         const profiles =
             await this.profileRepository.listPublicPhotographerProfiles();
-        const hydratedProfiles: Profile[] = [];
 
-        for (const profile of profiles) {
-            hydratedProfiles.push(await this.ensurePublicSlugIfNeeded(profile));
-        }
-
-        return hydratedProfiles.map((profile) =>
-            this.buildPublicPhotographerSummary(profile),
+        const hydratedProfiles = await Promise.all(
+            profiles.map((profile) => this.ensurePublicSlugIfNeeded(profile)),
         );
+
+        const summaries = await Promise.all(
+            hydratedProfiles.map(async (profile) => {
+                const portfolioItems =
+                    await this.profilePortfolioItemRepository.listPublicByProfileId(
+                        profile.id,
+                    );
+
+                return this.buildPublicPhotographerSummary(
+                    profile,
+                    portfolioItems,
+                );
+            }),
+        );
+
+        const filtered = summaries.filter((summary) =>
+            this.matchesPublicPhotographerQuery(summary, query),
+        );
+
+        filtered.sort((a, b) => {
+            const featuredDelta =
+                Number(b.hasFeaturedWork) - Number(a.hasFeaturedWork);
+
+            if (featuredDelta !== 0) {
+                return featuredDelta;
+            }
+
+            if (b.classifiedPortfolioCount !== a.classifiedPortfolioCount) {
+                return b.classifiedPortfolioCount - a.classifiedPortfolioCount;
+            }
+
+            if (b.portfolioItemCount !== a.portfolioItemCount) {
+                return b.portfolioItemCount - a.portfolioItemCount;
+            }
+
+            return a.name.localeCompare(b.name);
+        });
+
+        const limit = this.normalizePublicQueryLimit(query.limit);
+
+        return limit ? filtered.slice(0, limit) : filtered;
     }
 
     async getPublicPhotographerBySlug(
@@ -790,6 +844,7 @@ export class ProfileService {
 
     private buildPublicPhotographerSummary(
         profile: Profile,
+        portfolioItems: ProfilePortfolioItem[],
     ): PublicPhotographerSummary {
         const specialties = this.normalizeSpecialties(profile.specialties);
         const specialty = specialties[0] ?? 'Photography';
@@ -799,6 +854,8 @@ export class ProfileService {
             profile.bio?.trim() ||
             'This photographer is preparing their public Fotovia profile.';
         const price = this.normalizeMoneyValue(profile.pricePerHour);
+        const discovery =
+            this.buildPublicPhotographerDiscoverySummary(portfolioItems);
 
         return {
             id: profile.id,
@@ -813,7 +870,18 @@ export class ProfileService {
             rating: null,
             reviewCount: null,
             startingPrice: price,
-            tags: specialties.slice(0, 3),
+            tags: Array.from(
+                new Set([
+                    ...discovery.discoveryStyles.slice(0, 2),
+                    ...specialties.slice(0, 2),
+                ]),
+            ).slice(0, 3),
+            primaryDiscoveryStyle: discovery.primaryDiscoveryStyle,
+            discoveryStyles: discovery.discoveryStyles,
+            discoveryStyleSource: discovery.discoveryStyleSource,
+            portfolioItemCount: discovery.portfolioItemCount,
+            classifiedPortfolioCount: discovery.classifiedPortfolioCount,
+            hasFeaturedWork: discovery.hasFeaturedWork,
         };
     }
 
@@ -821,7 +889,10 @@ export class ProfileService {
         profile: Profile,
         portfolioItems: ProfilePortfolioItem[],
     ): PublicPhotographerDetail {
-        const summary = this.buildPublicPhotographerSummary(profile);
+        const summary = this.buildPublicPhotographerSummary(
+            profile,
+            portfolioItems,
+        );
         const specialties = this.normalizeSpecialties(profile.specialties);
         const intro =
             profile.bio?.trim() ||
@@ -851,6 +922,155 @@ export class ProfileService {
                 isFeatured: item.isFeatured,
             })),
         };
+    }
+
+    private buildPublicPhotographerDiscoverySummary(
+        portfolioItems: ProfilePortfolioItem[],
+    ): PublicPhotographerDiscoverySummary {
+        const normalizedItems = Array.isArray(portfolioItems)
+            ? portfolioItems
+            : [];
+        const styleMap = new Map<
+            string,
+            { totalCount: number; aiCount: number; featuredCount: number }
+        >();
+
+        let hasFeaturedWork = false;
+        let classifiedPortfolioCount = 0;
+
+        for (const item of normalizedItems) {
+            if (item.isFeatured) {
+                hasFeaturedWork = true;
+            }
+
+            if (
+                item.classificationStatus === 'completed' &&
+                typeof item.detectedPrimaryStyle === 'string' &&
+                item.detectedPrimaryStyle.trim().length > 0
+            ) {
+                classifiedPortfolioCount += 1;
+            }
+
+            const styleLabel = this.resolvePortfolioStyleLabel(item);
+            const styleSource = this.resolvePortfolioStyleSource(item);
+
+            if (!styleLabel) {
+                continue;
+            }
+
+            const current = styleMap.get(styleLabel) ?? {
+                totalCount: 0,
+                aiCount: 0,
+                featuredCount: 0,
+            };
+
+            current.totalCount += 1;
+
+            if (styleSource === 'ai') {
+                current.aiCount += 1;
+            }
+
+            if (item.isFeatured) {
+                current.featuredCount += 1;
+            }
+
+            styleMap.set(styleLabel, current);
+        }
+
+        const rankedStyles = Array.from(styleMap.entries()).sort((a, b) => {
+            if (b[1].aiCount !== a[1].aiCount) {
+                return b[1].aiCount - a[1].aiCount;
+            }
+
+            if (b[1].totalCount !== a[1].totalCount) {
+                return b[1].totalCount - a[1].totalCount;
+            }
+
+            if (b[1].featuredCount !== a[1].featuredCount) {
+                return b[1].featuredCount - a[1].featuredCount;
+            }
+
+            return a[0].localeCompare(b[0]);
+        });
+
+        const primaryDiscoveryStyle = rankedStyles[0]?.[0] ?? null;
+        const primaryStats = primaryDiscoveryStyle
+            ? styleMap.get(primaryDiscoveryStyle)
+            : null;
+
+        return {
+            primaryDiscoveryStyle,
+            discoveryStyles: rankedStyles.map(([label]) => label).slice(0, 6),
+            discoveryStyleSource: primaryDiscoveryStyle
+                ? (primaryStats?.aiCount ?? 0) > 0
+                    ? 'ai'
+                    : 'legacy'
+                : 'none',
+            portfolioItemCount: normalizedItems.length,
+            classifiedPortfolioCount,
+            hasFeaturedWork,
+        };
+    }
+
+    private matchesPublicPhotographerQuery(
+        summary: PublicPhotographerSummary,
+        query: GetPublicPhotographersQueryDto,
+    ): boolean {
+        const normalizedSearch = this.normalizePublicQueryText(query.search);
+        const normalizedStyle = this.normalizePublicQueryText(query.style);
+
+        if (normalizedSearch) {
+            const haystack = [
+                summary.name,
+                summary.specialty,
+                summary.location,
+                summary.bio,
+                summary.styles.join(' '),
+                summary.discoveryStyles.join(' '),
+                summary.tags.join(' '),
+            ]
+                .join(' ')
+                .toLowerCase();
+
+            if (!haystack.includes(normalizedSearch)) {
+                return false;
+            }
+        }
+
+        if (normalizedStyle) {
+            const matchesStyle =
+                summary.primaryDiscoveryStyle?.toLowerCase() ===
+                    normalizedStyle ||
+                summary.discoveryStyles.some(
+                    (style) => style.toLowerCase() === normalizedStyle,
+                );
+
+            if (!matchesStyle) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private normalizePublicQueryText(value: unknown): string {
+        return typeof value === 'string' ? value.trim().toLowerCase() : '';
+    }
+
+    private normalizePublicQueryLimit(value: unknown): number | null {
+        if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+            return Math.min(Math.floor(value), 24);
+        }
+
+        if (
+            typeof value === 'string' &&
+            value.trim().length > 0 &&
+            !Number.isNaN(Number(value))
+        ) {
+            return Math.min(Math.floor(Number(value)), 24);
+        }
+
+        return null;
     }
 
     private normalizeSpecialties(

@@ -1,11 +1,10 @@
 import { Input } from "../../../components/ui/input";
 import { Label } from "../../../components/ui/label";
 
-interface PhotographerFiltersProps {
+interface PhotographerFiltersProps
+{
   search: string;
   onSearchChange: (value: string) => void;
-  specialty: string;
-  onSpecialtyChange: (value: string) => void;
   style: string;
   onStyleChange: (value: string) => void;
   location: string;
@@ -14,7 +13,6 @@ interface PhotographerFiltersProps {
   onBudgetChange: (value: string) => void;
   sort: string;
   onSortChange: (value: string) => void;
-  specialtyOptions: string[];
   styleOptions: string[];
   locationOptions: string[];
 }
@@ -25,8 +23,6 @@ const selectClassName =
 export const PhotographerFilters = ({
   search,
   onSearchChange,
-  specialty,
-  onSpecialtyChange,
   style,
   onStyleChange,
   location,
@@ -35,43 +31,31 @@ export const PhotographerFilters = ({
   onBudgetChange,
   sort,
   onSortChange,
-  specialtyOptions,
   styleOptions,
   locationOptions,
-}: PhotographerFiltersProps) => {
+}: PhotographerFiltersProps) =>
+{
   return (
-    <div className="grid gap-4 rounded-2xl border border-border bg-surface/70 p-4 md:grid-cols-2 lg:grid-cols-[1.3fr_repeat(4,1fr)]">
+    <div className="space-y-5">
       <div className="space-y-2">
-        <Label>Search</Label>
+        <Label htmlFor="photographer-search">Search</Label>
         <Input
+          id="photographer-search"
           value={search}
           onChange={(event) => onSearchChange(event.target.value)}
           placeholder="Search by name, style, or location"
         />
       </div>
+
       <div className="space-y-2">
-        <Label>Specialty</Label>
+        <Label htmlFor="photographer-style">AI style</Label>
         <select
-          value={specialty}
-          onChange={(event) => onSpecialtyChange(event.target.value)}
-          className={selectClassName}
-        >
-          <option value="all">All specialties</option>
-          {specialtyOptions.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className="space-y-2">
-        <Label>Style</Label>
-        <select
+          id="photographer-style"
           value={style}
           onChange={(event) => onStyleChange(event.target.value)}
           className={selectClassName}
         >
-          <option value="all">All styles</option>
+          <option value="all">All detected styles</option>
           {styleOptions.map((option) => (
             <option key={option} value={option}>
               {option}
@@ -79,9 +63,11 @@ export const PhotographerFilters = ({
           ))}
         </select>
       </div>
+
       <div className="space-y-2">
-        <Label>Location</Label>
+        <Label htmlFor="photographer-location">Location</Label>
         <select
+          id="photographer-location"
           value={location}
           onChange={(event) => onLocationChange(event.target.value)}
           className={selectClassName}
@@ -94,9 +80,11 @@ export const PhotographerFilters = ({
           ))}
         </select>
       </div>
+
       <div className="space-y-2">
-        <Label>Budget</Label>
+        <Label htmlFor="photographer-budget">Budget</Label>
         <select
+          id="photographer-budget"
           value={budget}
           onChange={(event) => onBudgetChange(event.target.value)}
           className={selectClassName}
@@ -107,17 +95,17 @@ export const PhotographerFilters = ({
           <option value="over-700">Over $700</option>
         </select>
       </div>
-      <div className="space-y-2 md:col-span-2 lg:col-span-5">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <Label>Sort by</Label>
-        </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="photographer-sort">Sort by</Label>
         <select
+          id="photographer-sort"
           value={sort}
           onChange={(event) => onSortChange(event.target.value)}
           className={selectClassName}
         >
           <option value="recommended">Recommended</option>
-          <option value="rating">Highest rated</option>
+          <option value="style-ready">Most AI-ready</option>
           <option value="price-low">Price: low to high</option>
           <option value="price-high">Price: high to low</option>
           <option value="name">Name (A-Z)</option>

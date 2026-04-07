@@ -7,6 +7,7 @@ import {
     ParseUUIDPipe,
     Patch,
     Post,
+    Query,
     UseGuards,
 } from '@nestjs/common';
 import {
@@ -22,6 +23,7 @@ import { PortfolioItemClassificationRetryService } from './portfolio-item-classi
 import { CreateProfileFromAuthDto } from './dtos/create-profile-from-auth.dto';
 import { CreateProfileDto } from './dtos/create-profile.dto';
 import { CreateProfilePortfolioItemDto } from './dtos/create-profile-portfolio-item.dto';
+import { GetPublicPhotographersQueryDto } from './dtos/get-public-photographers-query.dto';
 import { UpdateProfileAvatarDto } from './dtos/update-profile-avatar.dto';
 import { UpdateProfileDto } from './dtos/update-profile.dto';
 import { UpdateProfilePortfolioItemDto } from './dtos/update-profile-portfolio-item.dto';
@@ -42,8 +44,10 @@ export class ProfileController {
     @ApiOkResponse({
         description: 'Public photographers fetched successfully',
     })
-    async getPublicPhotographers(): Promise<Record<string, unknown>[]> {
-        return this.profileService.getPublicPhotographers();
+    async getPublicPhotographers(
+        @Query() query: GetPublicPhotographersQueryDto,
+    ): Promise<Record<string, unknown>[]> {
+        return this.profileService.getPublicPhotographers(query);
     }
 
     @Get('/public/photographers/:slug')
