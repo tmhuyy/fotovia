@@ -8,14 +8,15 @@ import { ASSET_SERVICE, AUTH_SERVICE } from '@repo/common';
 
 import { ConfigSchemaValidation } from './config.schema';
 import { PortfolioItemClassificationMapper } from './classification/portfolio-item-classification.mapper';
+import { PORTFOLIO_ITEM_CLASSIFICATION_QUEUE } from './classification/portfolio-item-classification.constants';
 import { PortfolioItemClassificationProcessor } from './classification/portfolio-item-classification.processor';
 import { PortfolioItemClassificationService } from './classification/portfolio-item-classification.service';
-import { PORTFOLIO_ITEM_CLASSIFICATION_QUEUE } from './classification/portfolio-item-classification.constants';
 import { ProfileController } from './profile.controller';
 import { ProfilePortfolioItemImageClassification } from './entities/profile-portfolio-item-image-classification.entity';
 import { ProfilePortfolioItemImage } from './entities/profile-portfolio-item-image.entity';
 import { ProfilePortfolioItem } from './entities/profile-portfolio-item.entity';
 import { Profile } from './entities/profile.entity';
+import { PortfolioItemClassificationRetryService } from './portfolio-item-classification-retry.service';
 import { ProfilePortfolioItemImageClassificationRepository } from './repositories/profile-portfolio-item-image-classification.repository';
 import { ProfilePortfolioItemImageRepository } from './repositories/profile-portfolio-item-image.repository';
 import { ProfilePortfolioItemRepository } from './repositories/profile-portfolio-item.repository';
@@ -61,9 +62,7 @@ import { ProfileService } from './profile.service';
                     host: configService.getOrThrow('REDIS_HOST'),
                     port: Number(configService.getOrThrow('REDIS_PORT')),
                     db: Number(configService.get('REDIS_DB') ?? 0),
-                    password:
-                        configService.get<string>('REDIS_PASSWORD') ||
-                        undefined,
+                    password: configService.get('REDIS_PASSWORD') || undefined,
                 },
             }),
         }),
@@ -121,6 +120,7 @@ import { ProfileService } from './profile.service';
         PortfolioItemClassificationMapper,
         PortfolioItemClassificationService,
         PortfolioItemClassificationProcessor,
+        PortfolioItemClassificationRetryService,
     ],
     controllers: [ProfileController],
 })

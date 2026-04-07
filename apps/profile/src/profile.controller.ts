@@ -18,6 +18,7 @@ import {
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { GetUser, IUser, JwtAuthGuard } from '@repo/common';
 
+import { PortfolioItemClassificationRetryService } from './portfolio-item-classification-retry.service';
 import { CreateProfileFromAuthDto } from './dtos/create-profile-from-auth.dto';
 import { CreateProfileDto } from './dtos/create-profile.dto';
 import { CreateProfilePortfolioItemDto } from './dtos/create-profile-portfolio-item.dto';
@@ -31,7 +32,10 @@ import { ProfileService } from './profile.service';
 @ApiTags('Profiles')
 @Controller('profiles')
 export class ProfileController {
-    constructor(private readonly profileService: ProfileService) {}
+    constructor(
+        private readonly profileService: ProfileService,
+        private readonly portfolioItemClassificationRetryService: PortfolioItemClassificationRetryService,
+    ) {}
 
     @Get('/public/photographers')
     @ApiOperation({ summary: 'Get public photographer summaries' })
@@ -155,6 +159,23 @@ export class ProfileController {
         return this.profileService.updateMyPortfolioItem(
             itemId,
             updateProfilePortfolioItemDto,
+            user.id,
+        );
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Post('/me/portfolio-items/:itemId/retry-classification')
+    @ApiOperation({ summary: 'Retry AI classification for a portfolio item' })
+    @ApiOkResponse({
+        description: 'Portfolio item classification requeued successfully',
+        type: ProfilePortfolioItem,
+    })
+    async retryMyPortfolioItemClassification(
+        @Param('itemId', new ParseUUIDPipe()) itemId: string,
+        @GetUser() user: IUser,
+    ): Promise<ProfilePortfolioItem> {
+        return this.portfolioItemClassificationRetryService.retryMyPortfolioItemClassification(
+            itemId,
             user.id,
         );
     }

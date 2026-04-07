@@ -28,6 +28,22 @@ export const PORTFOLIO_CATEGORY_LABELS: Record<PortfolioCategory, string> = {
     wildlife: "Wildlife",
 };
 
+export const PORTFOLIO_ITEM_CLASSIFICATION_STATUSES = [
+    "not_requested",
+    "queued",
+    "processing",
+    "completed",
+    "failed",
+] as const;
+
+export type PortfolioItemClassificationStatus =
+    (typeof PORTFOLIO_ITEM_CLASSIFICATION_STATUSES)[number];
+
+export interface PortfolioStyleDistributionEntry {
+    label: string;
+    score: number;
+}
+
 export interface PhotographerPortfolioItem {
     id: string;
     title: string;
@@ -39,6 +55,16 @@ export interface PhotographerPortfolioItem {
     sortOrder: number;
     createdAt: string;
     updatedAt?: string;
+    classificationStatus: PortfolioItemClassificationStatus;
+    classificationError: string | null;
+    classificationRequestedAt: string | null;
+    classificationStartedAt: string | null;
+    classificationCompletedAt: string | null;
+    classificationFailedAt: string | null;
+    detectedPrimaryStyle: string | null;
+    detectedPrimaryScore: number | null;
+    detectedSecondaryStyles: string[];
+    detectedStyleDistribution: PortfolioStyleDistributionEntry[];
 }
 
 export interface PortfolioItemDraft {

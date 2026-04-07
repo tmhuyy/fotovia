@@ -7,7 +7,10 @@ export type PortfolioItemClassificationStatus =
 
 export type PortfolioImageRole = 'cover' | 'gallery';
 
-export type PortfolioItemClassificationTrigger = 'create' | 'update';
+export type PortfolioItemClassificationTrigger =
+    | 'create'
+    | 'update'
+    | 'manual_retry';
 
 export type ClassificationPrediction = {
     label: string;

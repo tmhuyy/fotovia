@@ -10,9 +10,12 @@ import type {
 import type { PhotographerProfile } from "../features/photographer/types/photographer.types";
 import {
     PORTFOLIO_CATEGORIES,
+    PORTFOLIO_ITEM_CLASSIFICATION_STATUSES,
     type PhotographerPortfolioItem,
     type PortfolioCategory,
+    type PortfolioItemClassificationStatus,
     type PortfolioItemMutationPayload,
+    type PortfolioStyleDistributionEntry,
 } from "../features/photographer/types/portfolio.types";
 import { assetService } from "./asset.service";
 import { profileClient } from "./api/axios";
@@ -23,6 +26,8 @@ type AnyRecord = Record<string, unknown>;
 
 const PHOTOGRAPHER_ENDPOINTS = {
     portfolioItems: "/profiles/me/portfolio-items",
+    retryPortfolioItemClassification: (itemId: string) =>
+        `/profiles/me/portfolio-items/${itemId}/retry-classification`,
     publicPhotographers: "/profiles/public/photographers",
     publicPhotographerBySlug: (slug: string) =>
         `/profiles/public/photographers/${encodeURIComponent(slug)}`,
@@ -86,6 +91,52 @@ const normalizeCategory = (value: unknown): PortfolioCategory => {
     return "wedding";
 };
 
+const normalizeClassificationStatus = (
+    value: unknown,
+): PortfolioItemClassificationStatus => {
+    if (
+        typeof value === "string" &&
+        PORTFOLIO_ITEM_CLASSIFICATION_STATUSES.includes(
+            value as PortfolioItemClassificationStatus,
+        )
+    ) {
+        return value as PortfolioItemClassificationStatus;
+    }
+
+    return "not_requested";
+};
+
+const normalizeIsoDate = (value: unknown): string | null => {
+    return typeof value === "string" && value.trim().length > 0 ? value : null;
+};
+
+const normalizeStyleDistribution = (
+    value: unknown,
+): PortfolioStyleDistributionEntry[] => {
+    if (!Array.isArray(value)) {
+        return [];
+    }
+
+    return value
+        .map((entry) => {
+            const record = (entry as AnyRecord | undefined) ?? {};
+            const label = normalizeString(record.label).trim();
+            const score = normalizeNumber(record.score);
+
+            if (!label || score === null) {
+                return null;
+            }
+
+            return {
+                label,
+                score,
+            } satisfies PortfolioStyleDistributionEntry;
+        })
+        .filter(
+            (entry): entry is PortfolioStyleDistributionEntry => entry !== null,
+        );
+};
+
 const normalizeUploadedAssetPreview = (payload: AnyRecord): AssetPreview => {
     const assetId = normalizeString(payload.assetId);
     const assetUrl = normalizeString(payload.assetUrl);
@@ -146,6 +197,34 @@ const normalizePortfolioItem = (
             typeof payload.updatedAt === "string"
                 ? payload.updatedAt
                 : undefined,
+        classificationStatus: normalizeClassificationStatus(
+            payload.classificationStatus,
+        ),
+        classificationError: normalizeNullableString(
+            payload.classificationError,
+        ),
+        classificationRequestedAt: normalizeIsoDate(
+            payload.classificationRequestedAt,
+        ),
+        classificationStartedAt: normalizeIsoDate(
+            payload.classificationStartedAt,
+        ),
+        classificationCompletedAt: normalizeIsoDate(
+            payload.classificationCompletedAt,
+        ),
+        classificationFailedAt: normalizeIsoDate(
+            payload.classificationFailedAt,
+        ),
+        detectedPrimaryStyle: normalizeNullableString(
+            payload.detectedPrimaryStyle,
+        ),
+        detectedPrimaryScore: normalizeNumber(payload.detectedPrimaryScore),
+        detectedSecondaryStyles: normalizeStringArray(
+            payload.detectedSecondaryStyles,
+        ),
+        detectedStyleDistribution: normalizeStyleDistribution(
+            payload.detectedStyleDistribution,
+        ),
     };
 };
 
@@ -284,6 +363,17 @@ export const photographerService = {
         const response = await profileClient.patch<
             ApiResponse<AnyRecord> | AnyRecord
         >(`${PHOTOGRAPHER_ENDPOINTS.portfolioItems}/${itemId}`, payload);
+        const data = unwrapResponse<AnyRecord>(response.data);
+
+        return normalizePortfolioItem(data);
+    },
+
+    async retryMyPortfolioItemClassification(
+        itemId: string,
+    ): Promise<PhotographerPortfolioItem> {
+        const response = await profileClient.post<
+            ApiResponse<AnyRecord> | AnyRecord
+        >(PHOTOGRAPHER_ENDPOINTS.retryPortfolioItemClassification(itemId));
         const data = unwrapResponse<AnyRecord>(response.data);
 
         return normalizePortfolioItem(data);

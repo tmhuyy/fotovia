@@ -13,10 +13,10 @@ import { Badge } from "../../../components/ui/badge";
 import { Button, buttonVariants } from "../../../components/ui/button";
 import { Card, CardContent } from "../../../components/ui/card";
 import
-{
-  assetService,
-  type AssetPurpose,
-} from "../../../services/asset.service";
+  {
+    assetService,
+    type AssetPurpose,
+  } from "../../../services/asset.service";
 import { photographerService } from "../../../services/photographer.service";
 import { useAuthStore } from "../../../store/auth.store";
 import type { AssetPreview } from "../../asset/types/asset.types";
@@ -25,10 +25,12 @@ import type {
   PortfolioItemDraft,
   PortfolioItemMutationPayload,
 } from "../types/portfolio.types";
+import { DeletePortfolioItemDialog } from "./delete-portfolio-item-dialog";
 import { PortfolioEmptyState } from "./portfolio-empty-state";
 import { PortfolioGrid } from "./portfolio-grid";
 import { PortfolioItemForm } from "./portfolio-item-form";
-import { DeletePortfolioItemDialog } from "./delete-portfolio-item-dialog";
+
+const CLASSIFICATION_POLL_INTERVAL_MS = 4000;
 
 const sortPortfolioItems = (items: PhotographerPortfolioItem[]) =>
 {
@@ -43,6 +45,19 @@ const sortPortfolioItems = (items: PhotographerPortfolioItem[]) =>
 
     return b.sortOrder - a.sortOrder;
   });
+};
+
+const isClassificationInFlight = (item: PhotographerPortfolioItem) =>
+{
+  return (
+    item.classificationStatus === "queued" ||
+    item.classificationStatus === "processing"
+  );
+};
+
+const hasActiveClassification = (items: PhotographerPortfolioItem[]) =>
+{
+  return items.some(isClassificationInFlight);
 };
 
 const mapItemToDraft = (
@@ -61,6 +76,20 @@ const mapItemToDraft = (
   };
 };
 
+const buildSaveSuccessDescription = (
+  item: PhotographerPortfolioItem,
+  mode: "create" | "update",
+) =>
+{
+  const actionLabel = mode === "create" ? "saved" : "updated";
+
+  if (isClassificationInFlight(item)) {
+    return `Your portfolio item was ${actionLabel}, and AI classification is now queued. This page will refresh automatically while the job runs.`;
+  }
+
+  return `Your portfolio item was ${actionLabel} successfully.`;
+};
+
 const PortfolioPageSkeleton = () =>
 {
   return (
@@ -74,8 +103,8 @@ const PortfolioPageSkeleton = () =>
             <div className="h-6 w-[40rem] max-w-full animate-pulse rounded bg-border/50" />
           </div>
 
-          <div className="grid gap-4 md:grid-cols-3">
-            {Array.from({ length: 3 }).map((_, index) => (
+          <div className="grid gap-4 md:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, index) => (
               <div
                 key={index}
                 className="h-28 animate-pulse rounded-[2rem] border border-border bg-surface/60"
@@ -174,6 +203,8 @@ export const PhotographerPortfolioPage = () =>
   const { user, isAuthenticated, isHydrating, hasHydrated } = useAuthStore();
 
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [deletingItem, setDeletingItem] =
+    useState<PhotographerPortfolioItem | null>(null);
 
   const isPhotographer = user?.role === "photographer";
   const displayName = user?.fullName?.trim() || user?.email || "Photographer";
@@ -185,6 +216,14 @@ export const PhotographerPortfolioPage = () =>
     enabled:
       hasHydrated && !isHydrating && isAuthenticated && isPhotographer,
     retry: false,
+    refetchInterval: (query) =>
+    {
+      const items = (query.state.data as PhotographerPortfolioItem[] | undefined) ?? [];
+
+      return hasActiveClassification(items)
+        ? CLASSIFICATION_POLL_INTERVAL_MS
+        : false;
+    },
   });
 
   const createPortfolioItemMutation = useMutation({
@@ -201,8 +240,7 @@ export const PhotographerPortfolioPage = () =>
       );
 
       toast.success("Portfolio item saved", {
-        description:
-          "Your cover image and gallery are now persisted through the real backend flow.",
+        description: buildSaveSuccessDescription(createdItem, "create"),
       });
     },
     onError: () =>
@@ -240,8 +278,7 @@ export const PhotographerPortfolioPage = () =>
       setEditingItemId(null);
 
       toast.success("Portfolio item updated", {
-        description:
-          "Your latest cover and gallery changes are now saved.",
+        description: buildSaveSuccessDescription(updatedItem, "update"),
       });
     },
     onError: () =>
@@ -321,6 +358,34 @@ export const PhotographerPortfolioPage = () =>
     },
   });
 
+  const retryClassificationMutation = useMutation({
+    mutationFn: (itemId: string) =>
+      photographerService.retryMyPortfolioItemClassification(itemId),
+    onSuccess: (updatedItem) =>
+    {
+      queryClient.setQueryData<PhotographerPortfolioItem[]>(
+        queryKey,
+        (current) =>
+          sortPortfolioItems(
+            (current ?? []).map((item) =>
+              item.id === updatedItem.id ? updatedItem : item,
+            ),
+          ),
+      );
+
+      toast.success("Classification requeued", {
+        description:
+          "The portfolio item was queued for another AI pass. This page will refresh automatically while the job runs.",
+      });
+    },
+    onError: () =>
+    {
+      toast.error("We couldn’t retry AI classification", {
+        description: "Please try again in a moment.",
+      });
+    },
+  });
+
   const sortedItems = useMemo(() =>
   {
     return sortPortfolioItems(portfolioQuery.data ?? []);
@@ -331,27 +396,30 @@ export const PhotographerPortfolioPage = () =>
     return sortedItems.filter((item) => item.isFeatured).length;
   }, [sortedItems]);
 
-  const uploadedCount = useMemo(() =>
+  const queuedOrProcessingCount = useMemo(() =>
   {
-    return sortedItems.reduce((count, item) =>
-    {
-      const coverCount =
-        item.coverAsset.source === "uploaded-remote" ? 1 : 0;
-      const galleryCount = item.galleryAssets.filter(
-        (galleryAsset) => galleryAsset.source === "uploaded-remote",
-      ).length;
+    return sortedItems.filter(isClassificationInFlight).length;
+  }, [sortedItems]);
 
-      return count + coverCount + galleryCount;
-    }, 0);
+  const completedClassificationCount = useMemo(() =>
+  {
+    return sortedItems.filter((item) => item.classificationStatus === "completed").length;
+  }, [sortedItems]);
+
+  const failedClassificationCount = useMemo(() =>
+  {
+    return sortedItems.filter((item) => item.classificationStatus === "failed").length;
+  }, [sortedItems]);
+
+  const isPollingForClassification = useMemo(() =>
+  {
+    return hasActiveClassification(sortedItems);
   }, [sortedItems]);
 
   const editingItem = useMemo(() =>
   {
     return sortedItems.find((item) => item.id === editingItemId) ?? null;
   }, [editingItemId, sortedItems]);
-
-  const [deletingItem, setDeletingItem] =
-    useState<PhotographerPortfolioItem | null>(null);
 
   const handleConfirmDeletePortfolioItem = async (
     item: PhotographerPortfolioItem,
@@ -484,7 +552,8 @@ export const PhotographerPortfolioPage = () =>
     createPortfolioItemMutation.isPending ||
     updatePortfolioItemMutation.isPending ||
     deletePortfolioItemMutation.isPending ||
-    toggleFeaturedMutation.isPending;
+    toggleFeaturedMutation.isPending ||
+    retryClassificationMutation.isPending;
 
   return (
     <>
@@ -493,21 +562,22 @@ export const PhotographerPortfolioPage = () =>
         <Container className="space-y-8">
           <section className="space-y-6">
             <div className="space-y-4">
-              <Badge variant="accent">Real backend portfolio</Badge>
+              <Badge variant="ai">Portfolio AI visibility</Badge>
 
               <div className="space-y-3">
                 <h1 className="font-serif text-4xl text-foreground sm:text-5xl">
-                  Manage saved portfolio works, {displayName}.
+                  Manage portfolio AI status, {displayName}.
                 </h1>
 
                 <p className="max-w-3xl text-sm leading-7 text-muted sm:text-base">
-                  This phase refines gallery UX, strengthens client-side
-                  compression, and adds safer cleanup behavior after delete.
+                  Each saved work now shows its AI classification lifecycle,
+                  detected style summary, and a manual retry path when
+                  classification fails.
                 </p>
               </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-4">
               <Card className="rounded-[2rem] border-border bg-surface shadow-sm">
                 <CardContent className="space-y-2 p-6">
                   <p className="text-xs uppercase tracking-[0.22em] text-muted">
@@ -533,13 +603,34 @@ export const PhotographerPortfolioPage = () =>
               <Card className="rounded-[2rem] border-border bg-surface shadow-sm">
                 <CardContent className="space-y-2 p-6">
                   <p className="text-xs uppercase tracking-[0.22em] text-muted">
-                    Uploaded assets
+                    AI in progress
                   </p>
                   <p className="font-serif text-3xl text-foreground">
-                    {uploadedCount}
+                    {queuedOrProcessingCount}
                   </p>
                 </CardContent>
               </Card>
+
+              <Card className="rounded-[2rem] border-border bg-surface shadow-sm">
+                <CardContent className="space-y-2 p-6">
+                  <p className="text-xs uppercase tracking-[0.22em] text-muted">
+                    Needs retry
+                  </p>
+                  <p className="font-serif text-3xl text-foreground">
+                    {failedClassificationCount}
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              <Badge variant="accent">{completedClassificationCount} completed</Badge>
+
+              {isPollingForClassification ? (
+                <Badge variant="ai">
+                  Refreshing every {CLASSIFICATION_POLL_INTERVAL_MS / 1000}s while AI runs
+                </Badge>
+              ) : null}
             </div>
           </section>
 
@@ -579,9 +670,9 @@ export const PhotographerPortfolioPage = () =>
                 </h2>
 
                 <p className="text-sm leading-7 text-muted">
-                  These works now come from the real backend source of truth.
-                  Deleting an item asks for confirmation first, and orphaned
-                  media can now be cleaned up after delete.
+                  Review AI queue and processing states, inspect completed style
+                  summaries, and retry failed classifications without leaving the
+                  portfolio workspace.
                 </p>
               </div>
 
@@ -589,6 +680,18 @@ export const PhotographerPortfolioPage = () =>
                 items={sortedItems}
                 renderActions={(item) => (
                   <>
+                    {item.classificationStatus === "failed" ? (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => retryClassificationMutation.mutate(item.id)}
+                        disabled={isAnyMutationPending}
+                      >
+                        Retry classification
+                      </Button>
+                    ) : null}
+
                     <Button
                       type="button"
                       variant="secondary"
