@@ -22,6 +22,7 @@ import { Profile } from './entities/profile.entity';
 import { ProfilePortfolioItemImageRepository } from './repositories/profile-portfolio-item-image.repository';
 import { ProfilePortfolioItemRepository } from './repositories/profile-portfolio-item.repository';
 import { ProfileRepository } from './repositories/profile.repository';
+import { PortfolioItemClassificationService } from './classification/portfolio-item-classification.service';
 
 const ASSET_GET_BY_ID_PATTERN = 'asset.get_by_id';
 const ASSET_GET_READ_URL_PATTERN = 'asset.get_read_url';
@@ -111,6 +112,7 @@ export class ProfileService {
         private readonly profileRepository: ProfileRepository,
         private readonly profilePortfolioItemRepository: ProfilePortfolioItemRepository,
         private readonly profilePortfolioItemImageRepository: ProfilePortfolioItemImageRepository,
+        private readonly portfolioItemClassificationService: PortfolioItemClassificationService,
         @Inject(ASSET_SERVICE) private readonly assetClient: ClientProxy,
     ) {}
     private readonly logger = new Logger(ProfileService.name);
@@ -266,6 +268,15 @@ export class ProfileService {
                 userId,
             );
 
+            await this.portfolioItemClassificationService.queuePortfolioItemClassification(
+                {
+                    portfolioItemId: createdItem.id,
+                    profileId: profile.id,
+                    userId,
+                    trigger: 'create',
+                },
+            );
+
             return this.profilePortfolioItemRepository.getByIdForProfile(
                 createdItem.id,
                 profile.id,
@@ -394,6 +405,24 @@ export class ProfileService {
         });
 
         await this.cleanupAssetsIfOrphaned(removedAssetIds, userId);
+
+        const shouldReclassify = this.hasPortfolioMediaChanged(currentItem, dto);
+
+        if (shouldReclassify) {
+            await this.portfolioItemClassificationService.queuePortfolioItemClassification(
+                {
+                    portfolioItemId: itemId,
+                    profileId: profile.id,
+                    userId,
+                    trigger: 'update',
+                },
+            );
+
+            return this.profilePortfolioItemRepository.getByIdForProfile(
+                itemId,
+                profile.id,
+            );
+        }
 
         return refreshedItem;
     }
@@ -923,5 +952,35 @@ export class ProfileService {
                 );
             }
         }
+    }
+
+    private normalizeAssetIdList(assetIds: string[]): string[] {
+        return [...assetIds].sort();
+    }
+
+    private hasPortfolioMediaChanged(
+        currentItem: ProfilePortfolioItem,
+        dto: UpdateProfilePortfolioItemDto,
+    ): boolean {
+        const nextCoverAssetId = dto.coverAssetId ?? currentItem.assetId;
+
+        const currentGalleryAssetIds = this.normalizeAssetIdList(
+            (currentItem.galleryImages ?? []).map((image) => image.assetId),
+        );
+
+        const nextGalleryAssetIds = this.normalizeAssetIdList(
+            typeof dto.galleryAssetIds !== 'undefined'
+                ? dto.galleryAssetIds
+                : (currentItem.galleryImages ?? []).map(
+                      (image) => image.assetId,
+                  ),
+        );
+
+        const hasCoverChanged = nextCoverAssetId !== currentItem.assetId;
+        const hasGalleryChanged =
+            JSON.stringify(currentGalleryAssetIds) !==
+            JSON.stringify(nextGalleryAssetIds);
+
+        return hasCoverChanged || hasGalleryChanged;
     }
 }

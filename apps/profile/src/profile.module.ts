@@ -1,14 +1,22 @@
+import { HttpModule } from '@nestjs/axios';
+import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
-import { ClientsModule, Transport } from '@nestjs/microservices';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ClientsModule, Transport } from '@nestjs/microservices';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ASSET_SERVICE, AUTH_SERVICE } from '@repo/common';
 
 import { ConfigSchemaValidation } from './config.schema';
+import { PortfolioItemClassificationMapper } from './classification/portfolio-item-classification.mapper';
+import { PortfolioItemClassificationProcessor } from './classification/portfolio-item-classification.processor';
+import { PortfolioItemClassificationService } from './classification/portfolio-item-classification.service';
+import { PORTFOLIO_ITEM_CLASSIFICATION_QUEUE } from './classification/portfolio-item-classification.constants';
 import { ProfileController } from './profile.controller';
+import { ProfilePortfolioItemImageClassification } from './entities/profile-portfolio-item-image-classification.entity';
 import { ProfilePortfolioItemImage } from './entities/profile-portfolio-item-image.entity';
 import { ProfilePortfolioItem } from './entities/profile-portfolio-item.entity';
 import { Profile } from './entities/profile.entity';
+import { ProfilePortfolioItemImageClassificationRepository } from './repositories/profile-portfolio-item-image-classification.repository';
 import { ProfilePortfolioItemImageRepository } from './repositories/profile-portfolio-item-image.repository';
 import { ProfilePortfolioItemRepository } from './repositories/profile-portfolio-item.repository';
 import { ProfileRepository } from './repositories/profile.repository';
@@ -20,7 +28,6 @@ import { ProfileService } from './profile.service';
             envFilePath: ['.env'],
             validationSchema: ConfigSchemaValidation,
         }),
-
         TypeOrmModule.forRootAsync({
             imports: [ConfigModule],
             inject: [ConfigService],
@@ -40,13 +47,40 @@ import { ProfileService } from './profile.service';
                 };
             },
         }),
-
         TypeOrmModule.forFeature([
             Profile,
             ProfilePortfolioItem,
             ProfilePortfolioItemImage,
+            ProfilePortfolioItemImageClassification,
         ]),
-
+        BullModule.forRootAsync({
+            imports: [ConfigModule],
+            inject: [ConfigService],
+            useFactory: async (configService: ConfigService) => ({
+                connection: {
+                    host: configService.getOrThrow('REDIS_HOST'),
+                    port: Number(configService.getOrThrow('REDIS_PORT')),
+                    db: Number(configService.get('REDIS_DB') ?? 0),
+                    password:
+                        configService.get<string>('REDIS_PASSWORD') ||
+                        undefined,
+                },
+            }),
+        }),
+        BullModule.registerQueue({
+            name: PORTFOLIO_ITEM_CLASSIFICATION_QUEUE,
+        }),
+        HttpModule.registerAsync({
+            imports: [ConfigModule],
+            inject: [ConfigService],
+            useFactory: async (configService: ConfigService) => ({
+                baseURL: configService.getOrThrow('AI_CLASSIFIER_BASE_URL'),
+                timeout: Number(
+                    configService.get('AI_CLASSIFIER_TIMEOUT_MS') ?? 20000,
+                ),
+                maxRedirects: 5,
+            }),
+        }),
         ClientsModule.registerAsync([
             {
                 name: AUTH_SERVICE,
@@ -83,6 +117,10 @@ import { ProfileService } from './profile.service';
         ProfileRepository,
         ProfilePortfolioItemRepository,
         ProfilePortfolioItemImageRepository,
+        ProfilePortfolioItemImageClassificationRepository,
+        PortfolioItemClassificationMapper,
+        PortfolioItemClassificationService,
+        PortfolioItemClassificationProcessor,
     ],
     controllers: [ProfileController],
 })

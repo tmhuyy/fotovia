@@ -1646,3 +1646,22 @@ Booking is now strong enough to be treated as MVP-complete for the current produ
 ### Recommended next phase
 
 Portfolio AI Classification Foundation
+
+## Portfolio AI Classification Foundation
+
+Completed the backend foundation for asynchronous portfolio item classification.
+
+Highlights:
+
+- integrated the profile service with the FastAPI classifier using batch URL classification
+- added Redis + BullMQ queue processing for background classification jobs
+- added portfolio item classification lifecycle fields
+- added image-level raw prediction persistence
+- added portfolio-level aggregate style summary persistence
+- fixed reclassification logic so text-only edits do not trigger AI reprocessing
+- verified the main local test cases for queueing, processing, failure handling, and reclassification behavior
+
+Next:
+
+- expose classification status and detected style clearly in the photographer portfolio frontend
+- add manual retry flow for failed classification jobs

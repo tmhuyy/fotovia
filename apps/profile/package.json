@@ -49,7 +49,12 @@
         "reflect-metadata": "^0.1.13",
         "rxjs": "^7.8.1",
         "typeorm": "^0.3.26",
-        "uuid": "^11.1.0"
+        "uuid": "^11.1.0",
+        "@nestjs/axios": "^4.0.1",
+        "@nestjs/bullmq": "^11.0.2",
+        "axios": "^1.8.4",
+        "bullmq": "^5.16.0",
+        "ioredis": "^5.4.1"
     },
     "devDependencies": {
         "@nestjs/cli": "^10.0.0",

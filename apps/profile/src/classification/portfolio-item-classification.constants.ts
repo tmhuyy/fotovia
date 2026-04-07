@@ -1,0 +1,8 @@
+export const PORTFOLIO_ITEM_CLASSIFICATION_QUEUE =
+    'portfolio-item-classification';
+
+export const CLASSIFY_PORTFOLIO_ITEM_JOB = 'classify-portfolio-item';
+
+export const PORTFOLIO_ITEM_CLASSIFICATION_MIN_CONFIDENCE = 0.08;
+export const PORTFOLIO_ITEM_CLASSIFICATION_COVER_WEIGHT = 2;
+export const PORTFOLIO_ITEM_CLASSIFICATION_GALLERY_WEIGHT = 1;

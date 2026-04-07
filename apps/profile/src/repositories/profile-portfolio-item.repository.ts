@@ -4,9 +4,19 @@ import { Repository } from 'typeorm';
 
 import { ProfilePortfolioItem } from 'src/entities/profile-portfolio-item.entity';
 
-type CreateProfilePortfolioItemRecord = Omit<
+type CreateProfilePortfolioItemRecord = Pick<
     ProfilePortfolioItem,
-    'id' | 'profile' | 'galleryImages' | 'createdAt' | 'updatedAt'
+    | 'profileId'
+    | 'title'
+    | 'description'
+    | 'assetId'
+    | 'assetUrl'
+    | 'assetFileName'
+    | 'assetMimeType'
+    | 'assetSizeBytes'
+    | 'category'
+    | 'isFeatured'
+    | 'sortOrder'
 >;
 
 @Injectable()
@@ -98,7 +108,6 @@ export class ProfilePortfolioItemRepository extends Repository<ProfilePortfolioI
     ): Promise<ProfilePortfolioItem> {
         const currentItem = await this.getByIdForProfile(itemId, profileId);
         const nextItem = this.repo.merge(currentItem, payload);
-
         return this.repo.save(nextItem);
     }
 
