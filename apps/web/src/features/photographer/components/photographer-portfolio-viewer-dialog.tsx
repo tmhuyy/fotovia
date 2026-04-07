@@ -12,6 +12,21 @@ interface PhotographerPortfolioViewerDialogProps
     onClose: () => void;
 }
 
+const getStyleMeta = (item: PhotographerPortfolioShowcaseItem) =>
+{
+    if (!item.styleLabel) {
+        return {
+            eyebrow: "Portfolio work",
+            value: "Style summary unavailable for this portfolio item.",
+        };
+    }
+
+    return {
+        eyebrow: item.styleSource === "ai" ? "AI-detected style" : "Style",
+        value: item.styleLabel,
+    };
+};
+
 export const PhotographerPortfolioViewerDialog = ({
     item,
     isOpen,
@@ -22,7 +37,10 @@ export const PhotographerPortfolioViewerDialog = ({
 
     const images = useMemo(() =>
     {
-        if (!item) return [];
+        if (!item) {
+            return [];
+        }
+
         return [item.coverImageUrl, ...item.galleryImages].filter(Boolean);
     }, [item]);
 
@@ -35,7 +53,9 @@ export const PhotographerPortfolioViewerDialog = ({
 
     useEffect(() =>
     {
-        if (!isOpen) return;
+        if (!isOpen) {
+            return;
+        }
 
         const handleKeyDown = (event: KeyboardEvent) =>
         {
@@ -60,6 +80,7 @@ export const PhotographerPortfolioViewerDialog = ({
         };
 
         window.addEventListener("keydown", handleKeyDown);
+
         return () => window.removeEventListener("keydown", handleKeyDown);
     }, [images.length, isOpen, onClose]);
 
@@ -69,6 +90,7 @@ export const PhotographerPortfolioViewerDialog = ({
 
     const currentImageUrl = images[activeIndex] ?? item.coverImageUrl;
     const canNavigate = images.length > 1;
+    const styleMeta = getStyleMeta(item);
 
     return (
         <div
@@ -101,7 +123,9 @@ export const PhotographerPortfolioViewerDialog = ({
                                     className="absolute left-3 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-2xl text-white transition hover:bg-black/70"
                                     onClick={() =>
                                         setActiveIndex((current) =>
-                                            current === 0 ? images.length - 1 : current - 1,
+                                            current === 0
+                                                ? images.length - 1
+                                                : current - 1,
                                         )
                                     }
                                     aria-label="Previous image"
@@ -121,7 +145,9 @@ export const PhotographerPortfolioViewerDialog = ({
                                     type="button"
                                     className="absolute right-3 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-2xl text-white transition hover:bg-black/70"
                                     onClick={() =>
-                                        setActiveIndex((current) => (current + 1) % images.length)
+                                        setActiveIndex((current) =>
+                                            (current + 1) % images.length,
+                                        )
                                     }
                                     aria-label="Next image"
                                 >
@@ -133,9 +159,15 @@ export const PhotographerPortfolioViewerDialog = ({
 
                     <div className="flex min-h-0 flex-col gap-5 overflow-y-auto bg-[#171717] p-6 text-white">
                         <div className="space-y-3">
-                            <p className="text-xs uppercase tracking-[0.22em] text-white/55">
-                                {item.category}
-                            </p>
+                            <div className="space-y-1">
+                                <p className="text-xs uppercase tracking-[0.22em] text-white/55">
+                                    {styleMeta.eyebrow}
+                                </p>
+
+                                <p className="text-sm font-medium text-white/80">
+                                    {styleMeta.value}
+                                </p>
+                            </div>
 
                             <div className="flex flex-wrap items-center gap-2">
                                 <h3 className="font-serif text-3xl">{item.title}</h3>
@@ -148,7 +180,8 @@ export const PhotographerPortfolioViewerDialog = ({
                             </div>
 
                             <p className="text-sm leading-7 text-white/70">
-                                {item.description || "Saved portfolio work from this photographer."}
+                                {item.description ||
+                                    "Saved portfolio work from this photographer."}
                             </p>
                         </div>
 
@@ -158,9 +191,9 @@ export const PhotographerPortfolioViewerDialog = ({
                             </p>
 
                             <p className="mt-2 text-sm leading-6 text-white/75">
-                                {images.length} image{images.length === 1 ? "" : "s"} in this
-                                portfolio item. Use the arrows or your keyboard left/right keys
-                                to browse.
+                                {images.length} image{images.length === 1 ? "" : "s"} in
+                                this portfolio item. Use the arrows or your keyboard
+                                left/right keys to browse.
                             </p>
                         </div>
 

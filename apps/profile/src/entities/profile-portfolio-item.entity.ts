@@ -58,8 +58,8 @@ export class ProfilePortfolioItem {
     @Column({ name: 'asset_size_bytes', type: 'int', nullable: true })
     assetSizeBytes: number | null;
 
-    @Column({ type: 'varchar', length: 50 })
-    category: string;
+    @Column({ type: 'varchar', length: 50, nullable: true })
+    category: string | null;
 
     @Column({ name: 'is_featured', type: 'boolean', default: false })
     isFeatured: boolean;

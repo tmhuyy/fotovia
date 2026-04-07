@@ -1,5 +1,7 @@
 import type { PhotographerProfile } from "./photographer.types";
 
+export type PhotographerPortfolioStyleSource = "ai" | "legacy" | "none";
+
 export interface PhotographerService {
     title: string;
     description: string;
@@ -19,7 +21,8 @@ export interface PhotographerPortfolioShowcaseItem {
     description: string;
     coverImageUrl: string;
     galleryImages: string[];
-    category: string;
+    styleLabel: string | null;
+    styleSource: PhotographerPortfolioStyleSource;
     isFeatured: boolean;
 }
 

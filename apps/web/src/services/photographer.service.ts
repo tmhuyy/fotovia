@@ -4,15 +4,14 @@ import type { AssetPreview } from "../features/asset/types/asset.types";
 import type {
     PhotographerDetail,
     PhotographerPortfolioShowcaseItem,
+    PhotographerPortfolioStyleSource,
     PhotographerService as PhotographerServiceItem,
     PhotographerTestimonial,
 } from "../features/photographer/types/photographer-detail.types";
 import type { PhotographerProfile } from "../features/photographer/types/photographer.types";
 import {
-    PORTFOLIO_CATEGORIES,
     PORTFOLIO_ITEM_CLASSIFICATION_STATUSES,
     type PhotographerPortfolioItem,
-    type PortfolioCategory,
     type PortfolioItemClassificationStatus,
     type PortfolioItemMutationPayload,
     type PortfolioStyleDistributionEntry,
@@ -80,17 +79,6 @@ const normalizeStringArray = (value: unknown): string[] => {
         .filter(Boolean);
 };
 
-const normalizeCategory = (value: unknown): PortfolioCategory => {
-    if (
-        typeof value === "string" &&
-        PORTFOLIO_CATEGORIES.includes(value as PortfolioCategory)
-    ) {
-        return value as PortfolioCategory;
-    }
-
-    return "wedding";
-};
-
 const normalizeClassificationStatus = (
     value: unknown,
 ): PortfolioItemClassificationStatus => {
@@ -104,6 +92,17 @@ const normalizeClassificationStatus = (
     }
 
     return "not_requested";
+};
+
+const normalizePortfolioStyleSource = (
+    value: unknown,
+    fallback: PhotographerPortfolioStyleSource = "none",
+): PhotographerPortfolioStyleSource => {
+    if (value === "ai" || value === "legacy" || value === "none") {
+        return value;
+    }
+
+    return fallback;
 };
 
 const normalizeIsoDate = (value: unknown): string | null => {
@@ -135,6 +134,25 @@ const normalizeStyleDistribution = (
         .filter(
             (entry): entry is PortfolioStyleDistributionEntry => entry !== null,
         );
+};
+
+const normalizeSecondaryStyleLabels = (value: unknown): string[] => {
+    if (!Array.isArray(value)) {
+        return [];
+    }
+
+    return value
+        .map((entry) => {
+            if (typeof entry === "string") {
+                return entry.trim();
+            }
+
+            const record = (entry as AnyRecord | undefined) ?? {};
+            const label = normalizeNullableString(record.label);
+
+            return label ?? "";
+        })
+        .filter(Boolean);
 };
 
 const normalizeUploadedAssetPreview = (payload: AnyRecord): AssetPreview => {
@@ -186,7 +204,6 @@ const normalizePortfolioItem = (
             createdAt: payload.createdAt,
         }),
         galleryAssets: normalizeGalleryAssets(payload.galleryImages),
-        category: normalizeCategory(payload.category),
         isFeatured: normalizeBoolean(payload.isFeatured),
         sortOrder: normalizeNumber(payload.sortOrder) ?? 0,
         createdAt:
@@ -219,7 +236,7 @@ const normalizePortfolioItem = (
             payload.detectedPrimaryStyle,
         ),
         detectedPrimaryScore: normalizeNumber(payload.detectedPrimaryScore),
-        detectedSecondaryStyles: normalizeStringArray(
+        detectedSecondaryStyles: normalizeSecondaryStyleLabels(
             payload.detectedSecondaryStyles,
         ),
         detectedStyleDistribution: normalizeStyleDistribution(
@@ -285,6 +302,15 @@ const normalizeTestimonials = (value: unknown): PhotographerTestimonial[] => {
 const normalizePortfolioShowcaseItem = (
     payload: AnyRecord,
 ): PhotographerPortfolioShowcaseItem => {
+    const explicitStyleLabel = normalizeNullableString(payload.styleLabel);
+    const legacyCategory = normalizeNullableString(payload.category);
+    const styleLabel = explicitStyleLabel ?? legacyCategory;
+    const fallbackSource: PhotographerPortfolioStyleSource = explicitStyleLabel
+        ? "ai"
+        : legacyCategory
+          ? "legacy"
+          : "none";
+
     return {
         id: normalizeString(payload.id),
         title: normalizeString(payload.title) || "Saved portfolio work",
@@ -295,7 +321,11 @@ const normalizePortfolioShowcaseItem = (
                   (item): item is string => typeof item === "string",
               )
             : [],
-        category: normalizeString(payload.category) || "Photography",
+        styleLabel,
+        styleSource: normalizePortfolioStyleSource(
+            payload.styleSource,
+            fallbackSource,
+        ),
         isFeatured: normalizeBoolean(payload.isFeatured),
     };
 };

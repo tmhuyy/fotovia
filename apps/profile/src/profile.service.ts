@@ -92,7 +92,8 @@ type PublicPhotographerPortfolioItem = {
     description: string;
     coverImageUrl: string;
     galleryImages: string[];
-    category: string;
+    styleLabel: string | null;
+    styleSource: 'ai' | 'legacy' | 'none';
     isFeatured: boolean;
 };
 
@@ -247,7 +248,6 @@ export class ProfileService {
                 assetSizeBytes: this.normalizeAssetSizeBytes(
                     coverAsset.asset.sizeBytes,
                 ),
-                category: dto.category.trim().toLowerCase(),
                 isFeatured: dto.isFeatured ?? false,
                 sortOrder,
             });
@@ -336,10 +336,6 @@ export class ProfileService {
             nextValues.description = dto.description.trim();
         }
 
-        if (typeof dto.category === 'string') {
-            nextValues.category = dto.category.trim().toLowerCase();
-        }
-
         if (typeof dto.isFeatured === 'boolean') {
             nextValues.isFeatured = dto.isFeatured;
         }
@@ -406,7 +402,10 @@ export class ProfileService {
 
         await this.cleanupAssetsIfOrphaned(removedAssetIds, userId);
 
-        const shouldReclassify = this.hasPortfolioMediaChanged(currentItem, dto);
+        const shouldReclassify = this.hasPortfolioMediaChanged(
+            currentItem,
+            dto,
+        );
 
         if (shouldReclassify) {
             await this.portfolioItemClassificationService.queuePortfolioItemClassification(
@@ -847,7 +846,8 @@ export class ProfileService {
                 galleryImages: (item.galleryImages ?? []).map(
                     (galleryImage) => galleryImage.assetUrl,
                 ),
-                category: this.toDisplayLabel(item.category),
+                styleLabel: this.resolvePortfolioStyleLabel(item),
+                styleSource: this.resolvePortfolioStyleSource(item),
                 isFeatured: item.isFeatured,
             })),
         };
@@ -871,14 +871,6 @@ export class ProfileService {
                     .map((value) => this.toDisplayLabel(value)),
             ),
         );
-    }
-
-    private toDisplayLabel(value: string): string {
-        return value
-            .split(/[\s-_]+/)
-            .filter(Boolean)
-            .map((part) => part[0].toUpperCase() + part.slice(1).toLowerCase())
-            .join(' ');
     }
 
     private normalizeMoneyValue(
@@ -982,5 +974,59 @@ export class ProfileService {
             JSON.stringify(nextGalleryAssetIds);
 
         return hasCoverChanged || hasGalleryChanged;
+    }
+
+    private resolvePortfolioStyleLabel(
+        item: Pick<ProfilePortfolioItem, 'detectedPrimaryStyle' | 'category'>,
+    ): string | null {
+        const detectedPrimaryStyle =
+            typeof item.detectedPrimaryStyle === 'string'
+                ? item.detectedPrimaryStyle.trim()
+                : '';
+
+        if (detectedPrimaryStyle) {
+            return this.toDisplayLabel(detectedPrimaryStyle);
+        }
+
+        const legacyCategory =
+            typeof item.category === 'string' ? item.category.trim() : '';
+
+        if (legacyCategory) {
+            return this.toDisplayLabel(legacyCategory);
+        }
+
+        return null;
+    }
+
+    private resolvePortfolioStyleSource(
+        item: Pick<ProfilePortfolioItem, 'detectedPrimaryStyle' | 'category'>,
+    ): 'ai' | 'legacy' | 'none' {
+        if (
+            typeof item.detectedPrimaryStyle === 'string' &&
+            item.detectedPrimaryStyle.trim().length > 0
+        ) {
+            return 'ai';
+        }
+
+        if (
+            typeof item.category === 'string' &&
+            item.category.trim().length > 0
+        ) {
+            return 'legacy';
+        }
+
+        return 'none';
+    }
+
+    private toDisplayLabel(value: string): string {
+        return value
+            .split(/[\s-_]+/)
+            .map((part) => part.trim())
+            .filter((part) => part.length > 0)
+            .map(
+                (part) =>
+                    part.charAt(0).toUpperCase() + part.slice(1).toLowerCase(),
+            )
+            .join(' ');
     }
 }

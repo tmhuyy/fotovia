@@ -64,14 +64,15 @@ const mapItemToDraft = (
   item: PhotographerPortfolioItem | null,
 ): PortfolioItemDraft | undefined =>
 {
-  if (!item) return undefined;
+  if (!item) {
+    return undefined;
+  }
 
   return {
     title: item.title,
     description: item.description,
     coverAsset: item.coverAsset,
     galleryAssets: item.galleryAssets,
-    category: item.category,
     isFeatured: item.isFeatured,
   };
 };
@@ -84,7 +85,7 @@ const buildSaveSuccessDescription = (
   const actionLabel = mode === "create" ? "saved" : "updated";
 
   if (isClassificationInFlight(item)) {
-    return `Your portfolio item was ${actionLabel}, and AI classification is now queued. This page will refresh automatically while the job runs.`;
+    return `Your portfolio item was ${actionLabel}, and Fotovia is now detecting the style automatically. This page will refresh while the AI job runs.`;
   }
 
   return `Your portfolio item was ${actionLabel} successfully.`;
@@ -178,7 +179,6 @@ const buildPortfolioMutationPayload = async (
   return {
     title: draft.title.trim(),
     description: draft.description.trim(),
-    category: draft.category,
     isFeatured: draft.isFeatured,
     coverAssetId: await resolveUploadedAssetId(
       draft.coverAsset,
@@ -213,12 +213,12 @@ export const PhotographerPortfolioPage = () =>
   const portfolioQuery = useQuery({
     queryKey,
     queryFn: () => photographerService.getMyPortfolioItems(),
-    enabled:
-      hasHydrated && !isHydrating && isAuthenticated && isPhotographer,
+    enabled: hasHydrated && !isHydrating && isAuthenticated && isPhotographer,
     retry: false,
     refetchInterval: (query) =>
     {
-      const items = (query.state.data as PhotographerPortfolioItem[] | undefined) ?? [];
+      const items =
+        (query.state.data as PhotographerPortfolioItem[] | undefined) ?? [];
 
       return hasActiveClassification(items)
         ? CLASSIFICATION_POLL_INTERVAL_MS
@@ -326,7 +326,6 @@ export const PhotographerPortfolioPage = () =>
       return photographerService.updateMyPortfolioItem(item.id, {
         title: item.title,
         description: item.description,
-        category: item.category,
         isFeatured: !item.isFeatured,
         coverAssetId: item.coverAsset.assetId,
         galleryAssetIds: item.galleryAssets
@@ -401,14 +400,15 @@ export const PhotographerPortfolioPage = () =>
     return sortedItems.filter(isClassificationInFlight).length;
   }, [sortedItems]);
 
-  const completedClassificationCount = useMemo(() =>
+  const stylesReadyCount = useMemo(() =>
   {
-    return sortedItems.filter((item) => item.classificationStatus === "completed").length;
+    return sortedItems.filter((item) => item.detectedPrimaryStyle).length;
   }, [sortedItems]);
 
   const failedClassificationCount = useMemo(() =>
   {
-    return sortedItems.filter((item) => item.classificationStatus === "failed").length;
+    return sortedItems.filter((item) => item.classificationStatus === "failed")
+      .length;
   }, [sortedItems]);
 
   const isPollingForClassification = useMemo(() =>
@@ -445,8 +445,8 @@ export const PhotographerPortfolioPage = () =>
                   Portfolio access requires sign-in
                 </h1>
                 <p className="text-sm leading-6 text-muted">
-                  Sign in with a photographer account to manage saved portfolio
-                  works.
+                  Sign in with a photographer account to manage saved
+                  portfolio works.
                 </p>
               </CardContent>
             </Card>
@@ -470,13 +470,15 @@ export const PhotographerPortfolioPage = () =>
 
                   <div className="space-y-2">
                     <h1 className="font-serif text-3xl text-foreground">
-                      This portfolio workspace is reserved for photographer accounts.
+                      This portfolio workspace is reserved for
+                      photographer accounts.
                     </h1>
 
                     <p className="text-sm leading-7 text-muted">
-                      Your account is signed in, but this route is meant for
-                      photographer-side portfolio setup. You can still return to
-                      your profile or go back to the main marketplace flow.
+                      Your account is signed in, but this route is
+                      meant for photographer-side portfolio setup.
+                      You can still return to your profile or go
+                      back to the main marketplace flow.
                     </p>
                   </div>
                 </div>
@@ -562,17 +564,18 @@ export const PhotographerPortfolioPage = () =>
         <Container className="space-y-8">
           <section className="space-y-6">
             <div className="space-y-4">
-              <Badge variant="ai">Portfolio AI visibility</Badge>
+              <Badge variant="ai">AI-first portfolio workspace</Badge>
 
               <div className="space-y-3">
                 <h1 className="font-serif text-4xl text-foreground sm:text-5xl">
-                  Manage portfolio AI status, {displayName}.
+                  Manage AI-first portfolio work, {displayName}.
                 </h1>
 
                 <p className="max-w-3xl text-sm leading-7 text-muted sm:text-base">
-                  Each saved work now shows its AI classification lifecycle,
-                  detected style summary, and a manual retry path when
-                  classification fails.
+                  Manual category selection has been removed from this
+                  flow. Fotovia now treats AI-detected style as the
+                  main source of truth after you save each portfolio
+                  item.
                 </p>
               </div>
             </div>
@@ -614,21 +617,27 @@ export const PhotographerPortfolioPage = () =>
               <Card className="rounded-[2rem] border-border bg-surface shadow-sm">
                 <CardContent className="space-y-2 p-6">
                   <p className="text-xs uppercase tracking-[0.22em] text-muted">
-                    Needs retry
+                    Styles ready
                   </p>
                   <p className="font-serif text-3xl text-foreground">
-                    {failedClassificationCount}
+                    {stylesReadyCount}
                   </p>
                 </CardContent>
               </Card>
             </div>
 
             <div className="flex flex-wrap gap-3">
-              <Badge variant="accent">{completedClassificationCount} completed</Badge>
+              {failedClassificationCount > 0 ? (
+                <Badge variant="neutral">
+                  {failedClassificationCount} need retry
+                </Badge>
+              ) : null}
 
               {isPollingForClassification ? (
                 <Badge variant="ai">
-                  Refreshing every {CLASSIFICATION_POLL_INTERVAL_MS / 1000}s while AI runs
+                  Refreshing every{" "}
+                  {CLASSIFICATION_POLL_INTERVAL_MS / 1000}s while AI
+                  runs
                 </Badge>
               ) : null}
             </div>
@@ -670,9 +679,10 @@ export const PhotographerPortfolioPage = () =>
                 </h2>
 
                 <p className="text-sm leading-7 text-muted">
-                  Review AI queue and processing states, inspect completed style
-                  summaries, and retry failed classifications without leaving the
-                  portfolio workspace.
+                  Review AI queue and processing states, inspect
+                  detected style summaries, and retry failed
+                  classifications without leaving the portfolio
+                  workspace.
                 </p>
               </div>
 
@@ -685,7 +695,11 @@ export const PhotographerPortfolioPage = () =>
                         type="button"
                         variant="secondary"
                         size="sm"
-                        onClick={() => retryClassificationMutation.mutate(item.id)}
+                        onClick={() =>
+                          retryClassificationMutation.mutate(
+                            item.id,
+                          )
+                        }
                         disabled={isAnyMutationPending}
                       >
                         Retry classification
@@ -706,7 +720,9 @@ export const PhotographerPortfolioPage = () =>
                       type="button"
                       variant="secondary"
                       size="sm"
-                      onClick={() => toggleFeaturedMutation.mutate(item)}
+                      onClick={() =>
+                        toggleFeaturedMutation.mutate(item)
+                      }
                       disabled={isAnyMutationPending}
                     >
                       {item.isFeatured ? "Unfeature" : "Feature"}

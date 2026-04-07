@@ -14,7 +14,6 @@ type CreateProfilePortfolioItemRecord = Pick<
     | 'assetFileName'
     | 'assetMimeType'
     | 'assetSizeBytes'
-    | 'category'
     | 'isFeatured'
     | 'sortOrder'
 >;
@@ -108,6 +107,7 @@ export class ProfilePortfolioItemRepository extends Repository<ProfilePortfolioI
     ): Promise<ProfilePortfolioItem> {
         const currentItem = await this.getByIdForProfile(itemId, profileId);
         const nextItem = this.repo.merge(currentItem, payload);
+
         return this.repo.save(nextItem);
     }
 

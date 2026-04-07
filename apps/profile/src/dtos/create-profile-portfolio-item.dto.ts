@@ -31,7 +31,8 @@ export class CreateProfilePortfolioItemDto {
     @ApiProperty({
         format: 'uuid',
         example: '5fa9cc8c-e71c-4746-b427-da36b06030e2',
-        description: 'Required cover image asset id.',
+        description:
+            'Required cover image asset id. Fotovia detects portfolio style automatically after save.',
     })
     @IsUUID()
     coverAssetId: string;
@@ -42,7 +43,8 @@ export class CreateProfilePortfolioItemDto {
             '5fa9cc8c-e71c-4746-b427-da36b06030e2',
             '36a6b5e0-9d64-4f1f-8b15-5a6b8d6bfe71',
         ],
-        description: 'Optional additional gallery image asset ids.',
+        description:
+            'Optional additional gallery image asset ids. These images also contribute to AI style detection.',
     })
     @IsOptional()
     @IsArray()
@@ -50,14 +52,6 @@ export class CreateProfilePortfolioItemDto {
     @ArrayMaxSize(8)
     @IsUUID('4', { each: true })
     galleryAssetIds?: string[] = [];
-
-    @ApiProperty({
-        example: 'wedding',
-    })
-    @IsString()
-    @IsNotEmpty()
-    @MaxLength(50)
-    category: string;
 
     @ApiPropertyOptional({
         example: false,

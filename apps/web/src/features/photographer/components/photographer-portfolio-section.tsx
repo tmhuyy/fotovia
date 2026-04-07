@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 
+import { Badge } from "../../../components/ui/badge";
 import type {
   PhotographerDetail,
   PhotographerPortfolioShowcaseItem,
@@ -15,6 +16,21 @@ interface PhotographerPortfolioSectionProps
 }
 
 const MAX_VISIBLE_PORTFOLIO_CARDS = 10;
+
+const getStyleMeta = (item: PhotographerPortfolioShowcaseItem) =>
+{
+  if (!item.styleLabel) {
+    return {
+      eyebrow: "Style",
+      value: "Style summary is not available yet.",
+    };
+  }
+
+  return {
+    eyebrow: item.styleSource === "ai" ? "AI-detected style" : "Style",
+    value: item.styleLabel,
+  };
+};
 
 export const PhotographerPortfolioSection = ({
   photographer,
@@ -37,79 +53,97 @@ export const PhotographerPortfolioSection = ({
     <>
       <PhotographerDetailSection
         eyebrow="Portfolio"
-        title="Saved works from this photographer"
-        description="This section is now compact by default. Open any portfolio card to view the full cover image and gallery in a focused viewer."
+        title="Saved portfolio work"
+        description="Open real cover and gallery images. When available, Fotovia now surfaces AI-detected style as the main style signal for each portfolio item."
       >
         {photographer.portfolio.length ? (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between gap-4">
-              <p className="text-sm text-muted">
+          <div className="space-y-6">
+            <div className="flex flex-wrap items-center gap-3">
+              <Badge variant="neutral">
                 {photographer.portfolio.length} saved portfolio item
                 {photographer.portfolio.length === 1 ? "" : "s"}
-              </p>
+              </Badge>
 
               {hiddenCount > 0 ? (
-                <p className="text-sm text-muted">
-                  Showing the first {visibleItems.length}. Scroll for more on
-                  future phases.
-                </p>
+                <Badge variant="neutral">
+                  Showing the first {visibleItems.length}
+                </Badge>
               ) : null}
             </div>
 
-            <div className="flex gap-4 overflow-x-auto pb-2">
-              {visibleItems.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  className="group w-[280px] shrink-0 overflow-hidden rounded-[1.5rem] border border-border bg-background text-left transition hover:border-accent"
-                  onClick={() => setSelectedItem(item)}
-                >
-                  <div className="aspect-[4/3] overflow-hidden bg-brand-background">
-                    <img
-                      src={item.coverImageUrl}
-                      alt={item.title}
-                      className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
-                    />
-                  </div>
+            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+              {visibleItems.map((item) =>
+              {
+                const styleMeta = getStyleMeta(item);
 
-                  <div className="space-y-3 p-4">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-xs uppercase tracking-[0.18em] text-muted">
-                        {item.category}
-                      </p>
-
-                      {item.isFeatured ? (
-                        <span className="rounded-full bg-brand-accent/15 px-2.5 py-1 text-[11px] font-medium text-brand-primary">
-                          Featured
-                        </span>
-                      ) : null}
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setSelectedItem(item)}
+                    className="overflow-hidden rounded-[2rem] border border-border bg-surface text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                  >
+                    <div className="aspect-[4/3] overflow-hidden bg-brand-background">
+                      <img
+                        src={item.coverImageUrl}
+                        alt={item.title}
+                        className="h-full w-full object-cover"
+                      />
                     </div>
 
-                    <div className="space-y-1">
-                      <h3 className="font-serif text-xl text-foreground">
-                        {item.title}
-                      </h3>
+                    <div className="space-y-4 p-6">
+                      <div className="flex flex-wrap gap-2">
+                        {item.isFeatured ? (
+                          <Badge variant="accent">
+                            Featured
+                          </Badge>
+                        ) : null}
 
-                      <p className="line-clamp-2 text-sm leading-6 text-muted">
-                        {item.description ||
-                          "Saved portfolio work from this photographer."}
+                        {item.styleSource === "ai" &&
+                          item.styleLabel ? (
+                          <Badge variant="ai">
+                            AI style
+                          </Badge>
+                        ) : null}
+                      </div>
+
+                      <div className="space-y-2">
+                        <p className="text-xs uppercase tracking-[0.22em] text-muted">
+                          {styleMeta.eyebrow}
+                        </p>
+
+                        <p className="text-sm font-medium text-foreground">
+                          {styleMeta.value}
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <h3 className="font-serif text-2xl text-foreground">
+                          {item.title}
+                        </h3>
+
+                        <p className="text-sm leading-7 text-muted">
+                          {item.description ||
+                            "Saved portfolio work from this photographer."}
+                        </p>
+                      </div>
+
+                      <p className="text-sm font-medium text-foreground">
+                        {item.galleryImages.length
+                          ? `Open ${item.galleryImages.length + 1} images`
+                          : "Open cover image"}
                       </p>
                     </div>
-
-                    <p className="text-sm font-medium text-foreground">
-                      {item.galleryImages.length
-                        ? `Open ${item.galleryImages.length + 1} images`
-                        : "Open cover image"}
-                    </p>
-                  </div>
-                </button>
-              ))}
+                  </button>
+                );
+              })}
             </div>
           </div>
         ) : (
-          <div className="rounded-[1.5rem] border border-dashed border-border bg-background px-5 py-6">
+          <div className="rounded-[2rem] border border-border bg-surface px-6 py-8">
             <p className="text-sm leading-7 text-muted">
-              This photographer has not published public portfolio works yet.
+              This photographer has not published public portfolio works
+              yet.
             </p>
           </div>
         )}

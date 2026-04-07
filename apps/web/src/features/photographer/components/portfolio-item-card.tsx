@@ -2,12 +2,10 @@ import type { ReactNode } from "react";
 
 import { Badge } from "../../../components/ui/badge";
 import { assetService } from "../../../services/asset.service";
-import
-{
-    PORTFOLIO_CATEGORY_LABELS,
-    type PhotographerPortfolioItem,
-    type PortfolioItemClassificationStatus,
-    type PortfolioStyleDistributionEntry,
+import type {
+    PhotographerPortfolioItem,
+    PortfolioItemClassificationStatus,
+    PortfolioStyleDistributionEntry,
 } from "../types/portfolio.types";
 
 interface PortfolioItemCardProps
@@ -133,10 +131,6 @@ export const PortfolioItemCard = ({
 
             <div className="space-y-4 p-6">
                 <div className="flex flex-wrap gap-2">
-                    <Badge variant="neutral">
-                        {PORTFOLIO_CATEGORY_LABELS[item.category]}
-                    </Badge>
-
                     {item.isFeatured ? <Badge variant="accent">Featured</Badge> : null}
 
                     <Badge
@@ -145,6 +139,10 @@ export const PortfolioItemCard = ({
                     >
                         AI {statusConfig.label}
                     </Badge>
+
+                    {primaryStyleLabel ? (
+                        <Badge variant="ai">Style · {primaryStyleLabel}</Badge>
+                    ) : null}
 
                     {isLocalPreview ? <Badge variant="neutral">Local preview</Badge> : null}
 
@@ -168,7 +166,7 @@ export const PortfolioItemCard = ({
                 <div className="rounded-[1.5rem] border border-border bg-background px-4 py-4">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <p className="text-xs uppercase tracking-[0.22em] text-muted">
-                            AI classification
+                            AI style result
                         </p>
 
                         <Badge
@@ -186,6 +184,7 @@ export const PortfolioItemCard = ({
                                 <p className="mt-1 text-sm font-medium text-foreground">
                                     {primaryStyleLabel}
                                 </p>
+
                                 {primaryConfidence ? (
                                     <p className="mt-1 text-sm text-muted">
                                         {primaryConfidence}
@@ -195,7 +194,10 @@ export const PortfolioItemCard = ({
 
                             {secondaryStyles.length > 0 ? (
                                 <div className="space-y-2">
-                                    <p className="text-sm text-muted">Secondary signals</p>
+                                    <p className="text-sm text-muted">
+                                        Secondary signals
+                                    </p>
+
                                     <div className="flex flex-wrap gap-2">
                                         {secondaryStyles.map((style) => (
                                             <Badge key={style.label} variant="ai">
