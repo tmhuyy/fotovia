@@ -5,6 +5,7 @@ import type {
     CreateBookingPayload,
     PhotographerBookingActionStatus,
 } from "../features/booking/types/booking.types";
+import type { BookingEventRecord } from "../features/booking/types/booking-event.types";
 import { bookingClient } from "./api/axios";
 import { unwrapResponse } from "./api/response";
 import type { ApiResponse } from "./api/types";
@@ -16,7 +17,11 @@ const BOOKING_ENDPOINTS = {
     clientMine: "/booking/client/me",
     clientCancel: (bookingId: string) =>
         `/booking/client/me/${bookingId}/cancel`,
+    clientTimeline: (bookingId: string) =>
+        `/booking/client/me/${bookingId}/timeline`,
     photographerMine: "/booking/photographer/me",
+    photographerTimeline: (bookingId: string) =>
+        `/booking/photographer/me/${bookingId}/timeline`,
     photographerStatus: (bookingId: string) =>
         `/booking/photographer/me/${bookingId}/status`,
 };
@@ -92,6 +97,43 @@ const normalizeBookingArray = (payload: unknown): BookingRequestRecord[] => {
         .map((item) => normalizeBooking(item));
 };
 
+const normalizeBookingEvent = (payload: AnyRecord): BookingEventRecord => {
+    return {
+        id: normalizeString(payload.id),
+        bookingId: normalizeString(payload.bookingId),
+        eventType:
+            (normalizeString(
+                payload.eventType,
+            ) as BookingEventRecord["eventType"]) || "created",
+        actorRole:
+            (normalizeString(
+                payload.actorRole,
+            ) as BookingEventRecord["actorRole"]) || "system",
+        actorUserId: normalizeNullableString(payload.actorUserId) ?? undefined,
+        actorLabel: normalizeString(payload.actorLabel),
+        note: normalizeNullableString(payload.note) ?? undefined,
+        createdAt:
+            typeof payload.createdAt === "string"
+                ? payload.createdAt
+                : new Date().toISOString(),
+    };
+};
+
+const normalizeBookingEventArray = (payload: unknown): BookingEventRecord[] => {
+    if (!Array.isArray(payload)) {
+        return [];
+    }
+
+    return payload
+        .filter(
+            (item): item is AnyRecord =>
+                typeof item === "object" &&
+                item !== null &&
+                !Array.isArray(item),
+        )
+        .map((item) => normalizeBookingEvent(item));
+};
+
 export const bookingService = {
     async createBooking(
         payload: CreateBookingPayload,
@@ -111,6 +153,17 @@ export const bookingService = {
 
         const data = unwrapResponse<unknown>(response.data);
         return normalizeBookingArray(data);
+    },
+
+    async getMyClientBookingTimeline(
+        bookingId: string,
+    ): Promise<BookingEventRecord[]> {
+        const response = await bookingClient.get<
+            ApiResponse<unknown> | unknown
+        >(BOOKING_ENDPOINTS.clientTimeline(bookingId));
+
+        const data = unwrapResponse<unknown>(response.data);
+        return normalizeBookingEventArray(data);
     },
 
     async cancelMyClientBooking(
@@ -134,6 +187,17 @@ export const bookingService = {
 
         const data = unwrapResponse<unknown>(response.data);
         return normalizeBookingArray(data);
+    },
+
+    async getMyPhotographerBookingTimeline(
+        bookingId: string,
+    ): Promise<BookingEventRecord[]> {
+        const response = await bookingClient.get<
+            ApiResponse<unknown> | unknown
+        >(BOOKING_ENDPOINTS.photographerTimeline(bookingId));
+
+        const data = unwrapResponse<unknown>(response.data);
+        return normalizeBookingEventArray(data);
     },
 
     async updateMyPhotographerBookingStatus(

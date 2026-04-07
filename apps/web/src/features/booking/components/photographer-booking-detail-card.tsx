@@ -10,7 +10,9 @@ import type {
     BookingRequestRecord,
     PhotographerBookingActionStatus,
 } from "../types/booking.types";
+import type { BookingEventRecord } from "../types/booking-event.types";
 import { BookingStatusPill } from "./booking-status-pill";
+import { BookingActivityTimeline } from "./booking-activity-timeline";
 
 interface PhotographerBookingDetailCardProps
 {
@@ -18,6 +20,9 @@ interface PhotographerBookingDetailCardProps
     isUpdating?: boolean;
     actionError?: string | null;
     onStatusChange: (status: PhotographerBookingActionStatus) => void;
+    timelineEvents: BookingEventRecord[];
+    isTimelineLoading?: boolean;
+    timelineError?: string | null;
 }
 
 const resolveLabel = (
@@ -99,6 +104,9 @@ export const PhotographerBookingDetailCard = ({
     isUpdating = false,
     actionError,
     onStatusChange,
+    timelineEvents,
+    isTimelineLoading = false,
+    timelineError,
 }: PhotographerBookingDetailCardProps) =>
 {
     if (!booking) {
@@ -121,129 +129,137 @@ export const PhotographerBookingDetailCard = ({
     const currentLifecycleCopy = lifecycleCopy[booking.status];
 
     return (
-        <Card className="border-brand-border bg-brand-surface">
-            <CardContent className="space-y-6 p-6 sm:p-8">
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div className="space-y-2">
-                        <p className="text-sm font-medium uppercase tracking-[0.18em] text-brand-muted">
-                            Request details
-                        </p>
-                        <h2 className="text-2xl font-semibold text-brand-primary">
-                            {resolveLabel(booking.sessionType, sessionTypeOptions)}
-                        </h2>
-                        <p className="text-sm text-brand-muted">
-                            Submitted {formatDateTime(booking.createdAt)}
-                        </p>
+        <div className="space-y-6">
+            <Card className="border-brand-border bg-brand-surface">
+                <CardContent className="space-y-6 p-6 sm:p-8">
+                    <div className="flex flex-wrap items-start justify-between gap-4">
+                        <div className="space-y-2">
+                            <p className="text-sm font-medium uppercase tracking-[0.18em] text-brand-muted">
+                                Request details
+                            </p>
+                            <h2 className="text-2xl font-semibold text-brand-primary">
+                                {resolveLabel(booking.sessionType, sessionTypeOptions)}
+                            </h2>
+                            <p className="text-sm text-brand-muted">
+                                Submitted {formatDateTime(booking.createdAt)}
+                            </p>
+                        </div>
+
+                        <BookingStatusPill status={booking.status} />
                     </div>
 
-                    <BookingStatusPill status={booking.status} />
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-2">
-                    <DetailItem
-                        label="Client account email"
-                        value={booking.clientEmail || "Not available yet"}
-                    />
-                    <DetailItem
-                        label="Preferred contact"
-                        value={booking.contactPreference || "Not specified"}
-                    />
-                    <DetailItem
-                        label="Date & time"
-                        value={`${booking.sessionDate || "Date not set"} · ${booking.sessionTime || "Time not set"
-                            }`}
-                    />
-                    <DetailItem
-                        label="Duration"
-                        value={resolveLabel(booking.duration, durationOptions)}
-                    />
-                    <DetailItem
-                        label="Budget"
-                        value={resolveLabel(booking.budget, budgetOptions)}
-                    />
-                    <DetailItem
-                        label="Location"
-                        value={booking.location || "Location not set"}
-                    />
-                </div>
-
-                <div className="space-y-4 border-t border-brand-border pt-6">
-                    <div>
-                        <p className="text-xs uppercase tracking-[0.14em] text-brand-muted">
-                            Shoot concept
-                        </p>
-                        <p className="mt-2 whitespace-pre-line text-sm leading-7 text-brand-primary">
-                            {booking.concept || "No concept provided."}
-                        </p>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                        <DetailItem
+                            label="Client account email"
+                            value={booking.clientEmail || "Not available yet"}
+                        />
+                        <DetailItem
+                            label="Preferred contact"
+                            value={booking.contactPreference || "Not specified"}
+                        />
+                        <DetailItem
+                            label="Date & time"
+                            value={`${booking.sessionDate || "Date not set"} · ${booking.sessionTime || "Time not set"
+                                }`}
+                        />
+                        <DetailItem
+                            label="Duration"
+                            value={resolveLabel(booking.duration, durationOptions)}
+                        />
+                        <DetailItem
+                            label="Budget"
+                            value={resolveLabel(booking.budget, budgetOptions)}
+                        />
+                        <DetailItem
+                            label="Location"
+                            value={booking.location || "Location not set"}
+                        />
                     </div>
 
-                    <div>
-                        <p className="text-xs uppercase tracking-[0.14em] text-brand-muted">
-                            Inspiration
-                        </p>
-                        <p className="mt-2 whitespace-pre-line text-sm leading-7 text-brand-primary">
-                            {booking.inspiration || "No inspiration notes were added."}
-                        </p>
+                    <div className="space-y-4 border-t border-brand-border pt-6">
+                        <div>
+                            <p className="text-xs uppercase tracking-[0.14em] text-brand-muted">
+                                Shoot concept
+                            </p>
+                            <p className="mt-2 whitespace-pre-line text-sm leading-7 text-brand-primary">
+                                {booking.concept || "No concept provided."}
+                            </p>
+                        </div>
+
+                        <div>
+                            <p className="text-xs uppercase tracking-[0.14em] text-brand-muted">
+                                Inspiration
+                            </p>
+                            <p className="mt-2 whitespace-pre-line text-sm leading-7 text-brand-primary">
+                                {booking.inspiration || "No inspiration notes were added."}
+                            </p>
+                        </div>
+
+                        <div>
+                            <p className="text-xs uppercase tracking-[0.14em] text-brand-muted">
+                                Extra notes
+                            </p>
+                            <p className="mt-2 whitespace-pre-line text-sm leading-7 text-brand-primary">
+                                {booking.notes || "No extra notes were added."}
+                            </p>
+                        </div>
                     </div>
 
-                    <div>
-                        <p className="text-xs uppercase tracking-[0.14em] text-brand-muted">
-                            Extra notes
-                        </p>
-                        <p className="mt-2 whitespace-pre-line text-sm leading-7 text-brand-primary">
-                            {booking.notes || "No extra notes were added."}
-                        </p>
-                    </div>
-                </div>
-
-                {actionError ? (
-                    <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-300">
-                        {actionError}
-                    </div>
-                ) : null}
-
-                <div className="rounded-2xl border border-brand-border bg-brand-background/70 p-4 text-sm text-brand-muted">
-                    <p className="font-medium text-brand-primary">
-                        {currentLifecycleCopy.title}
-                    </p>
-                    <p className="mt-2 leading-6">
-                        {currentLifecycleCopy.description}
-                    </p>
-                </div>
-
-                <div className="flex flex-wrap gap-3">
-                    {canRespond ? (
-                        <>
-                            <Button
-                                type="button"
-                                onClick={() => onStatusChange("confirmed")}
-                                disabled={isUpdating}
-                            >
-                                {isUpdating ? "Updating..." : "Confirm request"}
-                            </Button>
-
-                            <Button
-                                type="button"
-                                variant="secondary"
-                                onClick={() => onStatusChange("declined")}
-                                disabled={isUpdating}
-                            >
-                                Decline request
-                            </Button>
-                        </>
+                    {actionError ? (
+                        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-300">
+                            {actionError}
+                        </div>
                     ) : null}
 
-                    {canComplete ? (
-                        <Button
-                            type="button"
-                            onClick={() => onStatusChange("completed")}
-                            disabled={isUpdating}
-                        >
-                            {isUpdating ? "Updating..." : "Mark as completed"}
-                        </Button>
-                    ) : null}
-                </div>
-            </CardContent>
-        </Card>
+                    <div className="rounded-2xl border border-brand-border bg-brand-background/70 p-4 text-sm text-brand-muted">
+                        <p className="font-medium text-brand-primary">
+                            {currentLifecycleCopy.title}
+                        </p>
+                        <p className="mt-2 leading-6">
+                            {currentLifecycleCopy.description}
+                        </p>
+                    </div>
+
+                    <div className="flex flex-wrap gap-3">
+                        {canRespond ? (
+                            <>
+                                <Button
+                                    type="button"
+                                    onClick={() => onStatusChange("confirmed")}
+                                    disabled={isUpdating}
+                                >
+                                    {isUpdating ? "Updating..." : "Confirm request"}
+                                </Button>
+
+                                <Button
+                                    type="button"
+                                    variant="secondary"
+                                    onClick={() => onStatusChange("declined")}
+                                    disabled={isUpdating}
+                                >
+                                    Decline request
+                                </Button>
+                            </>
+                        ) : null}
+
+                        {canComplete ? (
+                            <Button
+                                type="button"
+                                onClick={() => onStatusChange("completed")}
+                                disabled={isUpdating}
+                            >
+                                {isUpdating ? "Updating..." : "Mark as completed"}
+                            </Button>
+                        ) : null}
+                    </div>
+                </CardContent>
+            </Card>
+
+            <BookingActivityTimeline
+                events={timelineEvents}
+                isLoading={isTimelineLoading}
+                errorMessage={timelineError}
+            />
+        </div>
     );
 };

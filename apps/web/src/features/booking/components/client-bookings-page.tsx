@@ -250,6 +250,22 @@ export const ClientBookingsPage = () =>
         );
     }, [filteredBookings, selectedBookingId]);
 
+    const timelineQuery = useQuery({
+        queryKey: [
+            "client-booking-timeline",
+            user?.id ?? user?.email ?? "anonymous",
+            selectedBooking?.id ?? "none",
+        ],
+        queryFn: () =>
+            bookingService.getMyClientBookingTimeline(selectedBooking!.id),
+        enabled:
+            hasHydrated &&
+            !isHydrating &&
+            isAuthenticated &&
+            Boolean(selectedBooking?.id),
+        retry: false,
+    });
+
     const cancelBookingMutation = useMutation({
         mutationFn: ({
             bookingId,
@@ -270,9 +286,18 @@ export const ClientBookingsPage = () =>
         },
         onSettled: async () =>
         {
-            await queryClient.invalidateQueries({
-                queryKey: bookingHistoryQueryKey,
-            });
+            await Promise.all([
+                queryClient.invalidateQueries({
+                    queryKey: bookingHistoryQueryKey,
+                }),
+                queryClient.invalidateQueries({
+                    queryKey: [
+                        "client-booking-timeline",
+                        user?.id ?? user?.email ?? "anonymous",
+                        selectedBooking?.id ?? "none",
+                    ],
+                }),
+            ]);
         },
     });
 
@@ -287,6 +312,13 @@ export const ClientBookingsPage = () =>
         ? getErrorMessage(
             cancelBookingMutation.error,
             "We couldn’t cancel that booking request right now.",
+        )
+        : null;
+
+    const timelineErrorMessage = timelineQuery.error
+        ? getErrorMessage(
+            timelineQuery.error,
+            "We couldn’t load the booking timeline right now.",
         )
         : null;
 
@@ -338,12 +370,13 @@ export const ClientBookingsPage = () =>
                                     Client dashboard
                                 </p>
                                 <h1 className="text-3xl font-semibold tracking-tight text-brand-primary sm:text-4xl">
-                                    Track and manage your booking lifecycle.
+                                    Track and understand your booking lifecycle.
                                 </h1>
                                 <p className="max-w-2xl text-base text-brand-muted">
                                     You can now review submitted requests, track
-                                    the photographer response, and cancel a
-                                    pending request directly from the frontend.
+                                    the photographer response, cancel a pending
+                                    request, and read the full activity timeline
+                                    behind each booking.
                                 </p>
                             </div>
                         </div>
@@ -394,6 +427,9 @@ export const ClientBookingsPage = () =>
                                         isUpdating={cancelBookingMutation.isPending}
                                         actionError={actionErrorMessage}
                                         onCancel={handleCancel}
+                                        timelineEvents={timelineQuery.data ?? []}
+                                        isTimelineLoading={timelineQuery.isLoading}
+                                        timelineError={timelineErrorMessage}
                                     />
                                 </div>
                             </>

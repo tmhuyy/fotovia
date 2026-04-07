@@ -9,6 +9,7 @@ import { BookingController } from './booking.controller';
 import { BookingService } from './booking.service';
 import { ConfigSchemaValidation } from './config.schema';
 import { Booking } from './entities/booking.entity';
+import { BookingEvent } from './entities/booking-event.entity';
 import { BookingRepository } from './repositories/booking.repository';
 
 @Module({
@@ -36,7 +37,7 @@ import { BookingRepository } from './repositories/booking.repository';
                 };
             },
         }),
-        TypeOrmModule.forFeature([Booking]),
+        TypeOrmModule.forFeature([Booking, BookingEvent]),
         ClientsModule.registerAsync([
             {
                 name: AUTH_SERVICE,

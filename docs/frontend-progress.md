@@ -1611,3 +1611,38 @@ This phase moved the booking system beyond the first response stage and made the
 ### Recommended next phase
 
 Booking Activity Timeline and Event History
+
+## Phase: Booking Activity Timeline and Event History
+
+### Status
+
+Completed
+
+### Goal
+
+Add real booking event history and timeline visibility across both backend and frontend.
+
+### What was completed
+
+This phase introduced:
+
+- booking event persistence
+- timeline read paths for client and photographer ownership
+- manual SQL migration for `booking_events`
+- shared timeline UI
+- client booking detail timeline
+- photographer booking detail timeline
+
+### Product result
+
+Booking now supports both lifecycle control and lifecycle visibility.
+
+Users can now understand not only the current booking status, but also the chronological sequence of actions that led to it.
+
+### Booking module status
+
+Booking is now strong enough to be treated as MVP-complete for the current product stage.
+
+### Recommended next phase
+
+Portfolio AI Classification Foundation

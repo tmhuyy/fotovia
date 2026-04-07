@@ -22,6 +22,7 @@ import { BookingService } from './booking.service';
 import { CreateBookingDto } from './dtos/create-booking.dto';
 import { UpdateBookingStatusDto } from './dtos/update-booking-status.dto';
 import { Booking } from './entities/booking.entity';
+import { BookingEvent } from './entities/booking-event.entity';
 
 @ApiTags('Booking')
 @Controller('booking')
@@ -61,6 +62,26 @@ export class BookingController {
     }
 
     @UseGuards(JwtAuthGuard)
+    @Get('/client/me/:bookingId/timeline')
+    @ApiOperation({
+        summary: 'Get booking activity timeline for the current client',
+    })
+    @ApiOkResponse({
+        description: 'Client booking timeline fetched successfully',
+        type: BookingEvent,
+        isArray: true,
+    })
+    async getMyClientBookingTimeline(
+        @Param('bookingId', new ParseUUIDPipe()) bookingId: string,
+        @GetUser() user: IUser,
+    ): Promise<BookingEvent[]> {
+        return this.bookingService.getMyClientBookingTimeline(
+            bookingId,
+            user.id,
+        );
+    }
+
+    @UseGuards(JwtAuthGuard)
     @Patch('/client/me/:bookingId/cancel')
     @ApiOperation({
         summary: 'Cancel a pending booking request as the current client',
@@ -93,6 +114,29 @@ export class BookingController {
         @GetUser() user: IUser,
     ): Promise<Booking[]> {
         return this.bookingService.getMyPhotographerBookings(user.id);
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Get('/photographer/me/:bookingId/timeline')
+    @ApiOperation({
+        summary: 'Get booking activity timeline for the current photographer',
+    })
+    @ApiOkResponse({
+        description: 'Photographer booking timeline fetched successfully',
+        type: BookingEvent,
+        isArray: true,
+    })
+    @ApiForbiddenResponse({
+        description: 'Only photographer accounts can access this timeline',
+    })
+    async getMyPhotographerBookingTimeline(
+        @Param('bookingId', new ParseUUIDPipe()) bookingId: string,
+        @GetUser() user: IUser,
+    ): Promise<BookingEvent[]> {
+        return this.bookingService.getMyPhotographerBookingTimeline(
+            bookingId,
+            user.id,
+        );
     }
 
     @UseGuards(JwtAuthGuard)

@@ -4,12 +4,18 @@ import {
     Injectable,
     NotFoundException,
 } from '@nestjs/common';
-import { DataSource } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { UserRole } from '@repo/types';
 
 import { CreateBookingDto } from './dtos/create-booking.dto';
 import { UpdateBookingStatusDto } from './dtos/update-booking-status.dto';
 import { Booking } from './entities/booking.entity';
+import {
+    BookingEvent,
+    BookingEventActorRole,
+    BookingEventType,
+} from './entities/booking-event.entity';
 import { BookingRepository } from './repositories/booking.repository';
 
 interface ProfileLookupRow {
@@ -22,6 +28,8 @@ interface ProfileLookupRow {
 export class BookingService {
     constructor(
         private readonly bookingRepository: BookingRepository,
+        @InjectRepository(BookingEvent)
+        private readonly bookingEventRepository: Repository<BookingEvent>,
         private readonly dataSource: DataSource,
     ) {}
 
@@ -58,7 +66,18 @@ export class BookingService {
             status: 'pending',
         });
 
-        return this.bookingRepository.save(booking);
+        const savedBooking = await this.bookingRepository.save(booking);
+
+        await this.recordBookingEvent({
+            bookingId: savedBooking.id,
+            eventType: 'created',
+            actorRole: 'client',
+            actorUserId: userId,
+            actorLabel: userEmail?.trim() || 'Client',
+            note: 'Booking request created.',
+        });
+
+        return savedBooking;
     }
 
     async getMyClientBookings(userId: string): Promise<Booking[]> {
@@ -68,6 +87,31 @@ export class BookingService {
             },
             order: {
                 createdAt: 'DESC',
+            },
+        });
+    }
+
+    async getMyClientBookingTimeline(
+        bookingId: string,
+        userId: string,
+    ): Promise<BookingEvent[]> {
+        const booking = await this.bookingRepository.findOne({
+            where: {
+                id: bookingId,
+                clientUserId: userId,
+            },
+        });
+
+        if (!booking) {
+            throw new NotFoundException('Booking request not found.');
+        }
+
+        return this.bookingEventRepository.find({
+            where: {
+                bookingId,
+            },
+            order: {
+                createdAt: 'ASC',
             },
         });
     }
@@ -94,7 +138,18 @@ export class BookingService {
         }
 
         booking.status = 'cancelled';
-        return this.bookingRepository.save(booking);
+        const savedBooking = await this.bookingRepository.save(booking);
+
+        await this.recordBookingEvent({
+            bookingId: savedBooking.id,
+            eventType: 'cancelled',
+            actorRole: 'client',
+            actorUserId: userId,
+            actorLabel: booking.clientEmail?.trim() || 'Client',
+            note: 'Client cancelled the pending request.',
+        });
+
+        return savedBooking;
     }
 
     async getMyPhotographerBookings(userId: string): Promise<Booking[]> {
@@ -108,6 +163,40 @@ export class BookingService {
             ],
             order: {
                 createdAt: 'DESC',
+            },
+        });
+    }
+
+    async getMyPhotographerBookingTimeline(
+        bookingId: string,
+        userId: string,
+    ): Promise<BookingEvent[]> {
+        const photographerProfile =
+            await this.getPhotographerWorkspaceProfile(userId);
+
+        const booking = await this.bookingRepository.findOne({
+            where: [
+                {
+                    id: bookingId,
+                    photographerUserId: userId,
+                },
+                {
+                    id: bookingId,
+                    photographerProfileId: photographerProfile.id,
+                },
+            ],
+        });
+
+        if (!booking) {
+            throw new NotFoundException('Booking request not found.');
+        }
+
+        return this.bookingEventRepository.find({
+            where: {
+                bookingId,
+            },
+            order: {
+                createdAt: 'ASC',
             },
         });
     }
@@ -145,7 +234,18 @@ export class BookingService {
             }
 
             booking.status = 'completed';
-            return this.bookingRepository.save(booking);
+            const savedBooking = await this.bookingRepository.save(booking);
+
+            await this.recordBookingEvent({
+                bookingId: savedBooking.id,
+                eventType: 'completed',
+                actorRole: 'photographer',
+                actorUserId: userId,
+                actorLabel: booking.photographerName,
+                note: 'Photographer marked the booking as completed.',
+            });
+
+            return savedBooking;
         }
 
         if (booking.status !== 'pending') {
@@ -155,7 +255,44 @@ export class BookingService {
         }
 
         booking.status = updateBookingStatusDto.status;
-        return this.bookingRepository.save(booking);
+        const savedBooking = await this.bookingRepository.save(booking);
+
+        await this.recordBookingEvent({
+            bookingId: savedBooking.id,
+            eventType: updateBookingStatusDto.status as Extract<
+                BookingEventType,
+                'confirmed' | 'declined'
+            >,
+            actorRole: 'photographer',
+            actorUserId: userId,
+            actorLabel: booking.photographerName,
+            note:
+                updateBookingStatusDto.status === 'confirmed'
+                    ? 'Photographer confirmed the booking request.'
+                    : 'Photographer declined the booking request.',
+        });
+
+        return savedBooking;
+    }
+
+    private async recordBookingEvent(input: {
+        bookingId: string;
+        eventType: BookingEventType;
+        actorRole: BookingEventActorRole;
+        actorUserId: string | null;
+        actorLabel: string;
+        note?: string | null;
+    }): Promise<BookingEvent> {
+        const event = this.bookingEventRepository.create({
+            bookingId: input.bookingId,
+            eventType: input.eventType,
+            actorRole: input.actorRole,
+            actorUserId: input.actorUserId,
+            actorLabel: input.actorLabel,
+            note: input.note?.trim() || null,
+        });
+
+        return this.bookingEventRepository.save(event);
     }
 
     private async getPhotographerWorkspaceProfile(

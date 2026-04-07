@@ -272,6 +272,23 @@ export const PhotographerBookingsPage = () =>
         );
     }, [filteredBookings, selectedBookingId]);
 
+    const timelineQuery = useQuery({
+        queryKey: [
+            "photographer-booking-timeline",
+            user?.id ?? user?.email ?? "anonymous",
+            selectedBooking?.id ?? "none",
+        ],
+        queryFn: () =>
+            bookingService.getMyPhotographerBookingTimeline(selectedBooking!.id),
+        enabled:
+            hasHydrated &&
+            !isHydrating &&
+            isAuthenticated &&
+            Boolean(isPhotographer) &&
+            Boolean(selectedBooking?.id),
+        retry: false,
+    });
+
     const updateStatusMutation = useMutation({
         mutationFn: ({
             bookingId,
@@ -292,9 +309,18 @@ export const PhotographerBookingsPage = () =>
         },
         onSettled: async () =>
         {
-            await queryClient.invalidateQueries({
-                queryKey: bookingInboxQueryKey,
-            });
+            await Promise.all([
+                queryClient.invalidateQueries({
+                    queryKey: bookingInboxQueryKey,
+                }),
+                queryClient.invalidateQueries({
+                    queryKey: [
+                        "photographer-booking-timeline",
+                        user?.id ?? user?.email ?? "anonymous",
+                        selectedBooking?.id ?? "none",
+                    ],
+                }),
+            ]);
         },
     });
 
@@ -309,6 +335,13 @@ export const PhotographerBookingsPage = () =>
         ? getErrorMessage(
             updateStatusMutation.error,
             "We couldn’t update that booking request status right now.",
+        )
+        : null;
+
+    const timelineErrorMessage = timelineQuery.error
+        ? getErrorMessage(
+            timelineQuery.error,
+            "We couldn’t load the booking timeline right now.",
         )
         : null;
 
@@ -363,9 +396,9 @@ export const PhotographerBookingsPage = () =>
                                     Manage booking lifecycle actions from your inbox.
                                 </h1>
                                 <p className="max-w-2xl text-base text-brand-muted">
-                                    This phase extends booking beyond the first response:
-                                    you can still confirm or decline pending requests, and now
-                                    you can also mark a confirmed booking as completed.
+                                    This phase adds event history on top of the current
+                                    lifecycle flow, so you can understand what happened on
+                                    each booking and when it happened.
                                 </p>
                             </div>
                         </div>
@@ -400,7 +433,7 @@ export const PhotographerBookingsPage = () =>
                             <EmptyBookingInbox />
                         ) : (
                             <>
-                                {/* <BookingCounts counts={counts} /> */}
+                                <BookingCounts counts={counts} />
 
                                 <div className="grid gap-6 xl:grid-cols-[380px_minmax(0,1fr)]">
                                     <PhotographerBookingsList
@@ -417,6 +450,9 @@ export const PhotographerBookingsPage = () =>
                                         isUpdating={updateStatusMutation.isPending}
                                         actionError={actionErrorMessage}
                                         onStatusChange={handleStatusChange}
+                                        timelineEvents={timelineQuery.data ?? []}
+                                        isTimelineLoading={timelineQuery.isLoading}
+                                        timelineError={timelineErrorMessage}
                                     />
                                 </div>
                             </>
