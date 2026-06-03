@@ -12,23 +12,12 @@ import { Container } from "../../../components/layout/container";
 import { Badge } from "../../../components/ui/badge";
 import { Button, buttonVariants } from "../../../components/ui/button";
 import { Card, CardContent } from "../../../components/ui/card";
-import
-  {
-    assetService,
-    type AssetPurpose,
-  } from "../../../services/asset.service";
 import { photographerService } from "../../../services/photographer.service";
 import { useAuthStore } from "../../../store/auth.store";
-import type { AssetPreview } from "../../asset/types/asset.types";
-import type {
-  PhotographerPortfolioItem,
-  PortfolioItemDraft,
-  PortfolioItemMutationPayload,
-} from "../types/portfolio.types";
+import type { PhotographerPortfolioItem } from "../types/portfolio.types";
 import { DeletePortfolioItemDialog } from "./delete-portfolio-item-dialog";
 import { PortfolioEmptyState } from "./portfolio-empty-state";
 import { PortfolioGrid } from "./portfolio-grid";
-import { PortfolioItemForm } from "./portfolio-item-form";
 
 const CLASSIFICATION_POLL_INTERVAL_MS = 4000;
 
@@ -60,37 +49,6 @@ const hasActiveClassification = (items: PhotographerPortfolioItem[]) =>
   return items.some(isClassificationInFlight);
 };
 
-const mapItemToDraft = (
-  item: PhotographerPortfolioItem | null,
-): PortfolioItemDraft | undefined =>
-{
-  if (!item) {
-    return undefined;
-  }
-
-  return {
-    title: item.title,
-    description: item.description,
-    coverAsset: item.coverAsset,
-    galleryAssets: item.galleryAssets,
-    isFeatured: item.isFeatured,
-  };
-};
-
-const buildSaveSuccessDescription = (
-  item: PhotographerPortfolioItem,
-  mode: "create" | "update",
-) =>
-{
-  const actionLabel = mode === "create" ? "saved" : "updated";
-
-  if (isClassificationInFlight(item)) {
-    return `Your portfolio item was ${actionLabel}, and Fotovia is now detecting the style automatically. This page will refresh while the AI job runs.`;
-  }
-
-  return `Your portfolio item was ${actionLabel} successfully.`;
-};
-
 const PortfolioPageSkeleton = () =>
 {
   return (
@@ -113,8 +71,14 @@ const PortfolioPageSkeleton = () =>
             ))}
           </div>
 
-          <div className="h-[40rem] animate-pulse rounded-[2rem] border border-border bg-surface/60" />
-          <div className="h-[24rem] animate-pulse rounded-[2rem] border border-border bg-surface/60" />
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <div
+                key={index}
+                className="h-[32rem] animate-pulse rounded-[2rem] border border-border bg-surface/60"
+              />
+            ))}
+          </div>
         </Container>
       </main>
       <Footer />
@@ -122,87 +86,11 @@ const PortfolioPageSkeleton = () =>
   );
 };
 
-const resolveUploadedAssetId = async (
-  asset: AssetPreview | null,
-  purpose: AssetPurpose,
-  metadataSource: string,
-) =>
-{
-  if (!asset) {
-    throw new Error("Please upload an image before saving this portfolio item.");
-  }
-
-  if (asset.source === "uploaded-remote" && asset.assetId) {
-    return asset.assetId;
-  }
-
-  if (!asset.file) {
-    throw new Error("Please choose the image again before saving.");
-  }
-
-  const uploadSession = await assetService.createUploadSession({
-    purpose,
-    visibility: "PUBLIC",
-    resourceType: "IMAGE",
-    originalFilename: asset.file.name,
-    mimeType: asset.file.type,
-    sizeBytes: asset.file.size,
-  });
-
-  await assetService.uploadToSignedUrl({
-    bucketName: uploadSession.asset.bucketName,
-    path: uploadSession.uploadData.path,
-    token: uploadSession.uploadData.token,
-    signedUrl: uploadSession.uploadData.signedUrl,
-    file: asset.file,
-    contentType: asset.file.type,
-  });
-
-  const confirmedUpload = await assetService.confirmUploadSession(
-    uploadSession.uploadSession.id,
-    {
-      metadataJson: {
-        source: metadataSource,
-        originalFilename: asset.file.name,
-        originalSizeInBytes: asset.originalSizeInBytes,
-      },
-    },
-  );
-
-  return confirmedUpload.asset.id;
-};
-
-const buildPortfolioMutationPayload = async (
-  draft: PortfolioItemDraft,
-): Promise<PortfolioItemMutationPayload> =>
-{
-  return {
-    title: draft.title.trim(),
-    description: draft.description.trim(),
-    isFeatured: draft.isFeatured,
-    coverAssetId: await resolveUploadedAssetId(
-      draft.coverAsset,
-      "PORTFOLIO_COVER",
-      "web-portfolio-cover-upload",
-    ),
-    galleryAssetIds: await Promise.all(
-      draft.galleryAssets.map((galleryAsset) =>
-        resolveUploadedAssetId(
-          galleryAsset,
-          "PORTFOLIO_IMAGE",
-          "web-portfolio-gallery-upload",
-        ),
-      ),
-    ),
-  };
-};
-
 export const PhotographerPortfolioPage = () =>
 {
   const queryClient = useQueryClient();
   const { user, isAuthenticated, isHydrating, hasHydrated } = useAuthStore();
 
-  const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [deletingItem, setDeletingItem] =
     useState<PhotographerPortfolioItem | null>(null);
 
@@ -226,69 +114,6 @@ export const PhotographerPortfolioPage = () =>
     },
   });
 
-  const createPortfolioItemMutation = useMutation({
-    mutationFn: async (draft: PortfolioItemDraft) =>
-    {
-      const payload = await buildPortfolioMutationPayload(draft);
-      return photographerService.createMyPortfolioItem(payload);
-    },
-    onSuccess: (createdItem) =>
-    {
-      queryClient.setQueryData<PhotographerPortfolioItem[]>(
-        queryKey,
-        (current) => sortPortfolioItems([createdItem, ...(current ?? [])]),
-      );
-
-      toast.success("Portfolio item saved", {
-        description: buildSaveSuccessDescription(createdItem, "create"),
-      });
-    },
-    onError: () =>
-    {
-      toast.error("We couldn’t save this portfolio item", {
-        description: "Please try again after checking the selected images.",
-      });
-    },
-  });
-
-  const updatePortfolioItemMutation = useMutation({
-    mutationFn: async ({
-      itemId,
-      draft,
-    }: {
-      itemId: string;
-      draft: PortfolioItemDraft;
-    }) =>
-    {
-      const payload = await buildPortfolioMutationPayload(draft);
-      return photographerService.updateMyPortfolioItem(itemId, payload);
-    },
-    onSuccess: (updatedItem) =>
-    {
-      queryClient.setQueryData<PhotographerPortfolioItem[]>(
-        queryKey,
-        (current) =>
-          sortPortfolioItems(
-            (current ?? []).map((item) =>
-              item.id === updatedItem.id ? updatedItem : item,
-            ),
-          ),
-      );
-
-      setEditingItemId(null);
-
-      toast.success("Portfolio item updated", {
-        description: buildSaveSuccessDescription(updatedItem, "update"),
-      });
-    },
-    onError: () =>
-    {
-      toast.error("We couldn’t update this portfolio item", {
-        description: "Please try again in a moment.",
-      });
-    },
-  });
-
   const deletePortfolioItemMutation = useMutation({
     mutationFn: (itemId: string) =>
       photographerService.deleteMyPortfolioItem(itemId),
@@ -298,10 +123,6 @@ export const PhotographerPortfolioPage = () =>
         queryKey,
         (current) => (current ?? []).filter((item) => item.id !== deletedItemId),
       );
-
-      if (editingItemId === deletedItemId) {
-        setEditingItemId(null);
-      }
 
       toast.success("Portfolio item deleted", {
         description:
@@ -416,11 +237,6 @@ export const PhotographerPortfolioPage = () =>
     return hasActiveClassification(sortedItems);
   }, [sortedItems]);
 
-  const editingItem = useMemo(() =>
-  {
-    return sortedItems.find((item) => item.id === editingItemId) ?? null;
-  }, [editingItemId, sortedItems]);
-
   const handleConfirmDeletePortfolioItem = async (
     item: PhotographerPortfolioItem,
   ) =>
@@ -445,8 +261,8 @@ export const PhotographerPortfolioPage = () =>
                   Portfolio access requires sign-in
                 </h1>
                 <p className="text-sm leading-6 text-muted">
-                  Sign in with a photographer account to manage saved
-                  portfolio works.
+                  Sign in with a photographer account to manage saved portfolio
+                  works.
                 </p>
               </CardContent>
             </Card>
@@ -470,15 +286,14 @@ export const PhotographerPortfolioPage = () =>
 
                   <div className="space-y-2">
                     <h1 className="font-serif text-3xl text-foreground">
-                      This portfolio workspace is reserved for
-                      photographer accounts.
+                      This portfolio workspace is reserved for photographer
+                      accounts.
                     </h1>
 
                     <p className="text-sm leading-7 text-muted">
-                      Your account is signed in, but this route is
-                      meant for photographer-side portfolio setup.
-                      You can still return to your profile or go
-                      back to the main marketplace flow.
+                      Your account is signed in, but this route is meant for
+                      photographer-side portfolio setup. You can still return to
+                      your profile or go back to the main marketplace flow.
                     </p>
                   </div>
                 </div>
@@ -489,6 +304,7 @@ export const PhotographerPortfolioPage = () =>
                     className={buttonVariants({
                       variant: "secondary",
                       size: "lg",
+                      className: "rounded-full",
                     })}
                   >
                     Go to profile
@@ -498,6 +314,7 @@ export const PhotographerPortfolioPage = () =>
                     href="/"
                     className={buttonVariants({
                       size: "lg",
+                      className: "rounded-full",
                     })}
                   >
                     Back to homepage
@@ -551,8 +368,6 @@ export const PhotographerPortfolioPage = () =>
   }
 
   const isAnyMutationPending =
-    createPortfolioItemMutation.isPending ||
-    updatePortfolioItemMutation.isPending ||
     deletePortfolioItemMutation.isPending ||
     toggleFeaturedMutation.isPending ||
     retryClassificationMutation.isPending;
@@ -560,24 +375,37 @@ export const PhotographerPortfolioPage = () =>
   return (
     <>
       <Navbar />
+
       <main className="pb-16 pt-10">
         <Container className="space-y-8">
           <section className="space-y-6">
-            <div className="space-y-4">
-              <Badge variant="ai">AI-first portfolio workspace</Badge>
+            <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
+              <div className="space-y-4">
+                <Badge variant="ai">AI-first portfolio gallery</Badge>
 
-              <div className="space-y-3">
-                <h1 className="font-serif text-4xl text-foreground sm:text-5xl">
-                  Manage AI-first portfolio work, {displayName}.
-                </h1>
+                <div className="space-y-3">
+                  <h1 className="max-w-4xl font-serif text-4xl text-foreground sm:text-5xl">
+                    Your portfolio collections, {displayName}.
+                  </h1>
 
-                <p className="max-w-3xl text-sm leading-7 text-muted sm:text-base">
-                  Manual category selection has been removed from this
-                  flow. Fotovia now treats AI-detected style as the
-                  main source of truth after you save each portfolio
-                  item.
-                </p>
+                  <p className="max-w-3xl text-sm leading-7 text-muted sm:text-base">
+                    This page now focuses on the saved image collections first.
+                    Add or edit portfolio work in a separate screen, then return
+                    here to review AI classification status and detected style
+                    results.
+                  </p>
+                </div>
               </div>
+
+              <Link
+                href="/photographer/portfolio/new"
+                className={buttonVariants({
+                  size: "lg",
+                  className: "rounded-full",
+                })}
+              >
+                Add portfolio item
+              </Link>
             </div>
 
             <div className="grid gap-4 md:grid-cols-4">
@@ -635,55 +463,33 @@ export const PhotographerPortfolioPage = () =>
 
               {isPollingForClassification ? (
                 <Badge variant="ai">
-                  Refreshing every{" "}
-                  {CLASSIFICATION_POLL_INTERVAL_MS / 1000}s while AI
-                  runs
+                  Refreshing every {CLASSIFICATION_POLL_INTERVAL_MS / 1000}s
+                  while AI runs
                 </Badge>
               ) : null}
             </div>
           </section>
 
-          <PortfolioItemForm
-            mode={editingItem ? "edit" : "create"}
-            initialValue={mapItemToDraft(editingItem)}
-            isSubmitting={
-              createPortfolioItemMutation.isPending ||
-              updatePortfolioItemMutation.isPending
-            }
-            onCancel={() => setEditingItemId(null)}
-            onSubmit={async (draft) =>
-            {
-              if (editingItem) {
-                await updatePortfolioItemMutation.mutateAsync({
-                  itemId: editingItem.id,
-                  draft,
-                });
-                return;
-              }
-
-              await createPortfolioItemMutation.mutateAsync(draft);
-            }}
-          />
-
           {sortedItems.length === 0 ? (
             <PortfolioEmptyState />
           ) : (
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <p className="text-xs uppercase tracking-[0.22em] text-muted">
-                  Portfolio preview
-                </p>
+            <section className="space-y-4">
+              <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+                <div className="space-y-2">
+                  <p className="text-xs uppercase tracking-[0.22em] text-muted">
+                    Portfolio gallery
+                  </p>
 
-                <h2 className="font-serif text-3xl text-foreground">
-                  Your saved portfolio set
-                </h2>
+                  <h2 className="font-serif text-4xl text-foreground">
+                    Saved image collections
+                  </h2>
 
-                <p className="text-sm leading-7 text-muted">
-                  Review AI queue and processing states, inspect
-                  detected style summaries, and retry failed
-                  classifications without leaving the portfolio
-                  workspace.
-                </p>
+                  <p className="max-w-3xl text-sm leading-7 text-muted">
+                    Each collection keeps its cover image, optional gallery
+                    images, AI status, detected primary style, and management
+                    actions.
+                  </p>
+                </div>
               </div>
 
               <PortfolioGrid
@@ -695,34 +501,33 @@ export const PhotographerPortfolioPage = () =>
                         type="button"
                         variant="secondary"
                         size="sm"
+                        className="rounded-full"
                         onClick={() =>
-                          retryClassificationMutation.mutate(
-                            item.id,
-                          )
+                          retryClassificationMutation.mutate(item.id)
                         }
                         disabled={isAnyMutationPending}
                       >
-                        Retry classification
+                        Retry AI
                       </Button>
                     ) : null}
 
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => setEditingItemId(item.id)}
-                      disabled={isAnyMutationPending}
+                    <Link
+                      href={`/photographer/portfolio/${item.id}/edit`}
+                      className={buttonVariants({
+                        variant: "secondary",
+                        size: "sm",
+                        className: "rounded-full",
+                      })}
                     >
                       Edit
-                    </Button>
+                    </Link>
 
                     <Button
                       type="button"
                       variant="secondary"
                       size="sm"
-                      onClick={() =>
-                        toggleFeaturedMutation.mutate(item)
-                      }
+                      className="rounded-full"
+                      onClick={() => toggleFeaturedMutation.mutate(item)}
                       disabled={isAnyMutationPending}
                     >
                       {item.isFeatured ? "Unfeature" : "Feature"}
@@ -732,6 +537,7 @@ export const PhotographerPortfolioPage = () =>
                       type="button"
                       variant="secondary"
                       size="sm"
+                      className="rounded-full"
                       onClick={() => setDeletingItem(item)}
                       disabled={isAnyMutationPending}
                     >
@@ -740,11 +546,13 @@ export const PhotographerPortfolioPage = () =>
                   </>
                 )}
               />
-            </div>
+            </section>
           )}
         </Container>
       </main>
+
       <Footer />
+
       <DeletePortfolioItemDialog
         item={deletingItem}
         isOpen={deletingItem !== null}
