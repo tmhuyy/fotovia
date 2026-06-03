@@ -12,21 +12,18 @@ import { Button } from "../ui/button";
 import { AccountMenu } from "./account-menu";
 import { MobileNav } from "./mobile-nav";
 
-const navLinks = [
-    { label: "Photographers", href: "/photographers" },
-    { label: "AI Match", href: "/ai" },
-    { label: "How It Works", href: "#how-it-works" },
-    { label: "Portfolio", href: "#portfolio" },
-];
+const navLinks: { label: string; href: string }[] = [];
 
-export const Navbar = () => {
+export const Navbar = () =>
+{
     const router = useRouter();
     const [isSigningOut, setIsSigningOut] = useState(false);
 
     const { user, isAuthenticated, isHydrating, hasHydrated, clearAuth } =
         useAuthStore();
 
-    const primaryAction = useMemo(() => {
+    const primaryAction = useMemo(() =>
+    {
         if (
             hasHydrated &&
             !isHydrating &&
@@ -45,7 +42,8 @@ export const Navbar = () => {
         };
     }, [hasHydrated, isAuthenticated, isHydrating, user?.role]);
 
-    const handleSignOut = async () => {
+    const handleSignOut = async () =>
+    {
         setIsSigningOut(true);
 
         try {
@@ -70,34 +68,18 @@ export const Navbar = () => {
     return (
         <header className="sticky top-0 z-40 border-b border-border/70 bg-background/90 backdrop-blur">
             <Container className="flex h-20 items-center justify-between gap-4">
-                <div className="flex min-w-0 items-center gap-4 md:gap-8">
-                    <Link href="/" className="flex items-center gap-4">
-                        <span className="font-serif text-2xl tracking-tight text-foreground">
-                            Fotovia
-                        </span>
-                        <span className="hidden text-xs uppercase tracking-[0.42em] text-muted md:block">
-                            Premium Photography Booking
-                        </span>
-                    </Link>
+                <Link href="/" className="flex min-w-0 items-center gap-4">
+                    <span className="font-serif text-2xl tracking-tight text-foreground">
+                        Fotovia
+                    </span>
 
-                    <nav className="hidden items-center gap-6 lg:flex">
-                        {navLinks.map((link) => (
-                            <Link
-                                key={link.href}
-                                href={link.href}
-                                className="text-sm text-muted transition hover:text-foreground"
-                            >
-                                {link.label}
-                            </Link>
-                        ))}
-                    </nav>
-                </div>
+                    <span className="hidden text-xs uppercase tracking-[0.42em] text-muted sm:block">
+                        Photography Booking
+                    </span>
+                </Link>
 
                 <div className="hidden items-center gap-3 lg:flex">
-                    <Button
-                        size="md"
-                        onClick={() => router.push(primaryAction.href)}
-                    >
+                    <Button size="md" onClick={() => router.push(primaryAction.href)}>
                         {primaryAction.label}
                     </Button>
 
@@ -120,10 +102,7 @@ export const Navbar = () => {
                                 Sign in
                             </Button>
 
-                            <Button
-                                size="md"
-                                onClick={() => router.push("/sign-up")}
-                            >
+                            <Button size="md" onClick={() => router.push("/sign-up")}>
                                 Create account
                             </Button>
                         </>
