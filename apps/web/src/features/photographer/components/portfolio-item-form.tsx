@@ -300,11 +300,11 @@ export const PortfolioItemForm = ({
                                     : "Upload portfolio work"}
                             </h2>
 
-                            <p className="max-w-4xl text-sm leading-7 text-muted">
+                            {/* <p className="max-w-4xl text-sm leading-7 text-muted">
                                 {isEditMode
                                     ? "Update the images, description, or featured state for this saved work. Fotovia will use the latest media set for AI style detection."
                                     : "Add a real portfolio work with one required cover image and optional gallery images. Fotovia now detects the photography style automatically after save, so you no longer need to choose a manual category."}
-                            </p>
+                            </p> */}
                         </div>
                     </div>
 
@@ -610,7 +610,7 @@ export const PortfolioItemForm = ({
                                 Mark this work as featured
                             </label>
 
-                            <div className="rounded-2xl border border-dashed border-border bg-background px-4 py-4">
+                            {/* <div className="rounded-2xl border border-dashed border-border bg-background px-4 py-4">
                                 <p className="text-xs uppercase tracking-[0.22em] text-muted">
                                     AI style detection
                                 </p>
@@ -620,7 +620,7 @@ export const PortfolioItemForm = ({
                                     gallery images as extra signals after save. You do
                                     not need to choose a manual category here anymore.
                                 </p>
-                            </div>
+                            </div> */}
 
                             <div className="rounded-2xl border border-dashed border-border bg-background px-4 py-4">
                                 <p className="text-xs uppercase tracking-[0.22em] text-muted">

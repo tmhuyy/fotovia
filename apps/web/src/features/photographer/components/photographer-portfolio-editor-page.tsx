@@ -14,12 +14,13 @@ import { Badge } from "../../../components/ui/badge";
 import { Button, buttonVariants } from "../../../components/ui/button";
 import { Card, CardContent } from "../../../components/ui/card";
 import
-    {
-        assetService,
-        type AssetPurpose,
-    } from "../../../services/asset.service";
+{
+    assetService,
+    type AssetPurpose,
+} from "../../../services/asset.service";
 import { photographerService } from "../../../services/photographer.service";
 import { useAuthStore } from "../../../store/auth.store";
+import { usePortfolioPostStore } from "../store/portfolio-post.store";
 import type { AssetPreview } from "../../asset/types/asset.types";
 import type {
     PhotographerPortfolioItem,
@@ -193,6 +194,16 @@ export const PhotographerPortfolioEditorPage = ({
     const queryClient = useQueryClient();
     const { user, isAuthenticated, isHydrating, hasHydrated } = useAuthStore();
 
+    const startCreatePortfolioPost = usePortfolioPostStore(
+        (state) => state.startCreatePortfolioPost,
+    );
+
+    const startUpdatePortfolioPost = usePortfolioPostStore(
+        (state) => state.startUpdatePortfolioPost,
+    );
+
+    const activePostJob = usePortfolioPostStore((state) => state.activeJob);
+
     const isEditMode = mode === "edit";
     const isPhotographer = user?.role === "photographer";
     const queryKey = ["my-photographer-portfolio", user?.id ?? "anonymous"] as const;
@@ -220,32 +231,32 @@ export const PhotographerPortfolioEditorPage = ({
         );
     }, [isEditMode, itemId, portfolioQuery.data]);
 
-    const createPortfolioItemMutation = useMutation({
-        mutationFn: async (draft: PortfolioItemDraft) =>
-        {
-            const payload = await buildPortfolioMutationPayload(draft);
-            return photographerService.createMyPortfolioItem(payload);
-        },
-        onSuccess: (createdItem) =>
-        {
-            queryClient.setQueryData<PhotographerPortfolioItem[]>(
-                queryKey,
-                (current) => sortPortfolioItems([createdItem, ...(current ?? [])]),
-            );
+    // const createPortfolioItemMutation = useMutation({
+    //     mutationFn: async (draft: PortfolioItemDraft) =>
+    //     {
+    //         const payload = await buildPortfolioMutationPayload(draft);
+    //         return photographerService.createMyPortfolioItem(payload);
+    //     },
+    //     onSuccess: (createdItem) =>
+    //     {
+    //         queryClient.setQueryData<PhotographerPortfolioItem[]>(
+    //             queryKey,
+    //             (current) => sortPortfolioItems([createdItem, ...(current ?? [])]),
+    //         );
 
-            toast.success("Portfolio item saved", {
-                description: buildSaveSuccessDescription(createdItem, "create"),
-            });
+    //         toast.success("Portfolio item saved", {
+    //             description: buildSaveSuccessDescription(createdItem, "create"),
+    //         });
 
-            router.push("/photographer/portfolio");
-        },
-        onError: () =>
-        {
-            toast.error("We couldn’t save this portfolio item", {
-                description: "Please try again after checking the selected images.",
-            });
-        },
-    });
+    //         router.push("/photographer/portfolio");
+    //     },
+    //     onError: () =>
+    //     {
+    //         toast.error("We couldn’t save this portfolio item", {
+    //             description: "Please try again after checking the selected images.",
+    //         });
+    //     },
+    // });
 
     const updatePortfolioItemMutation = useMutation({
         mutationFn: async (draft: PortfolioItemDraft) =>
@@ -408,7 +419,7 @@ export const PhotographerPortfolioEditorPage = ({
 
     const isSubmitting = isEditMode
         ? updatePortfolioItemMutation.isPending
-        : createPortfolioItemMutation.isPending;
+        : activePostJob?.status === "uploading" || activePostJob?.status === "saving";
 
     return (
         <>
@@ -436,11 +447,11 @@ export const PhotographerPortfolioEditorPage = ({
                                         : "Create a new portfolio collection."}
                                 </h1>
 
-                                <p className="max-w-3xl text-sm leading-7 text-muted sm:text-base">
+                                {/* <p className="max-w-3xl text-sm leading-7 text-muted sm:text-base">
                                     Keep the editing flow separate from the gallery so the main
                                     portfolio page can stay focused on visual collections and AI
                                     classification results.
-                                </p>
+                                </p> */}
                             </div>
                         </div>
                     </div>
@@ -452,12 +463,42 @@ export const PhotographerPortfolioEditorPage = ({
                         onCancel={() => router.push("/photographer/portfolio")}
                         onSubmit={async (draft) =>
                         {
+                            const authorName = user?.fullName?.trim() || user?.email || "Photographer";
+
                             if (isEditMode) {
-                                await updatePortfolioItemMutation.mutateAsync(draft);
+                                if (!itemId) {
+                                    toast.error("Missing portfolio item", {
+                                        description: "We couldn’t find the item you are editing.",
+                                    });
+                                    return;
+                                }
+
+                                startUpdatePortfolioPost({
+                                    itemId,
+                                    draft,
+                                    authorName,
+                                });
+
+                                toast.success("Updating portfolio collection", {
+                                    description:
+                                        "We moved you back to the portfolio gallery. The updated collection will open when saving finishes.",
+                                });
+
+                                router.push("/photographer/portfolio");
                                 return;
                             }
 
-                            await createPortfolioItemMutation.mutateAsync(draft);
+                            startCreatePortfolioPost({
+                                draft,
+                                authorName,
+                            });
+
+                            toast.success("Posting portfolio collection", {
+                                description:
+                                    "We moved you back to the portfolio gallery. The new collection will open when posting finishes.",
+                            });
+
+                            router.push("/photographer/portfolio");
                         }}
                     />
                 </Container>

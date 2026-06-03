@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -13,11 +13,15 @@ import { Badge } from "../../../components/ui/badge";
 import { Button, buttonVariants } from "../../../components/ui/button";
 import { Card, CardContent } from "../../../components/ui/card";
 import { photographerService } from "../../../services/photographer.service";
+import { profileService } from "../../../services/profile.service";
 import { useAuthStore } from "../../../store/auth.store";
 import type { PhotographerPortfolioItem } from "../types/portfolio.types";
 import { DeletePortfolioItemDialog } from "./delete-portfolio-item-dialog";
 import { PortfolioEmptyState } from "./portfolio-empty-state";
 import { PortfolioGrid } from "./portfolio-grid";
+import { PortfolioItemDetailDialog } from "./portfolio-item-detail-dialog";
+import { PortfolioPostProgressBanner } from "./portfolio-post-progress-banner";
+import { usePortfolioPostStore } from "../store/portfolio-post.store";
 
 const CLASSIFICATION_POLL_INTERVAL_MS = 4000;
 
@@ -91,13 +95,27 @@ export const PhotographerPortfolioPage = () =>
   const queryClient = useQueryClient();
   const { user, isAuthenticated, isHydrating, hasHydrated } = useAuthStore();
 
+  const activePostJob = usePortfolioPostStore((state) => state.activeJob);
+  const clearPortfolioPostJob = usePortfolioPostStore(
+    (state) => state.clearPortfolioPostJob,
+  );
+
   const [deletingItem, setDeletingItem] =
     useState<PhotographerPortfolioItem | null>(null);
 
-  const isPhotographer = user?.role === "photographer";
-  const displayName = user?.fullName?.trim() || user?.email || "Photographer";
-  const queryKey = ["my-photographer-portfolio", user?.id ?? "anonymous"] as const;
 
+  const [selectedItem, setSelectedItem] =
+    useState<PhotographerPortfolioItem | null>(null);
+
+  const handledPostJobIdRef = useRef<string | null>(null);
+
+  const isPhotographer = user?.role === "photographer";
+  const authEmail = user?.email ?? "";
+  const displayName = user?.fullName?.trim() || user?.email || "Photographer";
+  const queryKey = useMemo(
+    () => ["my-photographer-portfolio", user?.id ?? "anonymous"] as const,
+    [user?.id],
+  );
   const portfolioQuery = useQuery({
     queryKey,
     queryFn: () => photographerService.getMyPortfolioItems(),
@@ -112,6 +130,18 @@ export const PhotographerPortfolioPage = () =>
         ? CLASSIFICATION_POLL_INTERVAL_MS
         : false;
     },
+  });
+
+  const profileQuery = useQuery({
+    queryKey: ["my-profile", user?.id ?? "anonymous"],
+    queryFn: () => profileService.getMyProfile(authEmail),
+    enabled:
+      hasHydrated &&
+      !isHydrating &&
+      isAuthenticated &&
+      isPhotographer &&
+      authEmail.length > 0,
+    retry: false,
   });
 
   const deletePortfolioItemMutation = useMutation({
@@ -211,6 +241,47 @@ export const PhotographerPortfolioPage = () =>
     return sortPortfolioItems(portfolioQuery.data ?? []);
   }, [portfolioQuery.data]);
 
+  const selectedPortfolioItem = useMemo(() =>
+  {
+    if (!selectedItem) {
+      return null;
+    }
+
+    return sortedItems.find((item) => item.id === selectedItem.id) ?? selectedItem;
+  }, [selectedItem, sortedItems]);
+
+  const selectedPortfolioItemIndex = useMemo(() =>
+  {
+    if (!selectedPortfolioItem) {
+      return -1;
+    }
+
+    return sortedItems.findIndex((item) => item.id === selectedPortfolioItem.id);
+  }, [selectedPortfolioItem, sortedItems]);
+
+  const hasPreviousPortfolioItem = selectedPortfolioItemIndex > 0;
+  const hasNextPortfolioItem =
+    selectedPortfolioItemIndex >= 0 &&
+    selectedPortfolioItemIndex < sortedItems.length - 1;
+
+  const openPreviousPortfolioItem = () =>
+  {
+    if (!hasPreviousPortfolioItem) {
+      return;
+    }
+
+    setSelectedItem(sortedItems[selectedPortfolioItemIndex - 1] ?? null);
+  };
+
+  const openNextPortfolioItem = () =>
+  {
+    if (!hasNextPortfolioItem) {
+      return;
+    }
+
+    setSelectedItem(sortedItems[selectedPortfolioItemIndex + 1] ?? null);
+  };
+
   const featuredCount = useMemo(() =>
   {
     return sortedItems.filter((item) => item.isFeatured).length;
@@ -242,8 +313,57 @@ export const PhotographerPortfolioPage = () =>
   ) =>
   {
     await deletePortfolioItemMutation.mutateAsync(item.id);
+
+    if (selectedItem?.id === item.id) {
+      setSelectedItem(null);
+    }
+
     setDeletingItem(null);
   };
+
+  useEffect(() =>
+  {
+    if (activePostJob?.status !== "completed" || !activePostJob.createdItem) {
+      return;
+    }
+
+    if (handledPostJobIdRef.current === activePostJob.id) {
+      return;
+    }
+
+    handledPostJobIdRef.current = activePostJob.id;
+
+    const createdItem = activePostJob.createdItem;
+
+    queryClient.setQueryData<PhotographerPortfolioItem[]>(queryKey, (current) =>
+      sortPortfolioItems([
+        createdItem,
+        ...(current ?? []).filter((item) => item.id !== createdItem.id),
+      ]),
+    );
+
+    setSelectedItem((current) =>
+      current?.id === createdItem.id ? current : createdItem,
+    );
+
+    void queryClient.invalidateQueries({
+      queryKey,
+    });
+
+    const timeoutId = window.setTimeout(() =>
+    {
+      clearPortfolioPostJob();
+
+      if (handledPostJobIdRef.current === activePostJob.id) {
+        handledPostJobIdRef.current = null;
+      }
+    }, 1400);
+
+    return () =>
+    {
+      window.clearTimeout(timeoutId);
+    };
+  }, [activePostJob, clearPortfolioPostJob, queryClient, queryKey]);
 
   if (!hasHydrated || isHydrating) {
     return <PortfolioPageSkeleton />;
@@ -372,6 +492,56 @@ export const PhotographerPortfolioPage = () =>
     toggleFeaturedMutation.isPending ||
     retryClassificationMutation.isPending;
 
+  const renderPortfolioActions = (item: PhotographerPortfolioItem) => (
+    <>
+      {item.classificationStatus === "failed" ? (
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          className="rounded-full"
+          onClick={() => retryClassificationMutation.mutate(item.id)}
+          disabled={isAnyMutationPending}
+        >
+          Retry AI
+        </Button>
+      ) : null}
+
+      <Link
+        href={`/photographer/portfolio/${item.id}/edit`}
+        className={buttonVariants({
+          variant: "secondary",
+          size: "sm",
+          className: "rounded-full",
+        })}
+      >
+        Edit
+      </Link>
+
+      <Button
+        type="button"
+        variant="secondary"
+        size="sm"
+        className="rounded-full"
+        onClick={() => toggleFeaturedMutation.mutate(item)}
+        disabled={isAnyMutationPending}
+      >
+        {item.isFeatured ? "Unfeature" : "Feature"}
+      </Button>
+
+      <Button
+        type="button"
+        variant="secondary"
+        size="sm"
+        className="rounded-full"
+        onClick={() => setDeletingItem(item)}
+        disabled={isAnyMutationPending}
+      >
+        Delete
+      </Button>
+    </>
+  );
+
   return (
     <>
       <Navbar />
@@ -388,12 +558,12 @@ export const PhotographerPortfolioPage = () =>
                     Your portfolio collections, {displayName}.
                   </h1>
 
-                  <p className="max-w-3xl text-sm leading-7 text-muted sm:text-base">
+                  {/* <p className="max-w-3xl text-sm leading-7 text-muted sm:text-base">
                     This page now focuses on the saved image collections first.
                     Add or edit portfolio work in a separate screen, then return
                     here to review AI classification status and detected style
                     results.
-                  </p>
+                  </p> */}
                 </div>
               </div>
 
@@ -454,6 +624,15 @@ export const PhotographerPortfolioPage = () =>
               </Card>
             </div>
 
+            {activePostJob ? (
+              <PortfolioPostProgressBanner
+                job={activePostJob}
+                onDismiss={
+                  activePostJob.status === "failed" ? clearPortfolioPostJob : undefined
+                }
+              />
+            ) : null}
+
             <div className="flex flex-wrap gap-3">
               {failedClassificationCount > 0 ? (
                 <Badge variant="neutral">
@@ -484,67 +663,18 @@ export const PhotographerPortfolioPage = () =>
                     Saved image collections
                   </h2>
 
-                  <p className="max-w-3xl text-sm leading-7 text-muted">
+                  {/* <p className="max-w-3xl text-sm leading-7 text-muted">
                     Each collection keeps its cover image, optional gallery
                     images, AI status, detected primary style, and management
                     actions.
-                  </p>
+                  </p> */}
                 </div>
               </div>
 
               <PortfolioGrid
                 items={sortedItems}
-                renderActions={(item) => (
-                  <>
-                    {item.classificationStatus === "failed" ? (
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        size="sm"
-                        className="rounded-full"
-                        onClick={() =>
-                          retryClassificationMutation.mutate(item.id)
-                        }
-                        disabled={isAnyMutationPending}
-                      >
-                        Retry AI
-                      </Button>
-                    ) : null}
-
-                    <Link
-                      href={`/photographer/portfolio/${item.id}/edit`}
-                      className={buttonVariants({
-                        variant: "secondary",
-                        size: "sm",
-                        className: "rounded-full",
-                      })}
-                    >
-                      Edit
-                    </Link>
-
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      className="rounded-full"
-                      onClick={() => toggleFeaturedMutation.mutate(item)}
-                      disabled={isAnyMutationPending}
-                    >
-                      {item.isFeatured ? "Unfeature" : "Feature"}
-                    </Button>
-
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      className="rounded-full"
-                      onClick={() => setDeletingItem(item)}
-                      disabled={isAnyMutationPending}
-                    >
-                      Delete
-                    </Button>
-                  </>
-                )}
+                onOpenItem={setSelectedItem}
+                renderActions={(item) => renderPortfolioActions(item)}
               />
             </section>
           )}
@@ -552,6 +682,20 @@ export const PhotographerPortfolioPage = () =>
       </main>
 
       <Footer />
+
+      <PortfolioItemDetailDialog
+        item={selectedPortfolioItem}
+        authorName={profileQuery.data?.fullName || displayName}
+        authorAvatarUrl={profileQuery.data?.avatarUrl ?? null}
+        actions={
+          selectedPortfolioItem ? renderPortfolioActions(selectedPortfolioItem) : null
+        }
+        hasPreviousItem={hasPreviousPortfolioItem}
+        hasNextItem={hasNextPortfolioItem}
+        onOpenPreviousItem={openPreviousPortfolioItem}
+        onOpenNextItem={openNextPortfolioItem}
+        onClose={() => setSelectedItem(null)}
+      />
 
       <DeletePortfolioItemDialog
         item={deletingItem}

@@ -46,11 +46,11 @@ export const DeletePortfolioItemDialog = ({
                         Delete “{item.title}”?
                     </h2>
 
-                    <p className="text-sm leading-7 text-muted">
+                    {/* <p className="text-sm leading-7 text-muted">
                         This will remove the portfolio item from your saved works. Images
                         that are no longer used anywhere else may also be cleaned up from
                         storage.
-                    </p>
+                    </p> */}
                 </div>
 
                 <div className="mt-6 rounded-[1.5rem] border border-border bg-background px-4 py-4">

@@ -1,21 +1,18 @@
-import type { ReactNode } from "react";
-
 import { Badge } from "../../../components/ui/badge";
-import { assetService } from "../../../services/asset.service";
 import type {
     PhotographerPortfolioItem,
     PortfolioItemClassificationStatus,
-    PortfolioStyleDistributionEntry,
 } from "../types/portfolio.types";
 
 interface PortfolioItemCardProps
 {
     item: PhotographerPortfolioItem;
-    actions?: ReactNode;
+    onOpen?: () => void;
 }
 
 type ClassificationStatusBadgeConfig = {
     label: string;
+    centerLabel: string;
     variant: "neutral" | "accent" | "ai";
     className?: string;
 };
@@ -25,41 +22,31 @@ const CLASSIFICATION_STATUS_BADGE: Record<
     ClassificationStatusBadgeConfig
 > = {
     not_requested: {
-        label: "Not requested",
+        label: "AI pending",
+        centerLabel: "AI not started",
         variant: "neutral",
     },
     queued: {
         label: "Queued",
+        centerLabel: "Waiting for AI",
         variant: "ai",
     },
     processing: {
-        label: "Processing",
+        label: "Analyzing",
+        centerLabel: "Analyzing image",
         variant: "ai",
     },
     completed: {
-        label: "Completed",
+        label: "AI done",
+        centerLabel: "Classification ready",
         variant: "accent",
     },
     failed: {
-        label: "Failed",
+        label: "Retry",
+        centerLabel: "Needs retry",
         variant: "neutral",
         className: "border border-border text-foreground",
     },
-};
-
-const formatCreatedAt = (value: string) =>
-{
-    const parsed = new Date(value);
-
-    if (Number.isNaN(parsed.getTime())) {
-        return "Unknown date";
-    }
-
-    return parsed.toLocaleDateString("en-GB", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-    });
 };
 
 const formatStyleLabel = (value: string) =>
@@ -68,10 +55,7 @@ const formatStyleLabel = (value: string) =>
         .split(/[\s-_]+/)
         .map((part) => part.trim())
         .filter((part) => part.length > 0)
-        .map(
-            (part) =>
-                part.charAt(0).toUpperCase() + part.slice(1).toLowerCase(),
-        )
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
         .join(" ");
 };
 
@@ -81,185 +65,81 @@ const formatConfidence = (value: number | null) =>
         return null;
     }
 
-    return `${Math.round(value * 100)}% confidence`;
-};
-
-const resolveSecondaryStyles = (
-    item: PhotographerPortfolioItem,
-): Array<{ label: string; score: number | null }> =>
-{
-    const fromDistribution = item.detectedStyleDistribution
-        .filter((entry) => entry.label !== item.detectedPrimaryStyle)
-        .slice(0, 3)
-        .map((entry: PortfolioStyleDistributionEntry) => ({
-            label: entry.label,
-            score: entry.score,
-        }));
-
-    if (fromDistribution.length > 0) {
-        return fromDistribution;
-    }
-
-    return item.detectedSecondaryStyles.slice(0, 3).map((label) => ({
-        label,
-        score: null,
-    }));
+    return `${Math.round(value * 100)}%`;
 };
 
 export const PortfolioItemCard = ({
     item,
-    actions,
+    onOpen,
 }: PortfolioItemCardProps) =>
 {
-    const isLocalPreview = item.coverAsset.source === "local-preview";
     const statusConfig = CLASSIFICATION_STATUS_BADGE[item.classificationStatus];
     const primaryStyleLabel = item.detectedPrimaryStyle
         ? formatStyleLabel(item.detectedPrimaryStyle)
         : null;
     const primaryConfidence = formatConfidence(item.detectedPrimaryScore);
-    const secondaryStyles = resolveSecondaryStyles(item);
 
     return (
-        <div className="overflow-hidden rounded-[2rem] border border-border bg-surface shadow-sm">
-            <div className="aspect-[4/3] overflow-hidden bg-brand-background">
-                <img
-                    src={item.coverAsset.previewUrl}
-                    alt={item.title}
-                    className="h-full w-full object-cover"
-                />
-            </div>
+        <article className="group relative overflow-hidden bg-background">
+            <button
+                type="button"
+                onClick={onOpen}
+                className="relative block w-full cursor-pointer overflow-hidden text-left"
+                aria-label={`Open ${item.title}`}
+            >
+                <div className="relative aspect-[4/5] overflow-hidden bg-background">
+                    <img
+                        src={item.coverAsset.previewUrl}
+                        alt={item.title}
+                        loading="eager"
+                        decoding="async"
+                        className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                    />
 
-            <div className="space-y-4 p-6">
-                <div className="flex flex-wrap gap-2">
-                    {item.isFeatured ? <Badge variant="accent">Featured</Badge> : null}
+                    <div className="absolute inset-0 bg-foreground/0 transition duration-300 group-hover:bg-foreground/70" />
 
-                    <Badge
-                        variant={statusConfig.variant}
-                        className={statusConfig.className}
-                    >
-                        AI {statusConfig.label}
-                    </Badge>
+                    <div className="absolute left-3 right-3 top-3 flex items-start justify-between gap-2">
+                        <div className="flex flex-wrap gap-2">
+                            {item.isFeatured ? (
+                                <span className="rounded-full bg-surface/92 px-3 py-1 text-xs font-medium text-foreground shadow-sm backdrop-blur">
+                                    Featured
+                                </span>
+                            ) : null}
 
-                    {primaryStyleLabel ? (
-                        <Badge variant="ai">Style · {primaryStyleLabel}</Badge>
-                    ) : null}
+                            <Badge
+                                variant={statusConfig.variant}
+                                className={statusConfig.className}
+                            >
+                                {statusConfig.label}
+                            </Badge>
+                        </div>
 
-                    {isLocalPreview ? <Badge variant="neutral">Local preview</Badge> : null}
-
-                    {item.galleryAssets.length ? (
-                        <Badge variant="neutral">
-                            +{item.galleryAssets.length} gallery
-                        </Badge>
-                    ) : null}
-                </div>
-
-                <div className="space-y-2">
-                    <h3 className="font-serif text-2xl text-foreground">{item.title}</h3>
-
-                    <p className="text-sm text-muted">
-                        Added {formatCreatedAt(item.createdAt)}
-                    </p>
-                </div>
-
-                <p className="text-sm leading-7 text-muted">{item.description}</p>
-
-                <div className="rounded-[1.5rem] border border-border bg-background px-4 py-4">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                        <p className="text-xs uppercase tracking-[0.22em] text-muted">
-                            AI style result
-                        </p>
-
-                        <Badge
-                            variant={statusConfig.variant}
-                            className={statusConfig.className}
-                        >
-                            {statusConfig.label}
-                        </Badge>
+                        {item.galleryAssets.length ? (
+                            <span className="rounded-full bg-surface/92 px-3 py-1 text-xs font-medium text-foreground shadow-sm backdrop-blur">
+                                +{item.galleryAssets.length}
+                            </span>
+                        ) : null}
                     </div>
 
-                    {item.classificationStatus === "completed" && primaryStyleLabel ? (
-                        <div className="mt-3 space-y-3">
-                            <div>
-                                <p className="text-sm text-muted">Primary style</p>
-                                <p className="mt-1 text-sm font-medium text-foreground">
-                                    {primaryStyleLabel}
-                                </p>
-
-                                {primaryConfidence ? (
-                                    <p className="mt-1 text-sm text-muted">
-                                        {primaryConfidence}
-                                    </p>
-                                ) : null}
-                            </div>
-
-                            {secondaryStyles.length > 0 ? (
-                                <div className="space-y-2">
-                                    <p className="text-sm text-muted">
-                                        Secondary signals
-                                    </p>
-
-                                    <div className="flex flex-wrap gap-2">
-                                        {secondaryStyles.map((style) => (
-                                            <Badge key={style.label} variant="ai">
-                                                {formatStyleLabel(style.label)}
-                                                {style.score !== null
-                                                    ? ` · ${Math.round(style.score * 100)}%`
-                                                    : ""}
-                                            </Badge>
-                                        ))}
-                                    </div>
-                                </div>
-                            ) : null}
-                        </div>
-                    ) : null}
-
-                    {item.classificationStatus === "queued" ||
-                        item.classificationStatus === "processing" ? (
-                        <p className="mt-3 text-sm leading-6 text-muted">
-                            Fotovia is analyzing the cover image and gallery now.
-                            This workspace refreshes automatically while the job runs.
-                        </p>
-                    ) : null}
-
-                    {item.classificationStatus === "failed" ? (
-                        <div className="mt-3 space-y-2">
-                            <p className="text-sm leading-6 text-muted">
-                                The last AI run did not finish successfully. Retry the
-                                classification to queue another attempt.
+                    <div className="absolute inset-0 flex translate-y-3 flex-col items-center justify-center gap-4 px-6 text-center opacity-0 transition duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+                        <div className="space-y-2 text-white">
+                            <p className="text-xs font-medium uppercase tracking-[0.24em] text-white/70">
+                                AI classification
                             </p>
 
-                            {item.classificationError ? (
-                                <p className="text-sm leading-6 text-foreground">
-                                    {item.classificationError}
-                                </p>
-                            ) : null}
+                            <p className="font-serif text-3xl leading-none">
+                                {primaryStyleLabel ?? statusConfig.centerLabel}
+                            </p>
+
+                            <p className="text-sm font-medium text-white/80">
+                                {primaryConfidence
+                                    ? `${primaryConfidence} confidence`
+                                    : "Open to inspect result"}
+                            </p>
                         </div>
-                    ) : null}
-
-                    {item.classificationStatus === "not_requested" ? (
-                        <p className="mt-3 text-sm leading-6 text-muted">
-                            AI classification has not been requested for this item yet.
-                        </p>
-                    ) : null}
+                    </div>
                 </div>
-
-                <div className="rounded-[1.5rem] border border-border bg-background px-4 py-4">
-                    <p className="text-xs uppercase tracking-[0.22em] text-muted">
-                        Cover image metadata
-                    </p>
-
-                    <p className="mt-2 text-sm font-medium text-foreground">
-                        {item.coverAsset.fileName}
-                    </p>
-
-                    <p className="mt-1 text-sm text-muted">
-                        {item.coverAsset.mimeType} ·{" "}
-                        {assetService.formatFileSize(item.coverAsset.sizeInBytes)}
-                    </p>
-                </div>
-
-                {actions ? <div className="flex flex-wrap gap-3">{actions}</div> : null}
-            </div>
-        </div>
+            </button>
+        </article>
     );
 };
