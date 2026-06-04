@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, } from "react";
 
 import { Badge } from "../../../components/ui/badge";
+import { Button } from "../../../components/ui/button";
 import type {
     PhotographerPortfolioItem,
     PortfolioItemClassificationStatus,
@@ -23,6 +24,8 @@ interface PortfolioItemDetailDialogProps
     actionItems?: PortfolioActionMenuItem[];
     authorName: string;
     authorAvatarUrl?: string | null;
+    isRetryingClassification?: boolean;
+    onRetryClassification?: (item: PhotographerPortfolioItem) => void;
     onClose: () => void;
     onOpenPreviousItem?: () => void;
     onOpenNextItem?: () => void;
@@ -65,7 +68,7 @@ const CLASSIFICATION_STATUS_BADGE: Record<
         label: "Needs retry",
         helper: "The last AI run did not finish.",
         variant: "neutral",
-        className: "border border-border text-foreground",
+        className: "border border-red-200 bg-red-50 text-red-600",
     },
 };
 
@@ -152,10 +155,16 @@ const getClassificationJourney = (item: PhotographerPortfolioItem) =>
             state: "completed" as ClassificationStepState,
         },
         {
-            label: isQueued ? "Waiting in AI queue" : "Running style classifier",
-            helper: isQueued
-                ? "Fotovia is preparing this collection for model inference."
-                : "The model is reading visual signals from the image set.",
+            label: isFailed
+                ? "Classifier stopped"
+                : isQueued
+                    ? "Waiting in AI queue"
+                    : "Running style classifier",
+            helper: isFailed
+                ? "The AI job did not finish, so no style result was produced."
+                : isQueued
+                    ? "Fotovia is preparing this collection for model inference."
+                    : "The model is reading visual signals from the image set.",
             state: isCompleted
                 ? ("completed" as ClassificationStepState)
                 : isFailed
@@ -168,7 +177,9 @@ const getClassificationJourney = (item: PhotographerPortfolioItem) =>
             label: "Style result ready",
             helper: isCompleted
                 ? "The detected style is ready for portfolio discovery."
-                : "Primary and secondary style confidence will appear here.",
+                : isFailed
+                    ? "Retry AI classification to generate a new style result."
+                    : "Primary and secondary style confidence will appear here.",
             state: isCompleted
                 ? ("completed" as ClassificationStepState)
                 : ("pending" as ClassificationStepState),
@@ -201,7 +212,7 @@ const ClassificationStepDot = ({
 
     if (state === "failed") {
         return (
-            <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-foreground text-[10px] text-foreground">
+            <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-red-500 text-[10px] font-semibold text-white">
                 !
             </span>
         );
@@ -277,11 +288,63 @@ const AiProcessingPanel = ({
     );
 };
 
+const AiFailurePanel = ({
+    error,
+    isRetrying,
+    onRetry,
+}: {
+    error?: string | null;
+    isRetrying?: boolean;
+    onRetry?: () => void;
+}) =>
+{
+    return (
+        <div className="mt-4 overflow-hidden rounded-[1rem] border border-red-200 bg-red-50">
+            <div className="flex gap-3 px-4 py-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-500 text-base font-semibold text-white">
+                    !
+                </div>
+
+                <div className="min-w-0 space-y-2">
+                    <p className="text-sm font-semibold text-red-700">
+                        AI classification failed
+                    </p>
+
+                    <p className="text-xs leading-5 text-red-700/80">
+                        Fotovia could not finish reading this collection. Retry will send
+                        the same cover and gallery images back to the classifier.
+                    </p>
+
+                    {error ? (
+                        <p className="rounded-xl bg-white/70 px-3 py-2 text-xs leading-5 text-red-700">
+                            {error}
+                        </p>
+                    ) : null}
+
+                    <div className="pt-1">
+                        <Button
+                            type="button"
+                            size="sm"
+                            onClick={onRetry}
+                            disabled={!onRetry || isRetrying}
+                            className="rounded-full bg-red-500 text-white hover:bg-red-600"
+                        >
+                            {isRetrying ? "Retrying AI..." : "Retry AI classification"}
+                        </Button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 export const PortfolioItemDetailDialog = ({
     item,
     actionItems = [],
     authorName,
     authorAvatarUrl,
+    isRetryingClassification = false,
+    onRetryClassification,
     onClose,
     onOpenPreviousItem,
     onOpenNextItem,
@@ -581,7 +644,10 @@ export const PortfolioItemDetailDialog = ({
                             </div>
                         ) : null}
 
-                        <div className="rounded-[1.25rem] border border-border bg-background p-4">
+                        <div className={`rounded-[1.25rem] border p-4 ${isAiFailed
+                            ? "border-red-200 bg-red-50/35"
+                            : "border-border bg-background"
+                            }`}>
                             <div className="flex items-start justify-between gap-3">
                                 <div>
                                     <p className="text-xs uppercase tracking-[0.22em] text-muted">
@@ -596,7 +662,7 @@ export const PortfolioItemDetailDialog = ({
                                                 : isAiProcessing
                                                     ? "Analyzing visual style."
                                                     : isAiFailed
-                                                        ? "Classification needs retry."
+                                                        ? "AI classification failed."
                                                         : primaryStyleLabel ?? statusConfig.helper}
                                     </p>
                                 </div>
@@ -664,14 +730,22 @@ export const PortfolioItemDetailDialog = ({
                             ) : null}
 
                             {isAiFailed ? (
-                                <p className="mt-4 text-sm leading-6 text-muted">
-                                    The last AI run did not finish. Open the menu and choose Retry AI to send
-                                    this collection back to the classifier.
-                                </p>
+                                <AiFailurePanel
+                                    error={item.classificationError}
+                                    isRetrying={isRetryingClassification}
+                                    onRetry={
+                                        onRetryClassification
+                                            ? () => onRetryClassification(item)
+                                            : undefined
+                                    }
+                                />
                             ) : null}
                         </div>
 
-                        <div className="rounded-[1.25rem] border border-dashed border-border bg-background p-4">
+                        <div className={`rounded-[1.25rem] border border-dashed p-4 ${isAiFailed
+                            ? "border-red-200 bg-red-50/25"
+                            : "border-border bg-background"
+                            }`}>
                             <div className="flex items-center justify-between gap-3">
                                 <p className="text-xs uppercase tracking-[0.22em] text-muted">
                                     Classification journey
@@ -686,7 +760,7 @@ export const PortfolioItemDetailDialog = ({
                                         Live
                                     </span>
                                 ) : isAiFailed ? (
-                                    <span className="rounded-full border border-border px-3 py-1 text-xs font-medium text-foreground">
+                                    <span className="rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-medium text-red-600">
                                         Needs retry
                                     </span>
                                 ) : (
@@ -756,8 +830,8 @@ export const PortfolioItemDetailDialog = ({
                                     action.onSelect();
                                 }}
                                 className={`flex h-16 w-full items-center justify-center border-b border-border text-base transition disabled:cursor-not-allowed disabled:opacity-60 ${action.tone === "danger"
-                                        ? "font-semibold text-red-500 hover:bg-red-50"
-                                        : "font-medium text-foreground hover:bg-background"
+                                    ? "font-semibold text-red-500 hover:bg-red-50"
+                                    : "font-medium text-foreground hover:bg-background"
                                     }`}
                             >
                                 {action.label}

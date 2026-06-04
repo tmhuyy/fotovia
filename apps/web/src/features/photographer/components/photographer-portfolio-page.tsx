@@ -663,6 +663,10 @@ export const PhotographerPortfolioPage = () =>
         item={selectedPortfolioItem}
         authorName={profileQuery.data?.fullName || displayName}
         authorAvatarUrl={profileQuery.data?.avatarUrl ?? null}
+        isRetryingClassification={retryClassificationMutation.isPending}
+        onRetryClassification={(item) =>
+          retryClassificationMutation.mutate(item.id)
+        }
         actionItems={
           selectedPortfolioItem ? getPortfolioActionItems(selectedPortfolioItem) : []
         }
