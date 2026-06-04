@@ -9,22 +9,31 @@ export const PortfolioEmptyState = () =>
         <div className="rounded-[2rem] border border-border bg-surface p-8 shadow-sm">
             <div className="space-y-6">
                 <div className="space-y-3">
-                    <Badge variant="neutral">Real portfolio persistence</Badge>
+                    <Badge variant="neutral">Start your portfolio</Badge>
 
                     <div className="space-y-2">
                         <h2 className="font-serif text-3xl text-foreground">
-                            Your portfolio is still empty.
+                            Your portfolio is empty.
                         </h2>
 
                         <p className="max-w-2xl text-sm leading-7 text-muted">
-                            Upload your first real work so your photographer workspace starts
-                            reflecting saved backend content instead of browser-local demo
-                            data.
+                            Upload your first work so clients can understand your
+                            photography style. Fotovia will analyze your cover and
+                            gallery images, then suggest style tags automatically.
                         </p>
                     </div>
                 </div>
 
                 <div className="flex flex-wrap gap-3">
+                    <Link
+                        href="/photographer/portfolio/new"
+                        className={buttonVariants({
+                            size: "lg",
+                        })}
+                    >
+                        Add first work
+                    </Link>
+
                     <Link
                         href="/profile"
                         className={buttonVariants({
@@ -32,28 +41,19 @@ export const PortfolioEmptyState = () =>
                             size: "lg",
                         })}
                     >
-                        Review profile first
-                    </Link>
-
-                    <Link
-                        href="/photographer/dashboard"
-                        className={buttonVariants({
-                            size: "lg",
-                        })}
-                    >
-                        Back to dashboard
+                        Edit public info
                     </Link>
                 </div>
 
                 <div className="rounded-2xl border border-dashed border-border bg-background px-4 py-4">
                     <p className="text-xs uppercase tracking-[0.22em] text-muted">
-                        Suggested first portfolio mix
+                        Suggested first upload
                     </p>
 
                     <p className="mt-2 text-sm leading-7 text-muted">
-                        Start with 3 to 6 real works, keep one strong featured image, and
-                        choose categories that match the jobs you want clients to book you
-                        for later.
+                        Start with one strong cover image and a small gallery of 3
+                        to 6 photos. Choose work that shows the type of booking you
+                        want clients to request.
                     </p>
                 </div>
             </div>

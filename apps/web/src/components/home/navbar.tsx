@@ -31,8 +31,8 @@ export const Navbar = () =>
             user?.role === "photographer"
         ) {
             return {
-                label: "Open workspace",
-                href: "/photographer/dashboard",
+                label: "My portfolio",
+                href: "/photographer/portfolio",
             };
         }
 

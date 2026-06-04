@@ -1,10 +1,6 @@
-import { AuthenticatedRoute } from "../../../features/auth/components/authenticated-route";
-import { PhotographerDashboardPage } from "../../../features/photographer/components/photographer-dashboard-page";
+import { redirect } from "next/navigation";
 
-export default function PhotographerDashboardRoute() {
-    return (
-        <AuthenticatedRoute>
-            <PhotographerDashboardPage />
-        </AuthenticatedRoute>
-    );
+export default function PhotographerDashboardRoute()
+{
+    redirect("/photographer/portfolio");
 }

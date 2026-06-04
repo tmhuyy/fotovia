@@ -16,15 +16,16 @@ import { Card, CardContent } from "../../../components/ui/card";
 import { photographerService } from "../../../services/photographer.service";
 import { profileService } from "../../../services/profile.service";
 import { useAuthStore } from "../../../store/auth.store";
+import { getPhotographerProfileCompletion } from "../../profile/lib/get-profile-completion";
 import type { PhotographerPortfolioItem } from "../types/portfolio.types";
 import { DeletePortfolioItemDialog } from "./delete-portfolio-item-dialog";
 import { PortfolioEmptyState } from "./portfolio-empty-state";
 import { PortfolioGrid } from "./portfolio-grid";
 import
-{
-  PortfolioItemDetailDialog,
-  type PortfolioActionMenuItem,
-} from "./portfolio-item-detail-dialog";
+  {
+    PortfolioItemDetailDialog,
+    type PortfolioActionMenuItem,
+  } from "./portfolio-item-detail-dialog";
 import { PortfolioPostProgressBanner } from "./portfolio-post-progress-banner";
 import { usePortfolioPostStore } from "../store/portfolio-post.store";
 
@@ -121,7 +122,6 @@ export const PhotographerPortfolioPage = () =>
   const [deletingItem, setDeletingItem] =
     useState<PhotographerPortfolioItem | null>(null);
 
-
   const [selectedItem, setSelectedItem] =
     useState<PhotographerPortfolioItem | null>(null);
 
@@ -130,10 +130,12 @@ export const PhotographerPortfolioPage = () =>
   const isPhotographer = user?.role === "photographer";
   const authEmail = user?.email ?? "";
   const displayName = user?.fullName?.trim() || user?.email || "Photographer";
+
   const queryKey = useMemo(
     () => ["my-photographer-portfolio", user?.id ?? "anonymous"] as const,
     [user?.id],
   );
+
   const portfolioQuery = useQuery({
     queryKey,
     queryFn: () => photographerService.getMyPortfolioItems(),
@@ -387,6 +389,19 @@ export const PhotographerPortfolioPage = () =>
       ? `$${profilePricePerHour}/hour`
       : null;
 
+  const publicInfoCompletion = useMemo(() =>
+  {
+    return getPhotographerProfileCompletion(profileQuery.data ?? null);
+  }, [profileQuery.data]);
+
+  const shouldShowPublicInfoBanner =
+    !profileQuery.isLoading && !publicInfoCompletion.isComplete;
+
+  const missingPublicInfoLabels = publicInfoCompletion.missingItems
+    .slice(0, 3)
+    .map((item) => item.label.toLowerCase())
+    .join(", ");
+
   const isPollingForClassification = useMemo(() =>
   {
     return hasActiveClassification(sortedItems);
@@ -449,37 +464,6 @@ export const PhotographerPortfolioPage = () =>
       window.clearTimeout(timeoutId);
     };
   }, [activePostJob, clearPortfolioPostJob, queryClient, queryKey, router]);
-  // useEffect(() =>
-  // {
-  //   const syncSelectedItemFromUrl = () =>
-  //   {
-  //     const postId = readPortfolioPostIdFromUrl();
-
-  //     if (!postId) {
-  //       setSelectedItem((current) => (current ? null : current));
-  //       return;
-  //     }
-
-  //     const itemFromUrl = sortedItems.find((item) => item.id === postId);
-
-  //     if (!itemFromUrl) {
-  //       return;
-  //     }
-
-  //     setSelectedItem((current) =>
-  //       current?.id === itemFromUrl.id ? current : itemFromUrl,
-  //     );
-  //   };
-
-  //   syncSelectedItemFromUrl();
-
-  //   window.addEventListener("popstate", syncSelectedItemFromUrl);
-
-  //   return () =>
-  //   {
-  //     window.removeEventListener("popstate", syncSelectedItemFromUrl);
-  //   };
-  // }, [sortedItems]);
 
   if (!hasHydrated || isHydrating) {
     return <PortfolioPageSkeleton />;
@@ -503,7 +487,7 @@ export const PhotographerPortfolioPage = () =>
                     </h1>
 
                     <p className="text-sm leading-7 text-muted">
-                      This workspace is only available after signing in with a
+                      This portfolio page is only available after signing in with a
                       photographer account.
                     </p>
                   </div>
@@ -554,8 +538,7 @@ export const PhotographerPortfolioPage = () =>
 
                   <div className="space-y-2">
                     <h1 className="font-serif text-3xl text-foreground">
-                      This portfolio workspace is reserved for photographer
-                      accounts.
+                      This portfolio page is reserved for photographer accounts.
                     </h1>
 
                     <p className="text-sm leading-7 text-muted">
@@ -720,10 +703,10 @@ export const PhotographerPortfolioPage = () =>
           variant: "secondary",
           size: "sm",
           className:
-            "h-10 rounded-lg bg-[#efefef] text-sm font-semibold shadow-none hover:bg-[#e5e5e5]",
+            "h-10 rounded-lg border border-border bg-surface text-sm font-semibold shadow-none hover:bg-background",
         })}
       >
-        Edit profile
+        Edit public info
       </Link>
 
       <Link
@@ -732,7 +715,7 @@ export const PhotographerPortfolioPage = () =>
           variant: "secondary",
           size: "sm",
           className:
-            "h-10 rounded-lg bg-[#efefef] text-sm font-semibold shadow-none hover:bg-[#e5e5e5]",
+            "h-10 rounded-lg border border-border bg-surface text-sm font-semibold shadow-none hover:bg-background",
         })}
       >
         Add work
@@ -848,6 +831,32 @@ export const PhotographerPortfolioPage = () =>
               </div>
 
               {renderProfileActionButtons("mt-4")}
+
+              {shouldShowPublicInfoBanner ? (
+                <div className="mt-5 rounded-2xl border border-dashed border-border bg-surface px-4 py-4 sm:flex sm:items-center sm:justify-between sm:gap-4">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-foreground">
+                      Complete your public info
+                    </p>
+                    <p className="mt-1 text-sm leading-6 text-muted">
+                      Add {missingPublicInfoLabels || "the missing details"} so
+                      clients can understand your service before booking.
+                    </p>
+                  </div>
+
+                  <Link
+                    href="/profile"
+                    className={buttonVariants({
+                      variant: "secondary",
+                      size: "sm",
+                      className:
+                        "mt-3 w-full rounded-lg border border-border bg-background text-sm font-semibold shadow-none hover:bg-surface sm:mt-0 sm:w-auto",
+                    })}
+                  >
+                    Complete info
+                  </Link>
+                </div>
+              ) : null}
             </div>
 
             {(activePostJob ||
@@ -902,24 +911,6 @@ export const PhotographerPortfolioPage = () =>
                 >
                   ▦
                 </button>
-
-                {/* <button
-                  type="button"
-                  className="flex items-center justify-center text-lg"
-                  aria-label="AI styles"
-                  disabled
-                >
-                  ◎
-                </button>
-
-                <button
-                  type="button"
-                  className="flex items-center justify-center text-lg"
-                  aria-label="Featured"
-                  disabled
-                >
-                  ★
-                </button> */}
               </div>
 
               <PortfolioGrid

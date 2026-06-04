@@ -8,12 +8,14 @@ import { useEffect, useMemo, useState } from "react";
 import type { AuthRole } from "../../types/auth.types";
 import { Button } from "../ui/button";
 
-interface NavLinkItem {
+interface NavLinkItem
+{
     label: string;
     href: string;
 }
 
-interface MobileNavProps {
+interface MobileNavProps
+{
     navLinks: NavLinkItem[];
     isAuthenticated: boolean;
     isHydrating: boolean;
@@ -33,13 +35,15 @@ export const MobileNav = ({
     userRole,
     isSigningOut,
     onSignOut,
-}: MobileNavProps) => {
+}: MobileNavProps) =>
+{
     const pathname = usePathname();
     const router = useRouter();
     const [isMounted, setIsMounted] = useState(false);
     const [isOpen, setIsOpen] = useState(false);
 
-    const primaryAction = useMemo(() => {
+    const primaryAction = useMemo(() =>
+    {
         if (
             hasHydrated &&
             !isHydrating &&
@@ -47,8 +51,8 @@ export const MobileNav = ({
             userRole === "photographer"
         ) {
             return {
-                label: "Open workspace",
-                href: "/photographer/dashboard",
+                label: "My portfolio",
+                href: "/photographer/portfolio",
             };
         }
 
@@ -60,21 +64,25 @@ export const MobileNav = ({
 
     const isPhotographer = userRole === "photographer";
 
-    useEffect(() => {
+    useEffect(() =>
+    {
         setIsMounted(true);
     }, []);
 
-    useEffect(() => {
+    useEffect(() =>
+    {
         setIsOpen(false);
     }, [pathname]);
 
-    useEffect(() => {
+    useEffect(() =>
+    {
         if (!isOpen) return;
 
         const previousOverflow = document.body.style.overflow;
         document.body.style.overflow = "hidden";
 
-        return () => {
+        return () =>
+        {
             document.body.style.overflow = previousOverflow;
         };
     }, [isOpen]);
@@ -123,7 +131,8 @@ export const MobileNav = ({
                         <Button
                             type="button"
                             className="w-full rounded-full"
-                            onClick={() => {
+                            onClick={() =>
+                            {
                                 handleClose();
                                 router.push(primaryAction.href);
                             }}
@@ -155,35 +164,36 @@ export const MobileNav = ({
                                         <button
                                             type="button"
                                             className="flex w-full items-center justify-between rounded-2xl px-4 py-4 text-sm text-foreground transition hover:bg-background"
-                                            onClick={() => {
+                                            onClick={() =>
+                                            {
                                                 handleClose();
-                                                router.push(
-                                                    "/photographer/dashboard",
-                                                );
+                                                router.push("/photographer/bookings");
                                             }}
                                         >
-                                            <span>Workspace</span>
-                                            <span className="text-muted">
-                                                →
-                                            </span>
+                                            <span>Booking requests</span>
+                                            <span className="text-muted">→</span>
                                         </button>
                                     ) : null}
 
                                     <button
                                         type="button"
                                         className="flex w-full items-center justify-between rounded-2xl px-4 py-4 text-sm text-foreground transition hover:bg-background"
-                                        onClick={() => {
+                                        onClick={() =>
+                                        {
                                             handleClose();
                                             router.push("/profile");
                                         }}
                                     >
-                                        <span>Profile</span>
+                                        <span>
+                                            {isPhotographer ? "Public info" : "Profile"}
+                                        </span>
                                         <span className="text-muted">→</span>
                                     </button>
 
                                     <button
                                         type="button"
-                                        onClick={() => {
+                                        onClick={() =>
+                                        {
                                             handleClose();
                                             onSignOut();
                                         }}
@@ -205,7 +215,8 @@ export const MobileNav = ({
                                     type="button"
                                     variant="secondary"
                                     className="w-full rounded-full"
-                                    onClick={() => {
+                                    onClick={() =>
+                                    {
                                         handleClose();
                                         router.push("/sign-in");
                                     }}
@@ -216,7 +227,8 @@ export const MobileNav = ({
                                 <Button
                                     type="button"
                                     className="w-full rounded-full"
-                                    onClick={() => {
+                                    onClick={() =>
+                                    {
                                         handleClose();
                                         router.push("/sign-up");
                                     }}

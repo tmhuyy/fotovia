@@ -2,7 +2,7 @@ import type { AuthRole } from "../../../types/auth.types";
 
 const DEFAULT_POST_AUTH_ROUTE_BY_ROLE: Record<AuthRole, string> = {
     client: "/",
-    photographer: "/photographer/dashboard",
+    photographer: "/photographer/portfolio",
 };
 
 const DISALLOWED_POST_AUTH_PATHS = new Set([

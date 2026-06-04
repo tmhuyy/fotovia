@@ -597,7 +597,7 @@ export const PortfolioItemForm = ({
                                 />
                             </div>
 
-                            <label className="flex items-center gap-3 rounded-2xl border border-border bg-background px-4 py-4 text-sm text-foreground">
+                            {/* <label className="flex items-center gap-3 rounded-2xl border border-border bg-background px-4 py-4 text-sm text-foreground">
                                 <input
                                     type="checkbox"
                                     checked={draft.isFeatured}
@@ -608,7 +608,7 @@ export const PortfolioItemForm = ({
                                     disabled={isPreparingAsset || isSubmitting}
                                 />
                                 Mark this work as featured
-                            </label>
+                            </label> */}
 
                             {/* <div className="rounded-2xl border border-dashed border-border bg-background px-4 py-4">
                                 <p className="text-xs uppercase tracking-[0.22em] text-muted">

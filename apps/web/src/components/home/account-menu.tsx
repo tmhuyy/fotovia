@@ -99,27 +99,27 @@ export const AccountMenu = ({
                     <div className="mt-3 space-y-2">
                         {isPhotographer ? (
                             <Link
-                                href="/photographer/dashboard"
+                                href="/photographer/bookings"
                                 className="flex w-full items-center justify-between rounded-2xl px-4 py-3 text-sm text-foreground transition hover:bg-background"
                             >
-                                <span>Workspace</span>
+                                <span>Booking requests</span>
                                 <span className="text-muted">→</span>
                             </Link>
-                        ) : null}
-
-                        <Link
-                            href="/my-bookings"
-                            className="flex w-full items-center justify-between rounded-2xl px-4 py-3 text-sm text-foreground transition hover:bg-background"
-                        >
-                            <span>My bookings</span>
-                            <span className="text-muted">→</span>
-                        </Link>
+                        ) : (
+                            <Link
+                                href="/my-bookings"
+                                className="flex w-full items-center justify-between rounded-2xl px-4 py-3 text-sm text-foreground transition hover:bg-background"
+                            >
+                                <span>My bookings</span>
+                                <span className="text-muted">→</span>
+                            </Link>
+                        )}
 
                         <Link
                             href="/profile"
                             className="flex w-full items-center justify-between rounded-2xl px-4 py-3 text-sm text-foreground transition hover:bg-background"
                         >
-                            <span>Profile</span>
+                            <span>{isPhotographer ? "Public info" : "Profile"}</span>
                             <span className="text-muted">→</span>
                         </Link>
 
