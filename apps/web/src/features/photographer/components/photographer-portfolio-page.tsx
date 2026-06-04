@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -58,6 +58,68 @@ const hasActiveClassification = (items: PhotographerPortfolioItem[]) =>
   return items.some(isClassificationInFlight);
 };
 
+const PORTFOLIO_BASE_PATH = "/photographer/portfolio";
+
+const getPortfolioPostUrl = (itemId: string) =>
+{
+  return `${PORTFOLIO_BASE_PATH}?post=${encodeURIComponent(itemId)}`;
+};
+
+const readPortfolioPostIdFromUrl = () =>
+{
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  return new URL(window.location.href).searchParams.get("post");
+};
+
+const pushPortfolioPostUrl = (itemId: string) =>
+{
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.history.pushState(
+    { fotoviaPortfolioItemId: itemId },
+    "",
+    getPortfolioPostUrl(itemId),
+  );
+};
+
+const replacePortfolioPostUrl = (itemId: string) =>
+{
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.history.replaceState(
+    { fotoviaPortfolioItemId: itemId },
+    "",
+    getPortfolioPostUrl(itemId),
+  );
+};
+
+const clearPortfolioPostUrl = () =>
+{
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.history.replaceState(null, "", PORTFOLIO_BASE_PATH);
+};
+
+const getInitials = (value: string) =>
+{
+  return value
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.charAt(0))
+    .join("")
+    .toUpperCase();
+};
+
 const PortfolioPageSkeleton = () =>
 {
   return (
@@ -99,6 +161,7 @@ export const PhotographerPortfolioPage = () =>
 {
   const queryClient = useQueryClient();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, isAuthenticated, isHydrating, hasHydrated } = useAuthStore();
 
   const activePostJob = usePortfolioPostStore((state) => state.activeJob);
@@ -265,6 +328,43 @@ export const PhotographerPortfolioPage = () =>
     return sortedItems.findIndex((item) => item.id === selectedPortfolioItem.id);
   }, [selectedPortfolioItem, sortedItems]);
 
+  const selectedPostId = searchParams.get("post");
+
+  const getPostDetailUrl = (itemId: string) =>
+  {
+    return `/photographer/portfolio?post=${encodeURIComponent(itemId)}`;
+  };
+
+  const openPortfolioItem = (item: PhotographerPortfolioItem) =>
+  {
+    setSelectedItem(item);
+    router.push(getPostDetailUrl(item.id), { scroll: false });
+  };
+
+  const closePortfolioItem = () =>
+  {
+    setSelectedItem(null);
+    router.replace("/photographer/portfolio", { scroll: false });
+  };
+
+  useEffect(() =>
+  {
+    if (!selectedPostId) {
+      setSelectedItem((current) => (current ? null : current));
+      return;
+    }
+
+    const itemFromUrl = sortedItems.find((item) => item.id === selectedPostId);
+
+    if (!itemFromUrl) {
+      return;
+    }
+
+    setSelectedItem((current) =>
+      current?.id === itemFromUrl.id ? current : itemFromUrl,
+    );
+  }, [selectedPostId, sortedItems]);
+
   const hasPreviousPortfolioItem = selectedPortfolioItemIndex > 0;
   const hasNextPortfolioItem =
     selectedPortfolioItemIndex >= 0 &&
@@ -276,7 +376,14 @@ export const PhotographerPortfolioPage = () =>
       return;
     }
 
-    setSelectedItem(sortedItems[selectedPortfolioItemIndex - 1] ?? null);
+    const previousItem = sortedItems[selectedPortfolioItemIndex - 1] ?? null;
+
+    if (!previousItem) {
+      return;
+    }
+
+    setSelectedItem(previousItem);
+    router.replace(getPostDetailUrl(previousItem.id), { scroll: false });
   };
 
   const openNextPortfolioItem = () =>
@@ -285,7 +392,14 @@ export const PhotographerPortfolioPage = () =>
       return;
     }
 
-    setSelectedItem(sortedItems[selectedPortfolioItemIndex + 1] ?? null);
+    const nextItem = sortedItems[selectedPortfolioItemIndex + 1] ?? null;
+
+    if (!nextItem) {
+      return;
+    }
+
+    setSelectedItem(nextItem);
+    router.replace(getPostDetailUrl(nextItem.id), { scroll: false });
   };
 
   const featuredCount = useMemo(() =>
@@ -308,6 +422,11 @@ export const PhotographerPortfolioPage = () =>
     return sortedItems.filter((item) => item.classificationStatus === "failed")
       .length;
   }, [sortedItems]);
+
+  const profileDisplayName = profileQuery.data?.fullName || displayName;
+  const profileAvatarUrl = profileQuery.data?.avatarUrl ?? null;
+  const profileLocation = profileQuery.data?.location?.trim();
+  const profileExperienceYears = profileQuery.data?.experienceYears;
 
   const isPollingForClassification = useMemo(() =>
   {
@@ -371,6 +490,38 @@ export const PhotographerPortfolioPage = () =>
     };
   }, [activePostJob, clearPortfolioPostJob, queryClient, queryKey]);
 
+  // useEffect(() =>
+  // {
+  //   const syncSelectedItemFromUrl = () =>
+  //   {
+  //     const postId = readPortfolioPostIdFromUrl();
+
+  //     if (!postId) {
+  //       setSelectedItem((current) => (current ? null : current));
+  //       return;
+  //     }
+
+  //     const itemFromUrl = sortedItems.find((item) => item.id === postId);
+
+  //     if (!itemFromUrl) {
+  //       return;
+  //     }
+
+  //     setSelectedItem((current) =>
+  //       current?.id === itemFromUrl.id ? current : itemFromUrl,
+  //     );
+  //   };
+
+  //   syncSelectedItemFromUrl();
+
+  //   window.addEventListener("popstate", syncSelectedItemFromUrl);
+
+  //   return () =>
+  //   {
+  //     window.removeEventListener("popstate", syncSelectedItemFromUrl);
+  //   };
+  // }, [sortedItems]);
+
   if (!hasHydrated || isHydrating) {
     return <PortfolioPageSkeleton />;
   }
@@ -379,20 +530,226 @@ export const PhotographerPortfolioPage = () =>
     return (
       <>
         <Navbar />
-        <main className="pb-16 pt-10">
-          <Container>
-            <Card className="rounded-[2rem] border-border bg-surface shadow-sm">
-              <CardContent className="space-y-4 p-8">
-                <h1 className="font-serif text-3xl text-foreground">
-                  Portfolio access requires sign-in
-                </h1>
-                <p className="text-sm leading-6 text-muted">
-                  Sign in with a photographer account to manage saved portfolio
-                  works.
+        <main className="pb-10 pt-6 sm:pt-10">
+          <div className="mx-auto w-full max-w-[935px] px-0 sm:px-6">
+            <section className="border-b border-border px-4 pb-8 sm:px-0">
+              <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-6 sm:gap-10">
+                <div className="pt-1">
+                  {profileAvatarUrl ? (
+                    <img
+                      src={profileAvatarUrl}
+                      alt={profileDisplayName}
+                      className="h-20 w-20 rounded-full border border-border object-cover sm:h-36 sm:w-36"
+                    />
+                  ) : (
+                    <div className="flex h-20 w-20 items-center justify-center rounded-full border border-border bg-surface font-serif text-2xl text-foreground sm:h-36 sm:w-36 sm:text-4xl">
+                      {getInitials(profileDisplayName)}
+                    </div>
+                  )}
+                </div>
+
+                <div className="min-w-0 space-y-4">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <h1 className="truncate text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+                      {profileDisplayName}
+                    </h1>
+
+                    <Link
+                      href="/photographer/portfolio/new"
+                      className={buttonVariants({
+                        variant: "secondary",
+                        size: "sm",
+                        className:
+                          "hidden rounded-lg bg-[#efefef] px-5 text-sm font-semibold shadow-none hover:bg-[#e5e5e5] sm:inline-flex",
+                      })}
+                    >
+                      Add work
+                    </Link>
+
+                    <Link
+                      href="/photographer/profile"
+                      className={buttonVariants({
+                        variant: "secondary",
+                        size: "sm",
+                        className:
+                          "hidden rounded-lg bg-[#efefef] px-5 text-sm font-semibold shadow-none hover:bg-[#e5e5e5] sm:inline-flex",
+                      })}
+                    >
+                      Edit profile
+                    </Link>
+                  </div>
+
+                  <div className="grid max-w-md grid-cols-3 gap-3 text-center text-sm sm:text-left">
+                    <div>
+                      <span className="block font-semibold text-foreground sm:inline">
+                        {sortedItems.length}
+                      </span>{" "}
+                      <span className="text-foreground">posts</span>
+                    </div>
+
+                    <div>
+                      <span className="block font-semibold text-foreground sm:inline">
+                        {featuredCount}
+                      </span>{" "}
+                      <span className="text-foreground">featured</span>
+                    </div>
+
+                    <div>
+                      <span className="block font-semibold text-foreground sm:inline">
+                        {stylesReadyCount}
+                      </span>{" "}
+                      <span className="text-foreground">styles</span>
+                    </div>
+                  </div>
+
+                  <div className="hidden max-w-md space-y-0.5 text-sm leading-5 sm:block">
+                    <p className="font-semibold text-foreground">
+                      {profileDisplayName}
+                    </p>
+
+                    <p className="text-muted">Photographer</p>
+
+                    {profileLocation ? (
+                      <p className="text-foreground">Based in {profileLocation}</p>
+                    ) : null}
+
+                    {typeof profileExperienceYears === "number" ? (
+                      <p className="text-foreground">
+                        {profileExperienceYears} year(s) experience
+                      </p>
+                    ) : null}
+
+                    <p className="text-foreground">
+                      AI-assisted portfolio gallery for visual style discovery.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 space-y-0.5 text-sm leading-5 sm:hidden">
+                <p className="font-semibold text-foreground">{profileDisplayName}</p>
+                <p className="text-muted">Photographer</p>
+
+                {profileLocation ? (
+                  <p className="text-foreground">Based in {profileLocation}</p>
+                ) : null}
+
+                {typeof profileExperienceYears === "number" ? (
+                  <p className="text-foreground">
+                    {profileExperienceYears} year(s) experience
+                  </p>
+                ) : null}
+
+                <p className="text-foreground">
+                  AI-assisted portfolio gallery for visual style discovery.
                 </p>
-              </CardContent>
-            </Card>
-          </Container>
+              </div>
+
+              <div className="mt-4 grid grid-cols-2 gap-2 sm:hidden">
+                <Link
+                  href="/photographer/profile"
+                  className={buttonVariants({
+                    variant: "secondary",
+                    size: "sm",
+                    className:
+                      "rounded-lg bg-[#efefef] text-sm font-semibold shadow-none hover:bg-[#e5e5e5]",
+                  })}
+                >
+                  Edit profile
+                </Link>
+
+                <Link
+                  href="/photographer/portfolio/new"
+                  className={buttonVariants({
+                    variant: "secondary",
+                    size: "sm",
+                    className:
+                      "rounded-lg bg-[#efefef] text-sm font-semibold shadow-none hover:bg-[#e5e5e5]",
+                  })}
+                >
+                  Add work
+                </Link>
+              </div>
+
+              {(activePostJob ||
+                failedClassificationCount > 0 ||
+                isPollingForClassification) ? (
+                <div className="mt-5 space-y-3">
+                  {activePostJob ? (
+                    <PortfolioPostProgressBanner
+                      job={activePostJob}
+                      onDismiss={
+                        activePostJob.status === "failed"
+                          ? clearPortfolioPostJob
+                          : undefined
+                      }
+                    />
+                  ) : null}
+
+                  <div className="flex flex-wrap gap-2 text-xs">
+                    {failedClassificationCount > 0 ? (
+                      <span className="rounded-full bg-red-50 px-3 py-1 font-medium text-red-600">
+                        {failedClassificationCount} need retry
+                      </span>
+                    ) : null}
+
+                    {queuedOrProcessingCount > 0 ? (
+                      <span className="rounded-full bg-ai/15 px-3 py-1 font-medium text-foreground">
+                        {queuedOrProcessingCount} AI running
+                      </span>
+                    ) : null}
+
+                    {isPollingForClassification ? (
+                      <span className="rounded-full bg-background px-3 py-1 font-medium text-muted">
+                        Auto-refreshing
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+              ) : null}
+            </section>
+
+            {sortedItems.length === 0 ? (
+              <div className="px-4 pt-8 sm:px-0">
+                <PortfolioEmptyState />
+              </div>
+            ) : (
+              <section>
+                <div className="grid h-12 grid-cols-3 border-b border-border text-muted sm:h-14">
+                  <button
+                    type="button"
+                    className="flex items-center justify-center border-b border-foreground text-lg text-foreground"
+                    aria-label="Posts"
+                  >
+                    ▦
+                  </button>
+
+                  <button
+                    type="button"
+                    className="flex items-center justify-center text-lg"
+                    aria-label="AI styles"
+                    disabled
+                  >
+                    ◎
+                  </button>
+
+                  <button
+                    type="button"
+                    className="flex items-center justify-center text-lg"
+                    aria-label="Featured"
+                    disabled
+                  >
+                    ★
+                  </button>
+                </div>
+
+                <PortfolioGrid
+                  items={sortedItems}
+                  onOpenItem={openPortfolioItem}
+                />
+              </section>
+            )}
+          </div>
         </main>
         <Footer />
       </>
@@ -674,7 +1031,7 @@ export const PhotographerPortfolioPage = () =>
         hasNextItem={hasNextPortfolioItem}
         onOpenPreviousItem={openPreviousPortfolioItem}
         onOpenNextItem={openNextPortfolioItem}
-        onClose={() => setSelectedItem(null)}
+        onClose={closePortfolioItem}
       />
 
       <DeletePortfolioItemDialog

@@ -477,11 +477,15 @@ export const PortfolioItemDetailDialog = ({
 
     return (
         <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/70 p-4 backdrop-blur-sm"
+            className="fixed inset-0 z-50 overflow-y-auto bg-surface sm:flex sm:items-center sm:justify-center sm:bg-foreground/70 sm:p-4 sm:backdrop-blur-sm"
             role="presentation"
             onMouseDown={(event) =>
             {
-                if (event.target === event.currentTarget) {
+                if (event.target !== event.currentTarget) {
+                    return;
+                }
+
+                if (window.matchMedia("(min-width: 640px)").matches) {
                     onClose();
                 }
             }}
@@ -512,21 +516,71 @@ export const PortfolioItemDetailDialog = ({
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="portfolio-detail-title"
-                className="grid max-h-[84vh] w-full max-w-[1080px] overflow-hidden rounded-md border border-border bg-surface shadow-2xl lg:grid-cols-[minmax(0,1.08fr)_minmax(340px,0.92fr)]"
+                className="mx-auto min-h-dvh w-full bg-surface sm:grid sm:min-h-0 sm:max-h-[90vh] sm:max-w-[1080px] sm:overflow-hidden sm:rounded-md sm:border sm:border-border sm:shadow-2xl lg:grid-cols-[minmax(0,1.08fr)_minmax(340px,0.92fr)]"
             >
-                <div className="relative flex min-h-[48vh] items-center justify-center bg-foreground lg:min-h-[74vh]">
-                    <div className="relative h-full min-h-[48vh] w-full overflow-hidden lg:min-h-[74vh]">
-                        {images.map((image, index) => (
+                <div className="sticky top-0 z-40 flex h-12 items-center justify-center border-b border-border bg-surface sm:hidden">
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="absolute left-3 flex h-10 w-10 items-center justify-center text-3xl leading-none text-foreground"
+                        aria-label="Back to portfolio"
+                    >
+                        ‹
+                    </button>
+
+                    <p className="text-sm font-semibold text-foreground">Post</p>
+                </div>
+
+                <div className="flex items-center justify-between gap-3 border-b border-border bg-surface px-4 py-3 sm:hidden">
+                    <div className="flex min-w-0 items-center gap-3">
+                        {authorAvatarUrl ? (
                             <img
-                                key={image.id}
-                                src={image.previewUrl}
-                                alt={image.fileName}
-                                loading="eager"
-                                decoding="async"
-                                className={`absolute inset-0 h-full w-full object-contain transition-opacity duration-150 ${index === activeImageIndex ? "opacity-100" : "opacity-0"
-                                    }`}
+                                src={authorAvatarUrl}
+                                alt={authorName}
+                                className="h-9 w-9 shrink-0 rounded-full border border-border object-cover"
                             />
-                        ))}
+                        ) : (
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border bg-background text-xs font-medium text-foreground">
+                                {getInitials(authorName)}
+                            </div>
+                        )}
+
+                        <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-foreground">
+                                {authorName}
+                            </p>
+
+                            <p className="truncate text-xs text-muted">
+                                {statusConfig.label}
+                                {primaryStyleLabel ? ` · ${primaryStyleLabel}` : ""}
+                            </p>
+                        </div>
+                    </div>
+
+                    {actionItems.length > 0 ? (
+                        <button
+                            type="button"
+                            onClick={() => setIsActionMenuOpen(true)}
+                            className="flex h-9 w-9 items-center justify-center text-xl text-foreground"
+                            aria-label="Open portfolio actions"
+                            aria-expanded={isActionMenuOpen}
+                        >
+                            …
+                        </button>
+                    ) : null}
+                </div>
+                <div className="relative flex items-center justify-center bg-foreground sm:min-h-[58vh] lg:min-h-[74vh]">
+                    <div className="relative aspect-[4/5] w-full overflow-hidden sm:h-full sm:min-h-[58vh] sm:aspect-auto lg:min-h-[74vh]">                        {images.map((image, index) => (
+                        <img
+                            key={image.id}
+                            src={image.previewUrl}
+                            alt={image.fileName}
+                            loading="eager"
+                            decoding="async"
+                            className={`absolute inset-0 h-full w-full object-contain transition-opacity duration-150 sm:object-contain ${index === activeImageIndex ? "opacity-100" : "opacity-0"
+                                }`}
+                        />
+                    ))}
                     </div>
 
                     {images.length > 1 ? (
@@ -573,8 +627,8 @@ export const PortfolioItemDetailDialog = ({
                     ) : null}
                 </div>
 
-                <aside className="flex max-h-[84vh] flex-col overflow-y-auto">
-                    <div className="relative flex items-center justify-between gap-4 border-b border-border px-5 py-4">
+                <aside className="flex flex-col overflow-visible sm:max-h-[90vh] sm:overflow-y-auto">
+                    <div className="relative hidden items-center justify-between gap-4 border-b border-border px-5 py-4 sm:flex">
                         <div className="flex min-w-0 items-center gap-3">
                             {authorAvatarUrl ? (
                                 <img
@@ -613,11 +667,11 @@ export const PortfolioItemDetailDialog = ({
                         ) : null}
                     </div>
 
-                    <div className="space-y-5 px-5 py-5">
+                    <div className="space-y-4 px-4 py-4 sm:space-y-5 sm:px-5 sm:py-5">
                         <div className="space-y-2">
                             <h2
                                 id="portfolio-detail-title"
-                                className="font-serif text-2xl leading-tight text-foreground"
+                                className="font-serif text-xl leading-tight text-foreground sm:text-2xl"
                             >
                                 {item.title}
                             </h2>
@@ -799,7 +853,7 @@ export const PortfolioItemDetailDialog = ({
 
             {isActionMenuOpen ? (
                 <div
-                    className="absolute inset-0 z-30 flex items-center justify-center bg-foreground/35 p-4"
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/45 p-4 sm:absolute sm:z-30"
                     role="presentation"
                     onMouseDown={(event) =>
                     {
