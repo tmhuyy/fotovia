@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, } from "react";
 
 import { Badge } from "../../../components/ui/badge";
 import type {
@@ -9,10 +9,18 @@ import type {
     PortfolioStyleDistributionEntry,
 } from "../types/portfolio.types";
 
+export interface PortfolioActionMenuItem
+{
+    label: string;
+    tone?: "default" | "danger";
+    disabled?: boolean;
+    onSelect: () => void;
+}
+
 interface PortfolioItemDetailDialogProps
 {
     item: PhotographerPortfolioItem | null;
-    actions?: ReactNode;
+    actionItems?: PortfolioActionMenuItem[];
     authorName: string;
     authorAvatarUrl?: string | null;
     onClose: () => void;
@@ -271,7 +279,7 @@ const AiProcessingPanel = ({
 
 export const PortfolioItemDetailDialog = ({
     item,
-    actions,
+    actionItems = [],
     authorName,
     authorAvatarUrl,
     onClose,
@@ -529,24 +537,16 @@ export const PortfolioItemDetailDialog = ({
                             </div>
                         </div>
 
-                        {actions ? (
-                            <div className="relative shrink-0">
-                                <button
-                                    type="button"
-                                    onClick={() => setIsActionMenuOpen((current) => !current)}
-                                    className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-xl text-foreground transition hover:bg-background"
-                                    aria-label="Open portfolio actions"
-                                    aria-expanded={isActionMenuOpen}
-                                >
-                                    …
-                                </button>
-
-                                {isActionMenuOpen ? (
-                                    <div className="absolute right-0 top-11 z-20 w-56 rounded-[1.25rem] border border-border bg-surface p-2 shadow-xl">
-                                        <div className="flex flex-col gap-2">{actions}</div>
-                                    </div>
-                                ) : null}
-                            </div>
+                        {actionItems.length > 0 ? (
+                            <button
+                                type="button"
+                                onClick={() => setIsActionMenuOpen(true)}
+                                className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-xl text-foreground transition hover:bg-background"
+                                aria-label="Open portfolio actions"
+                                aria-expanded={isActionMenuOpen}
+                            >
+                                …
+                            </button>
                         ) : null}
                     </div>
 
@@ -722,6 +722,58 @@ export const PortfolioItemDetailDialog = ({
                     </div>
                 </aside>
             </section>
+
+            {isActionMenuOpen ? (
+                <div
+                    className="absolute inset-0 z-30 flex items-center justify-center bg-foreground/35 p-4"
+                    role="presentation"
+                    onMouseDown={(event) =>
+                    {
+                        if (event.target === event.currentTarget) {
+                            setIsActionMenuOpen(false);
+                        }
+                    }}
+                >
+                    <section
+                        role="dialog"
+                        aria-modal="true"
+                        aria-label="Portfolio actions"
+                        className="w-full max-w-xl overflow-hidden rounded-[1.75rem] bg-surface text-center shadow-2xl"
+                        onMouseDown={(event) => event.stopPropagation()}
+                    >
+                        {actionItems.map((action) => (
+                            <button
+                                key={action.label}
+                                type="button"
+                                disabled={action.disabled}
+                                onClick={() =>
+                                {
+                                    if (action.disabled) {
+                                        return;
+                                    }
+
+                                    setIsActionMenuOpen(false);
+                                    action.onSelect();
+                                }}
+                                className={`flex h-16 w-full items-center justify-center border-b border-border text-base transition disabled:cursor-not-allowed disabled:opacity-60 ${action.tone === "danger"
+                                        ? "font-semibold text-red-500 hover:bg-red-50"
+                                        : "font-medium text-foreground hover:bg-background"
+                                    }`}
+                            >
+                                {action.label}
+                            </button>
+                        ))}
+
+                        <button
+                            type="button"
+                            onClick={() => setIsActionMenuOpen(false)}
+                            className="flex h-16 w-full items-center justify-center text-base font-medium text-foreground transition hover:bg-background"
+                        >
+                            Cancel
+                        </button>
+                    </section>
+                </div>
+            ) : null}
         </div>
     );
 };

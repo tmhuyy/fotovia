@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -19,7 +20,11 @@ import type { PhotographerPortfolioItem } from "../types/portfolio.types";
 import { DeletePortfolioItemDialog } from "./delete-portfolio-item-dialog";
 import { PortfolioEmptyState } from "./portfolio-empty-state";
 import { PortfolioGrid } from "./portfolio-grid";
-import { PortfolioItemDetailDialog } from "./portfolio-item-detail-dialog";
+import
+{
+  PortfolioItemDetailDialog,
+  type PortfolioActionMenuItem,
+} from "./portfolio-item-detail-dialog";
 import { PortfolioPostProgressBanner } from "./portfolio-post-progress-banner";
 import { usePortfolioPostStore } from "../store/portfolio-post.store";
 
@@ -93,6 +98,7 @@ const PortfolioPageSkeleton = () =>
 export const PhotographerPortfolioPage = () =>
 {
   const queryClient = useQueryClient();
+  const router = useRouter();
   const { user, isAuthenticated, isHydrating, hasHydrated } = useAuthStore();
 
   const activePostJob = usePortfolioPostStore((state) => state.activeJob);
@@ -492,55 +498,26 @@ export const PhotographerPortfolioPage = () =>
     toggleFeaturedMutation.isPending ||
     retryClassificationMutation.isPending;
 
-  const renderPortfolioActions = (item: PhotographerPortfolioItem) => (
-    <>
-      {item.classificationStatus === "failed" ? (
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          className="rounded-full"
-          onClick={() => retryClassificationMutation.mutate(item.id)}
-          disabled={isAnyMutationPending}
-        >
-          Retry AI
-        </Button>
-      ) : null}
-
-      <Link
-        href={`/photographer/portfolio/${item.id}/edit`}
-        className={buttonVariants({
-          variant: "secondary",
-          size: "sm",
-          className: "rounded-full",
-        })}
-      >
-        Edit
-      </Link>
-
-      <Button
-        type="button"
-        variant="secondary"
-        size="sm"
-        className="rounded-full"
-        onClick={() => toggleFeaturedMutation.mutate(item)}
-        disabled={isAnyMutationPending}
-      >
-        {item.isFeatured ? "Unfeature" : "Feature"}
-      </Button>
-
-      <Button
-        type="button"
-        variant="secondary"
-        size="sm"
-        className="rounded-full"
-        onClick={() => setDeletingItem(item)}
-        disabled={isAnyMutationPending}
-      >
-        Delete
-      </Button>
-    </>
-  );
+  const getPortfolioActionItems = (
+    item: PhotographerPortfolioItem,
+  ): PortfolioActionMenuItem[] => [
+      {
+        label: "Delete",
+        tone: "danger",
+        disabled: isAnyMutationPending,
+        onSelect: () => setDeletingItem(item),
+      },
+      {
+        label: "Edit",
+        disabled: isAnyMutationPending,
+        onSelect: () => router.push(`/photographer/portfolio/${item.id}/edit`),
+      },
+      {
+        label: item.isFeatured ? "Unfeature" : "Feature",
+        disabled: isAnyMutationPending,
+        onSelect: () => toggleFeaturedMutation.mutate(item),
+      },
+    ];
 
   return (
     <>
@@ -674,7 +651,6 @@ export const PhotographerPortfolioPage = () =>
               <PortfolioGrid
                 items={sortedItems}
                 onOpenItem={setSelectedItem}
-                renderActions={(item) => renderPortfolioActions(item)}
               />
             </section>
           )}
@@ -687,8 +663,8 @@ export const PhotographerPortfolioPage = () =>
         item={selectedPortfolioItem}
         authorName={profileQuery.data?.fullName || displayName}
         authorAvatarUrl={profileQuery.data?.avatarUrl ?? null}
-        actions={
-          selectedPortfolioItem ? renderPortfolioActions(selectedPortfolioItem) : null
+        actionItems={
+          selectedPortfolioItem ? getPortfolioActionItems(selectedPortfolioItem) : []
         }
         hasPreviousItem={hasPreviousPortfolioItem}
         hasNextItem={hasNextPortfolioItem}
