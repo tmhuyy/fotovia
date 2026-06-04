@@ -375,7 +375,17 @@ export const PhotographerPortfolioPage = () =>
   const profileDisplayName = profileQuery.data?.fullName || displayName;
   const profileAvatarUrl = profileQuery.data?.avatarUrl ?? null;
   const profileLocation = profileQuery.data?.location?.trim();
+  const profilePhone = profileQuery.data?.phone?.trim();
+  const profileBio = profileQuery.data?.bio?.trim();
+  const profileSpecialties = profileQuery.data?.specialties ?? [];
+  const profilePricePerHour = profileQuery.data?.pricePerHour;
   const profileExperienceYears = profileQuery.data?.experienceYears;
+  const profileEmail = profileQuery.data?.email || authEmail;
+
+  const formattedPricePerHour =
+    typeof profilePricePerHour === "number" && !Number.isNaN(profilePricePerHour)
+      ? `$${profilePricePerHour}/hour`
+      : null;
 
   const isPollingForClassification = useMemo(() =>
   {
@@ -651,6 +661,85 @@ export const PhotographerPortfolioPage = () =>
       },
     ];
 
+  const renderProfileContactLinks = (className = "") =>
+  {
+    if (!profilePhone && !profileEmail) {
+      return null;
+    }
+
+    return (
+      <div className={`flex flex-wrap gap-2 ${className}`}>
+        {profilePhone ? (
+          <a
+            href={`tel:${profilePhone}`}
+            className="inline-flex items-center rounded-full bg-foreground px-3 py-1 text-xs font-semibold text-background transition hover:bg-foreground/85"
+          >
+            <span className="mr-1.5 opacity-70">Call</span>
+            {profilePhone}
+          </a>
+        ) : null}
+
+        {profileEmail ? (
+          <a
+            href={`mailto:${profileEmail}`}
+            className="inline-flex min-w-0 max-w-full items-center rounded-full border border-border bg-surface px-3 py-1 text-xs font-semibold text-foreground shadow-sm transition hover:border-foreground/25 hover:bg-background"
+          >
+            <span className="mr-1.5 text-muted">Email</span>
+            <span className="truncate">{profileEmail}</span>
+          </a>
+        ) : null}
+      </div>
+    );
+  };
+
+  const renderProfileSpecialties = (className = "") =>
+  {
+    if (profileSpecialties.length === 0) {
+      return null;
+    }
+
+    return (
+      <div className={`flex flex-wrap gap-1.5 ${className}`}>
+        {profileSpecialties.slice(0, 5).map((specialty) => (
+          <span
+            key={specialty}
+            className="rounded-full bg-ai/15 px-2.5 py-1 text-xs font-medium text-foreground"
+          >
+            {specialty}
+          </span>
+        ))}
+      </div>
+    );
+  };
+
+  const renderProfileActionButtons = (className = "") => (
+    <div className={`grid grid-cols-2 gap-3 ${className}`}>
+      <Link
+        href="/profile"
+        className={buttonVariants({
+          variant: "secondary",
+          size: "sm",
+          className:
+            "h-10 rounded-lg bg-[#efefef] text-sm font-semibold shadow-none hover:bg-[#e5e5e5]",
+        })}
+      >
+        Edit profile
+      </Link>
+
+      <Link
+        href="/photographer/portfolio/new"
+        className={buttonVariants({
+          variant: "secondary",
+          size: "sm",
+          className:
+            "h-10 rounded-lg bg-[#efefef] text-sm font-semibold shadow-none hover:bg-[#e5e5e5]",
+        })}
+      >
+        Add work
+      </Link>
+    </div>
+  );
+
   return (
     <>
       <Navbar />
@@ -658,142 +747,107 @@ export const PhotographerPortfolioPage = () =>
       <main className="pb-10 pt-6 sm:pt-10">
         <div className="mx-auto w-full max-w-[935px] px-0 sm:px-6">
           <section className="border-b border-border px-4 pb-8 sm:px-0">
-            <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-6 sm:gap-10">
-              <div className="pt-1">
-                {profileAvatarUrl ? (
-                  <img
-                    src={profileAvatarUrl}
-                    alt={profileDisplayName}
-                    className="h-20 w-20 rounded-full border border-border object-cover sm:h-36 sm:w-36"
-                  />
-                ) : (
-                  <div className="flex h-20 w-20 items-center justify-center rounded-full border border-border bg-surface font-serif text-2xl text-foreground sm:h-36 sm:w-36 sm:text-4xl">
-                    {getInitials(profileDisplayName)}
+            <div className="mx-auto max-w-[840px]">
+              <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-6 gap-y-4 sm:grid-cols-[150px_minmax(0,1fr)] sm:gap-x-14">
+                <div className="pt-1 sm:flex sm:justify-center">
+                  {profileAvatarUrl ? (
+                    <img
+                      src={profileAvatarUrl}
+                      alt={profileDisplayName}
+                      className="h-20 w-20 rounded-full border border-border object-cover sm:h-[150px] sm:w-[150px]"
+                    />
+                  ) : (
+                    <div className="flex h-20 w-20 items-center justify-center rounded-full border border-border bg-surface font-serif text-2xl text-foreground sm:h-[150px] sm:w-[150px] sm:text-4xl">
+                      {getInitials(profileDisplayName)}
+                    </div>
+                  )}
+                </div>
+
+                <div className="min-w-0 space-y-4">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <h1 className="truncate text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+                      {profileDisplayName}
+                    </h1>
                   </div>
-                )}
+
+                  <div className="grid max-w-md grid-cols-3 gap-3 text-left text-sm sm:text-left">
+                    <div>
+                      <span className="block font-semibold text-foreground sm:inline">
+                        {sortedItems.length}
+                      </span>{" "}
+                      <span className="text-foreground">posts</span>
+                    </div>
+
+                    <div>
+                      <span className="block font-semibold text-foreground sm:inline">
+                        {featuredCount}
+                      </span>{" "}
+                      <span className="text-foreground">featured</span>
+                    </div>
+
+                    <div>
+                      <span className="block font-semibold text-foreground sm:inline">
+                        {stylesReadyCount}
+                      </span>{" "}
+                      <span className="text-foreground">styles</span>
+                    </div>
+                  </div>
+
+                  <div className="hidden max-w-xl space-y-1 text-sm leading-5 sm:block">
+                    <p className="font-semibold text-foreground">{profileDisplayName}</p>
+                    <p className="text-muted">Photographer</p>
+
+                    {profileBio ? (
+                      <p className="text-foreground">{profileBio}</p>
+                    ) : null}
+
+                    {profileLocation ? (
+                      <p className="text-foreground">Based in {profileLocation}</p>
+                    ) : null}
+
+                    {typeof profileExperienceYears === "number" ? (
+                      <p className="text-foreground">
+                        {profileExperienceYears} year(s) experience
+                      </p>
+                    ) : null}
+
+                    {formattedPricePerHour ? (
+                      <p className="text-foreground">{formattedPricePerHour}</p>
+                    ) : null}
+
+                    {renderProfileContactLinks("pt-1")}
+                    {renderProfileSpecialties("pt-1")}
+                  </div>
+                </div>
               </div>
 
-              <div className="min-w-0 space-y-4">
-                <div className="flex min-w-0 items-center gap-3">
-                  <h1 className="truncate text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
-                    {profileDisplayName}
-                  </h1>
+              <div className="mt-4 space-y-1 text-sm leading-5 sm:hidden">
+                <p className="font-semibold text-foreground">{profileDisplayName}</p>
+                <p className="text-muted">Photographer</p>
 
-                  <Link
-                    href="/photographer/portfolio/new"
-                    className={buttonVariants({
-                      variant: "secondary",
-                      size: "sm",
-                      className:
-                        "hidden rounded-lg bg-[#efefef] px-5 text-sm font-semibold shadow-none hover:bg-[#e5e5e5] sm:inline-flex",
-                    })}
-                  >
-                    Add work
-                  </Link>
+                {profileBio ? (
+                  <p className="text-foreground">{profileBio}</p>
+                ) : null}
 
-                  <Link
-                    href="/profile"
-                    className={buttonVariants({
-                      variant: "secondary",
-                      size: "sm",
-                      className:
-                        "hidden rounded-lg bg-[#efefef] px-5 text-sm font-semibold shadow-none hover:bg-[#e5e5e5] sm:inline-flex",
-                    })}
-                  >
-                    Edit profile
-                  </Link>
-                </div>
+                {profileLocation ? (
+                  <p className="text-foreground">Based in {profileLocation}</p>
+                ) : null}
 
-                <div className="grid max-w-md grid-cols-3 gap-3 text-center text-sm sm:text-left">
-                  <div>
-                    <span className="block font-semibold text-foreground sm:inline">
-                      {sortedItems.length}
-                    </span>{" "}
-                    <span className="text-foreground">posts</span>
-                  </div>
-
-                  <div>
-                    <span className="block font-semibold text-foreground sm:inline">
-                      {featuredCount}
-                    </span>{" "}
-                    <span className="text-foreground">featured</span>
-                  </div>
-
-                  <div>
-                    <span className="block font-semibold text-foreground sm:inline">
-                      {stylesReadyCount}
-                    </span>{" "}
-                    <span className="text-foreground">styles</span>
-                  </div>
-                </div>
-
-                <div className="hidden max-w-md space-y-0.5 text-sm leading-5 sm:block">
-                  <p className="font-semibold text-foreground">
-                    {profileDisplayName}
+                {typeof profileExperienceYears === "number" ? (
+                  <p className="text-foreground">
+                    {profileExperienceYears} year(s) experience
                   </p>
+                ) : null}
 
-                  <p className="text-muted">Photographer</p>
+                {formattedPricePerHour ? (
+                  <p className="text-foreground">{formattedPricePerHour}</p>
+                ) : null}
 
-                  {profileLocation ? (
-                    <p className="text-foreground">Based in {profileLocation}</p>
-                  ) : null}
-
-                  {typeof profileExperienceYears === "number" ? (
-                    <p className="text-foreground">
-                      {profileExperienceYears} year(s) experience
-                    </p>
-                  ) : null}
-
-                  {/* <p className="text-foreground">
-                    AI-assisted portfolio gallery for visual style discovery.
-                  </p> */}
-                </div>
+                {renderProfileContactLinks("pt-1")}
+                {renderProfileSpecialties("pt-1")}
               </div>
-            </div>
 
-            <div className="mt-4 space-y-0.5 text-sm leading-5 sm:hidden">
-              <p className="font-semibold text-foreground">{profileDisplayName}</p>
-              <p className="text-muted">Photographer</p>
-
-              {profileLocation ? (
-                <p className="text-foreground">Based in {profileLocation}</p>
-              ) : null}
-
-              {typeof profileExperienceYears === "number" ? (
-                <p className="text-foreground">
-                  {profileExperienceYears} year(s) experience
-                </p>
-              ) : null}
-
-              {/* <p className="text-foreground">
-                AI-assisted portfolio gallery for visual style discovery.
-              </p> */}
-            </div>
-
-            <div className="mt-4 grid grid-cols-2 gap-2 sm:hidden">
-              <Link
-                href="/profile"
-                className={buttonVariants({
-                  variant: "secondary",
-                  size: "sm",
-                  className:
-                    "rounded-lg bg-[#efefef] text-sm font-semibold shadow-none hover:bg-[#e5e5e5]",
-                })}
-              >
-                Edit profile
-              </Link>
-
-              <Link
-                href="/photographer/portfolio/new"
-                className={buttonVariants({
-                  variant: "secondary",
-                  size: "sm",
-                  className:
-                    "rounded-lg bg-[#efefef] text-sm font-semibold shadow-none hover:bg-[#e5e5e5]",
-                })}
-              >
-                Add work
-              </Link>
+              {renderProfileActionButtons("mt-4")}
             </div>
 
             {(activePostJob ||
