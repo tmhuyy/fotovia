@@ -128,6 +128,147 @@ const resolveSecondaryStyles = (
     }));
 };
 
+type ClassificationStepState = "completed" | "active" | "pending" | "failed";
+
+const getClassificationJourney = (item: PhotographerPortfolioItem) =>
+{
+    const isQueued = item.classificationStatus === "queued";
+    const isProcessing = item.classificationStatus === "processing";
+    const isCompleted = item.classificationStatus === "completed";
+    const isFailed = item.classificationStatus === "failed";
+
+    return [
+        {
+            label: "Upload received",
+            helper: "Cover and gallery images are saved.",
+            state: "completed" as ClassificationStepState,
+        },
+        {
+            label: isQueued ? "Waiting in AI queue" : "Running style classifier",
+            helper: isQueued
+                ? "Fotovia is preparing this collection for model inference."
+                : "The model is reading visual signals from the image set.",
+            state: isCompleted
+                ? ("completed" as ClassificationStepState)
+                : isFailed
+                    ? ("failed" as ClassificationStepState)
+                    : isQueued || isProcessing
+                        ? ("active" as ClassificationStepState)
+                        : ("pending" as ClassificationStepState),
+        },
+        {
+            label: "Style result ready",
+            helper: isCompleted
+                ? "The detected style is ready for portfolio discovery."
+                : "Primary and secondary style confidence will appear here.",
+            state: isCompleted
+                ? ("completed" as ClassificationStepState)
+                : ("pending" as ClassificationStepState),
+        },
+    ];
+};
+
+const ClassificationStepDot = ({
+    state,
+}: {
+    state: ClassificationStepState;
+}) =>
+{
+    if (state === "completed") {
+        return (
+            <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-foreground text-[10px] text-background">
+                ✓
+            </span>
+        );
+    }
+
+    if (state === "active") {
+        return (
+            <span className="relative mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-ai/20">
+                <span className="absolute h-5 w-5 animate-ping rounded-full bg-ai/30" />
+                <span className="relative h-2.5 w-2.5 rounded-full bg-ai" />
+            </span>
+        );
+    }
+
+    if (state === "failed") {
+        return (
+            <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-foreground text-[10px] text-foreground">
+                !
+            </span>
+        );
+    }
+
+    return (
+        <span className="mt-0.5 h-5 w-5 shrink-0 rounded-full border border-border bg-surface" />
+    );
+};
+
+const AiIndeterminateBar = () =>
+{
+    return (
+        <div className="relative h-1.5 overflow-hidden rounded-full bg-border/70">
+            <div className="fotovia-ai-indeterminate-bar absolute inset-y-0 left-0 w-1/3 rounded-full bg-foreground" />
+
+            <style jsx>{`
+        .fotovia-ai-indeterminate-bar {
+          animation: fotovia-ai-indeterminate 1.25s ease-in-out infinite;
+        }
+
+        @keyframes fotovia-ai-indeterminate {
+          0% {
+            transform: translateX(-130%);
+          }
+
+          55% {
+            transform: translateX(135%);
+          }
+
+          100% {
+            transform: translateX(330%);
+          }
+        }
+      `}</style>
+        </div>
+    );
+};
+
+const AiProcessingPanel = ({
+    status,
+}: {
+    status: PortfolioItemClassificationStatus;
+}) =>
+{
+    const isQueued = status === "queued";
+
+    return (
+        <div className="mt-4 space-y-4">
+            <AiIndeterminateBar />
+
+            <div className="rounded-[1rem] border border-dashed border-border bg-surface px-4 py-3">
+                <div className="flex items-center gap-2">
+                    <span className="relative flex h-2.5 w-2.5">
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-ai opacity-60" />
+                        <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-ai" />
+                    </span>
+
+                    <p className="text-sm font-medium text-foreground">
+                        {isQueued
+                            ? "Waiting in AI queue"
+                            : "Running visual style analysis"}
+                    </p>
+                </div>
+
+                <p className="mt-2 text-xs leading-5 text-muted">
+                    {isQueued
+                        ? "Fotovia has received this collection. The classifier will start reading the image set shortly."
+                        : "The model is analyzing the cover image and gallery images. This view will update automatically when the style result is ready."}
+                </p>
+            </div>
+        </div>
+    );
+};
+
 export const PortfolioItemDetailDialog = ({
     item,
     actions,
@@ -236,6 +377,14 @@ export const PortfolioItemDetailDialog = ({
         : null;
     const primaryConfidence = formatConfidence(item.detectedPrimaryScore);
     const secondaryStyles = resolveSecondaryStyles(item);
+    const classificationJourney = getClassificationJourney(item);
+
+    const isAiQueued = item.classificationStatus === "queued";
+    const isAiProcessing = item.classificationStatus === "processing";
+    const isAiInProgress = isAiQueued || isAiProcessing;
+    const isAiCompleted = item.classificationStatus === "completed";
+    const isAiFailed = item.classificationStatus === "failed";
+
     const styleTags = [
         ...(primaryStyleLabel ? [primaryStyleLabel] : []),
         ...secondaryStyles.map((style) => formatStyleLabel(style.label)),
@@ -440,7 +589,15 @@ export const PortfolioItemDetailDialog = ({
                                     </p>
 
                                     <p className="mt-2 text-base font-medium text-foreground">
-                                        {primaryStyleLabel ?? statusConfig.helper}
+                                        {isAiCompleted
+                                            ? primaryStyleLabel ?? "Style detected"
+                                            : isAiQueued
+                                                ? "Waiting for AI analysis."
+                                                : isAiProcessing
+                                                    ? "Analyzing visual style."
+                                                    : isAiFailed
+                                                        ? "Classification needs retry."
+                                                        : primaryStyleLabel ?? statusConfig.helper}
                                     </p>
                                 </div>
 
@@ -452,7 +609,11 @@ export const PortfolioItemDetailDialog = ({
                                 </Badge>
                             </div>
 
-                            {item.classificationStatus === "completed" && primaryConfidence ? (
+                            {isAiInProgress ? (
+                                <AiProcessingPanel status={item.classificationStatus} />
+                            ) : null}
+
+                            {isAiCompleted && primaryConfidence ? (
                                 <div className="mt-4 space-y-3">
                                     <div className="space-y-2">
                                         <div className="h-2 overflow-hidden rounded-full bg-border/70">
@@ -501,38 +662,61 @@ export const PortfolioItemDetailDialog = ({
                                     ) : null}
                                 </div>
                             ) : null}
+
+                            {isAiFailed ? (
+                                <p className="mt-4 text-sm leading-6 text-muted">
+                                    The last AI run did not finish. Open the menu and choose Retry AI to send
+                                    this collection back to the classifier.
+                                </p>
+                            ) : null}
                         </div>
 
                         <div className="rounded-[1.25rem] border border-dashed border-border bg-background p-4">
-                            <p className="text-xs uppercase tracking-[0.22em] text-muted">
-                                Classification journey
-                            </p>
+                            <div className="flex items-center justify-between gap-3">
+                                <p className="text-xs uppercase tracking-[0.22em] text-muted">
+                                    Classification journey
+                                </p>
 
-                            <div className="mt-4 grid gap-2 text-sm">
-                                <div className="flex items-center gap-3">
-                                    <span className="h-2.5 w-2.5 rounded-full bg-foreground" />
-                                    <span className="text-foreground">Image uploaded</span>
-                                </div>
+                                {isAiCompleted ? (
+                                    <span className="rounded-full bg-foreground px-3 py-1 text-xs font-medium text-background">
+                                        Completed
+                                    </span>
+                                ) : isAiInProgress ? (
+                                    <span className="rounded-full bg-ai/15 px-3 py-1 text-xs font-medium text-foreground">
+                                        Live
+                                    </span>
+                                ) : isAiFailed ? (
+                                    <span className="rounded-full border border-border px-3 py-1 text-xs font-medium text-foreground">
+                                        Needs retry
+                                    </span>
+                                ) : (
+                                    <span className="rounded-full border border-border px-3 py-1 text-xs font-medium text-muted">
+                                        Pending
+                                    </span>
+                                )}
+                            </div>
 
-                                <div className="flex items-center gap-3">
-                                    <span
-                                        className={`h-2.5 w-2.5 rounded-full ${item.classificationRequestedAt
-                                            ? "bg-foreground"
-                                            : "bg-border"
-                                            }`}
-                                    />
-                                    <span className="text-muted">AI requested</span>
-                                </div>
+                            <div className="mt-4 grid gap-3 text-sm">
+                                {classificationJourney.map((step) =>
+                                {
+                                    const isMuted = step.state === "pending";
 
-                                <div className="flex items-center gap-3">
-                                    <span
-                                        className={`h-2.5 w-2.5 rounded-full ${item.classificationStatus === "completed"
-                                            ? "bg-foreground"
-                                            : "bg-border"
-                                            }`}
-                                    />
-                                    <span className="text-muted">Style ready for discovery</span>
-                                </div>
+                                    return (
+                                        <div key={step.label} className="flex gap-3">
+                                            <ClassificationStepDot state={step.state} />
+
+                                            <div className="space-y-0.5">
+                                                <p className={isMuted ? "text-muted" : "text-foreground"}>
+                                                    {step.label}
+                                                </p>
+
+                                                <p className="text-xs leading-5 text-muted">
+                                                    {step.helper}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
                     </div>
