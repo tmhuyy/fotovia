@@ -338,6 +338,438 @@ const AiFailurePanel = ({
     );
 };
 
+type AiStyleAnalysisCardProps = {
+    item: PhotographerPortfolioItem;
+    statusConfig: ClassificationStatusBadgeConfig;
+    primaryStyleLabel: string | null;
+    primaryConfidence: string | null;
+    secondaryStyles: Array<{ label: string; score: number | null }>;
+    classificationJourney: ReturnType<typeof getClassificationJourney>;
+    isAiCompleted: boolean;
+    isAiInProgress: boolean;
+    isAiFailed: boolean;
+    isRetryingClassification?: boolean;
+    onRetryClassification?: () => void;
+    onOpenAnalysis: () => void;
+};
+
+const AiStyleAnalysisCard = ({
+    item,
+    statusConfig,
+    primaryStyleLabel,
+    primaryConfidence,
+    secondaryStyles,
+    classificationJourney,
+    isAiCompleted,
+    isAiInProgress,
+    isAiFailed,
+    isRetryingClassification = false,
+    onRetryClassification,
+    onOpenAnalysis,
+}: AiStyleAnalysisCardProps) =>
+{
+    const secondaryPreview = secondaryStyles.slice(0, 2);
+
+    return (
+        <div
+            className={`rounded-[1.25rem] border p-4 ${isAiFailed
+                ? "border-red-200 bg-red-50"
+                : isAiInProgress
+                    ? "border-ai/30 bg-ai/5"
+                    : "border-border bg-background"
+                }`}
+        >
+            <div className="flex items-start justify-between">
+                <div className="min-w-0">
+                    <p className="text-xs uppercase tracking-[0.22em] text-muted">
+                        AI style analysis
+                    </p>
+
+                    <h3 className="mt-2 text-base font-semibold text-foreground">
+                        {isAiCompleted
+                            ? `AI detected ${primaryStyleLabel ?? "a visual style"}`
+                            : isAiInProgress
+                                ? "Fotovia is reading this collection"
+                                : isAiFailed
+                                    ? "AI analysis needs retry"
+                                    : "AI analysis pending"}
+                    </h3>
+
+                    <p className="mt-1 text-xs leading-5 text-muted">
+                        {isAiCompleted
+                            ? `${primaryConfidence ?? "A"} primary confidence result is ready for discovery.`
+                            : isAiInProgress
+                                ? "The classifier is checking the cover image and gallery images. This post will update automatically."
+                                : isAiFailed
+                                    ? "The last classifier run did not finish. Retry will send this collection back to the AI service."
+                                    : statusConfig.helper}
+                    </p>
+                </div>
+
+                <Badge
+                    variant={statusConfig.variant}
+                    className={statusConfig.className}
+                >
+                    {statusConfig.label}
+                </Badge>
+            </div>
+
+            {isAiInProgress ? (
+                <div className="mt-4 space-y-4">
+                    <AiIndeterminateBar />
+
+                    <div className="grid gap-3">
+                        {classificationJourney.map((step) => (
+                            <div key={step.label} className="flex items-start gap-3">
+                                <ClassificationStepDot state={step.state} />
+
+                                <div className="min-w-0">
+                                    <p
+                                        className={
+                                            step.state === "pending"
+                                                ? "text-sm text-muted"
+                                                : "text-sm font-medium text-foreground"
+                                        }
+                                    >
+                                        {step.label}
+                                    </p>
+
+                                    <p className="text-xs leading-5 text-muted">
+                                        {step.helper}
+                                    </p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            ) : null}
+
+            {isAiCompleted ? (
+                <div className="mt-4 space-y-3">
+                    <div className="space-y-2">
+                        <div className="h-2 overflow-hidden rounded-full bg-border/70">
+                            <div
+                                className="h-full rounded-full bg-foreground"
+                                style={{ width: primaryConfidence ?? "0%" }}
+                            />
+                        </div>
+
+                        <p className="text-xs text-muted">
+                            Primary confidence: {primaryConfidence ?? "Ready"}
+                        </p>
+                    </div>
+
+                    {secondaryPreview.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                            {secondaryPreview.map((style) =>
+                            {
+                                const score = formatConfidence(style.score);
+
+                                return (
+                                    <span
+                                        key={style.label}
+                                        className="rounded-full bg-surface px-3 py-1 text-xs font-medium text-foreground"
+                                    >
+                                        {formatStyleLabel(style.label)}
+                                        {score ? ` · ${score}` : ""}
+                                    </span>
+                                );
+                            })}
+                        </div>
+                    ) : null}
+                </div>
+            ) : null}
+
+            {isAiFailed ? (
+                <div className="mt-4 flex flex-wrap gap-2">
+                    <Button
+                        type="button"
+                        size="sm"
+                        onClick={onRetryClassification}
+                        disabled={!onRetryClassification || isRetryingClassification}
+                        className="rounded-full bg-red-500 text-white hover:bg-red-600"
+                    >
+                        {isRetryingClassification ? "Retrying AI..." : "Retry AI analysis"}
+                    </Button>
+                </div>
+            ) : null}
+
+            <div className="mt-4 flex items-center justify-between gap-3 border-t border-border/70 pt-3">
+                <p className="text-xs text-muted">
+                    {item.galleryAssets.length + 1} image
+                    {item.galleryAssets.length + 1 > 1 ? "s" : ""} analyzed
+                </p>
+
+                <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={onOpenAnalysis}
+                    className="rounded-full"
+                >
+                    View AI analysis
+                </Button>
+            </div>
+        </div>
+    );
+};
+
+type AiStyleAnalysisSheetProps = {
+    item: PhotographerPortfolioItem;
+    statusConfig: ClassificationStatusBadgeConfig;
+    primaryStyleLabel: string | null;
+    primaryConfidence: string | null;
+    secondaryStyles: Array<{ label: string; score: number | null }>;
+    classificationJourney: ReturnType<typeof getClassificationJourney>;
+    isAiCompleted: boolean;
+    isAiInProgress: boolean;
+    isAiFailed: boolean;
+    isRetryingClassification?: boolean;
+    onRetryClassification?: () => void;
+    onClose: () => void;
+};
+
+const AiStyleAnalysisSheet = ({
+    item,
+    statusConfig,
+    primaryStyleLabel,
+    primaryConfidence,
+    secondaryStyles,
+    classificationJourney,
+    isAiCompleted,
+    isAiInProgress,
+    isAiFailed,
+    isRetryingClassification = false,
+    onRetryClassification,
+    onClose,
+}: AiStyleAnalysisSheetProps) =>
+{
+    return (
+        <div
+            className="fixed inset-0 z-[70] flex items-end justify-center bg-foreground/55 p-0 backdrop-blur-sm sm:items-center sm:p-6"
+            role="presentation"
+            onMouseDown={(event) =>
+            {
+                if (event.target === event.currentTarget) {
+                    onClose();
+                }
+            }}
+        >
+            <section
+                role="dialog"
+                aria-modal="true"
+                aria-label="AI style analysis"
+                className="max-h-[92dvh] w-full overflow-y-auto rounded-t-[2rem] bg-surface shadow-2xl sm:max-w-[760px] sm:rounded-[2rem]"
+                onMouseDown={(event) => event.stopPropagation()}
+            >
+                <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-surface px-5 py-4">
+                    <div>
+                        <p className="text-xs uppercase tracking-[0.22em] text-muted">
+                            Fotovia AI
+                        </p>
+
+                        <h2 className="mt-1 text-lg font-semibold text-foreground">
+                            Style analysis
+                        </h2>
+                    </div>
+
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="flex h-10 w-10 items-center justify-center rounded-full bg-background text-2xl text-foreground transition hover:bg-border/50"
+                        aria-label="Close AI analysis"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div className="space-y-5 px-5 py-5">
+                    <div
+                        className={`rounded-[1.5rem] border p-5 ${isAiFailed
+                            ? "border-red-200 bg-red-50"
+                            : isAiInProgress
+                                ? "border-ai/30 bg-ai/5"
+                                : "border-border bg-background"
+                            }`}
+                    >
+                        <div className="flex items-start justify-between gap-4">
+                            <div>
+                                <p className="text-xs uppercase tracking-[0.22em] text-muted">
+                                    Current status
+                                </p>
+
+                                <h3 className="mt-2 text-xl font-semibold text-foreground">
+                                    {isAiCompleted
+                                        ? primaryStyleLabel ?? "Style detected"
+                                        : isAiInProgress
+                                            ? "AI analysis is running"
+                                            : isAiFailed
+                                                ? "AI analysis needs retry"
+                                                : "AI analysis pending"}
+                                </h3>
+                            </div>
+
+                            <Badge
+                                variant={statusConfig.variant}
+                                className={statusConfig.className}
+                            >
+                                {statusConfig.label}
+                            </Badge>
+                        </div>
+
+                        {isAiInProgress ? (
+                            <AiProcessingPanel status={item.classificationStatus} />
+                        ) : null}
+
+                        {isAiFailed ? (
+                            <AiFailurePanel
+                                error={item.classificationError}
+                                isRetrying={isRetryingClassification}
+                                onRetry={onRetryClassification}
+                            />
+                        ) : null}
+
+                        {isAiCompleted && primaryConfidence ? (
+                            <div className="mt-5 space-y-3">
+                                <div className="flex items-center justify-between gap-4">
+                                    <span className="text-sm text-muted">
+                                        Primary confidence
+                                    </span>
+
+                                    <span className="text-sm font-semibold text-foreground">
+                                        {primaryConfidence}
+                                    </span>
+                                </div>
+
+                                <div className="h-2 overflow-hidden rounded-full bg-border/70">
+                                    <div
+                                        className="h-full rounded-full bg-foreground"
+                                        style={{ width: primaryConfidence }}
+                                    />
+                                </div>
+                            </div>
+                        ) : null}
+                    </div>
+
+                    {isAiCompleted && secondaryStyles.length > 0 ? (
+                        <div className="rounded-[1.5rem] border border-border bg-background p-5">
+                            <p className="text-xs uppercase tracking-[0.22em] text-muted">
+                                Secondary confidence
+                            </p>
+
+                            <div className="mt-4 grid gap-3">
+                                {secondaryStyles.map((style) =>
+                                {
+                                    const score = formatConfidence(style.score);
+
+                                    return (
+                                        <div key={style.label} className="space-y-2">
+                                            <div className="flex items-center justify-between gap-4">
+                                                <span className="text-sm font-medium text-foreground">
+                                                    {formatStyleLabel(style.label)}
+                                                </span>
+
+                                                <span className="text-sm text-muted">
+                                                    {score ?? "Signal"}
+                                                </span>
+                                            </div>
+
+                                            {score ? (
+                                                <div className="h-2 overflow-hidden rounded-full bg-border/70">
+                                                    <div
+                                                        className="h-full rounded-full bg-foreground/70"
+                                                        style={{ width: score }}
+                                                    />
+                                                </div>
+                                            ) : null}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    ) : null}
+
+                    <div
+                        className={`rounded-[1.5rem] border border-dashed p-5 ${isAiFailed
+                            ? "border-red-200 bg-red-50/30"
+                            : "border-border bg-background"
+                            }`}
+                    >
+                        <div className="flex items-center justify-between gap-3">
+                            <p className="text-xs uppercase tracking-[0.22em] text-muted">
+                                Classification journey
+                            </p>
+
+                            <span
+                                className={`rounded-full px-3 py-1 text-xs font-medium ${isAiCompleted
+                                    ? "bg-foreground text-background"
+                                    : isAiInProgress
+                                        ? "bg-ai/15 text-foreground"
+                                        : isAiFailed
+                                            ? "border border-red-200 bg-red-50 text-red-600"
+                                            : "border border-border text-muted"
+                                    }`}
+                            >
+                                {isAiCompleted
+                                    ? "Completed"
+                                    : isAiInProgress
+                                        ? "Live"
+                                        : isAiFailed
+                                            ? "Needs retry"
+                                            : "Pending"}
+                            </span>
+                        </div>
+
+                        <div className="mt-5 grid gap-4">
+                            {classificationJourney.map((step) => (
+                                <div key={step.label} className="flex gap-3">
+                                    <ClassificationStepDot state={step.state} />
+
+                                    <div>
+                                        <p
+                                            className={
+                                                step.state === "pending"
+                                                    ? "text-sm text-muted"
+                                                    : "text-sm font-medium text-foreground"
+                                            }
+                                        >
+                                            {step.label}
+                                        </p>
+
+                                        <p className="mt-1 text-xs leading-5 text-muted">
+                                            {step.helper}
+                                        </p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="rounded-[1.5rem] border border-border bg-background p-5">
+                        <p className="text-xs uppercase tracking-[0.22em] text-muted">
+                            Image set analyzed
+                        </p>
+
+                        <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                            <div className="rounded-2xl bg-surface px-4 py-3">
+                                <p className="text-muted">Cover image</p>
+                                <p className="mt-1 font-semibold text-foreground">1</p>
+                            </div>
+
+                            <div className="rounded-2xl bg-surface px-4 py-3">
+                                <p className="text-muted">Gallery images</p>
+                                <p className="mt-1 font-semibold text-foreground">
+                                    {item.galleryAssets.length}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    );
+};
+
 export const PortfolioItemDetailDialog = ({
     item,
     actionItems = [],
@@ -354,6 +786,7 @@ export const PortfolioItemDetailDialog = ({
 {
     const [activeImageIndex, setActiveImageIndex] = useState(0);
     const [isActionMenuOpen, setIsActionMenuOpen] = useState(false);
+    const [isAiAnalysisOpen, setIsAiAnalysisOpen] = useState(false);
 
     const images = useMemo(() =>
     {
@@ -381,6 +814,7 @@ export const PortfolioItemDetailDialog = ({
     {
         setActiveImageIndex(0);
         setIsActionMenuOpen(false);
+        setIsAiAnalysisOpen(false);
     }, [item?.id]);
 
     useEffect(() =>
@@ -698,7 +1132,24 @@ export const PortfolioItemDetailDialog = ({
                             </div>
                         ) : null}
 
-                        <div className={`rounded-[1.25rem] border p-4 ${isAiFailed
+                        <AiStyleAnalysisCard
+                            item={item}
+                            statusConfig={statusConfig}
+                            primaryStyleLabel={primaryStyleLabel}
+                            primaryConfidence={primaryConfidence}
+                            secondaryStyles={secondaryStyles}
+                            classificationJourney={classificationJourney}
+                            isAiCompleted={isAiCompleted}
+                            isAiInProgress={isAiInProgress}
+                            isAiFailed={isAiFailed}
+                            isRetryingClassification={isRetryingClassification}
+                            onRetryClassification={
+                                onRetryClassification ? () => onRetryClassification(item) : undefined
+                            }
+                            onOpenAnalysis={() => setIsAiAnalysisOpen(true)}
+                        />
+                        {/* old design */}
+                        {/* <div className={`rounded-[1.25rem] border p-4 ${isAiFailed
                             ? "border-red-200 bg-red-50/35"
                             : "border-border bg-background"
                             }`}>
@@ -846,10 +1297,30 @@ export const PortfolioItemDetailDialog = ({
                                     );
                                 })}
                             </div>
-                        </div>
+                        </div> */}
                     </div>
                 </aside>
             </section>
+
+
+            {isAiAnalysisOpen ? (
+                <AiStyleAnalysisSheet
+                    item={item}
+                    statusConfig={statusConfig}
+                    primaryStyleLabel={primaryStyleLabel}
+                    primaryConfidence={primaryConfidence}
+                    secondaryStyles={secondaryStyles}
+                    classificationJourney={classificationJourney}
+                    isAiCompleted={isAiCompleted}
+                    isAiInProgress={isAiInProgress}
+                    isAiFailed={isAiFailed}
+                    isRetryingClassification={isRetryingClassification}
+                    onRetryClassification={
+                        onRetryClassification ? () => onRetryClassification(item) : undefined
+                    }
+                    onClose={() => setIsAiAnalysisOpen(false)}
+                />
+            ) : null}
 
             {isActionMenuOpen ? (
                 <div
