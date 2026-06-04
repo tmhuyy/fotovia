@@ -58,57 +58,6 @@ const hasActiveClassification = (items: PhotographerPortfolioItem[]) =>
   return items.some(isClassificationInFlight);
 };
 
-const PORTFOLIO_BASE_PATH = "/photographer/portfolio";
-
-const getPortfolioPostUrl = (itemId: string) =>
-{
-  return `${PORTFOLIO_BASE_PATH}?post=${encodeURIComponent(itemId)}`;
-};
-
-const readPortfolioPostIdFromUrl = () =>
-{
-  if (typeof window === "undefined") {
-    return null;
-  }
-
-  return new URL(window.location.href).searchParams.get("post");
-};
-
-const pushPortfolioPostUrl = (itemId: string) =>
-{
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  window.history.pushState(
-    { fotoviaPortfolioItemId: itemId },
-    "",
-    getPortfolioPostUrl(itemId),
-  );
-};
-
-const replacePortfolioPostUrl = (itemId: string) =>
-{
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  window.history.replaceState(
-    { fotoviaPortfolioItemId: itemId },
-    "",
-    getPortfolioPostUrl(itemId),
-  );
-};
-
-const clearPortfolioPostUrl = () =>
-{
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  window.history.replaceState(null, "", PORTFOLIO_BASE_PATH);
-};
-
 const getInitials = (value: string) =>
 {
   return value
@@ -470,6 +419,7 @@ export const PhotographerPortfolioPage = () =>
     setSelectedItem((current) =>
       current?.id === createdItem.id ? current : createdItem,
     );
+    router.replace(getPostDetailUrl(createdItem.id), { scroll: false });
 
     void queryClient.invalidateQueries({
       queryKey,
@@ -488,8 +438,7 @@ export const PhotographerPortfolioPage = () =>
     {
       window.clearTimeout(timeoutId);
     };
-  }, [activePostJob, clearPortfolioPostJob, queryClient, queryKey]);
-
+  }, [activePostJob, clearPortfolioPostJob, queryClient, queryKey, router]);
   // useEffect(() =>
   // {
   //   const syncSelectedItemFromUrl = () =>
@@ -530,227 +479,53 @@ export const PhotographerPortfolioPage = () =>
     return (
       <>
         <Navbar />
-        <main className="pb-10 pt-6 sm:pt-10">
-          <div className="mx-auto w-full max-w-[935px] px-0 sm:px-6">
-            <section className="border-b border-border px-4 pb-8 sm:px-0">
-              <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-6 sm:gap-10">
-                <div className="pt-1">
-                  {profileAvatarUrl ? (
-                    <img
-                      src={profileAvatarUrl}
-                      alt={profileDisplayName}
-                      className="h-20 w-20 rounded-full border border-border object-cover sm:h-36 sm:w-36"
-                    />
-                  ) : (
-                    <div className="flex h-20 w-20 items-center justify-center rounded-full border border-border bg-surface font-serif text-2xl text-foreground sm:h-36 sm:w-36 sm:text-4xl">
-                      {getInitials(profileDisplayName)}
-                    </div>
-                  )}
-                </div>
 
-                <div className="min-w-0 space-y-4">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <h1 className="truncate text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
-                      {profileDisplayName}
+        <main className="pb-16 pt-10">
+          <Container>
+            <Card className="rounded-[2rem] border-border bg-surface shadow-sm">
+              <CardContent className="space-y-6 p-8">
+                <div className="space-y-3">
+                  <Badge variant="neutral">Portfolio access</Badge>
+
+                  <div className="space-y-2">
+                    <h1 className="font-serif text-3xl text-foreground">
+                      Sign in to manage your portfolio.
                     </h1>
 
-                    <Link
-                      href="/photographer/portfolio/new"
-                      className={buttonVariants({
-                        variant: "secondary",
-                        size: "sm",
-                        className:
-                          "hidden rounded-lg bg-[#efefef] px-5 text-sm font-semibold shadow-none hover:bg-[#e5e5e5] sm:inline-flex",
-                      })}
-                    >
-                      Add work
-                    </Link>
-
-                    <Link
-                      href="/photographer/profile"
-                      className={buttonVariants({
-                        variant: "secondary",
-                        size: "sm",
-                        className:
-                          "hidden rounded-lg bg-[#efefef] px-5 text-sm font-semibold shadow-none hover:bg-[#e5e5e5] sm:inline-flex",
-                      })}
-                    >
-                      Edit profile
-                    </Link>
-                  </div>
-
-                  <div className="grid max-w-md grid-cols-3 gap-3 text-center text-sm sm:text-left">
-                    <div>
-                      <span className="block font-semibold text-foreground sm:inline">
-                        {sortedItems.length}
-                      </span>{" "}
-                      <span className="text-foreground">posts</span>
-                    </div>
-
-                    <div>
-                      <span className="block font-semibold text-foreground sm:inline">
-                        {featuredCount}
-                      </span>{" "}
-                      <span className="text-foreground">featured</span>
-                    </div>
-
-                    <div>
-                      <span className="block font-semibold text-foreground sm:inline">
-                        {stylesReadyCount}
-                      </span>{" "}
-                      <span className="text-foreground">styles</span>
-                    </div>
-                  </div>
-
-                  <div className="hidden max-w-md space-y-0.5 text-sm leading-5 sm:block">
-                    <p className="font-semibold text-foreground">
-                      {profileDisplayName}
-                    </p>
-
-                    <p className="text-muted">Photographer</p>
-
-                    {profileLocation ? (
-                      <p className="text-foreground">Based in {profileLocation}</p>
-                    ) : null}
-
-                    {typeof profileExperienceYears === "number" ? (
-                      <p className="text-foreground">
-                        {profileExperienceYears} year(s) experience
-                      </p>
-                    ) : null}
-
-                    <p className="text-foreground">
-                      AI-assisted portfolio gallery for visual style discovery.
+                    <p className="text-sm leading-7 text-muted">
+                      This workspace is only available after signing in with a
+                      photographer account.
                     </p>
                   </div>
                 </div>
-              </div>
 
-              <div className="mt-4 space-y-0.5 text-sm leading-5 sm:hidden">
-                <p className="font-semibold text-foreground">{profileDisplayName}</p>
-                <p className="text-muted">Photographer</p>
+                <div className="flex flex-wrap gap-3">
+                  <Link
+                    href="/sign-in"
+                    className={buttonVariants({
+                      size: "lg",
+                      className: "rounded-full",
+                    })}
+                  >
+                    Sign in
+                  </Link>
 
-                {profileLocation ? (
-                  <p className="text-foreground">Based in {profileLocation}</p>
-                ) : null}
-
-                {typeof profileExperienceYears === "number" ? (
-                  <p className="text-foreground">
-                    {profileExperienceYears} year(s) experience
-                  </p>
-                ) : null}
-
-                <p className="text-foreground">
-                  AI-assisted portfolio gallery for visual style discovery.
-                </p>
-              </div>
-
-              <div className="mt-4 grid grid-cols-2 gap-2 sm:hidden">
-                <Link
-                  href="/photographer/profile"
-                  className={buttonVariants({
-                    variant: "secondary",
-                    size: "sm",
-                    className:
-                      "rounded-lg bg-[#efefef] text-sm font-semibold shadow-none hover:bg-[#e5e5e5]",
-                  })}
-                >
-                  Edit profile
-                </Link>
-
-                <Link
-                  href="/photographer/portfolio/new"
-                  className={buttonVariants({
-                    variant: "secondary",
-                    size: "sm",
-                    className:
-                      "rounded-lg bg-[#efefef] text-sm font-semibold shadow-none hover:bg-[#e5e5e5]",
-                  })}
-                >
-                  Add work
-                </Link>
-              </div>
-
-              {(activePostJob ||
-                failedClassificationCount > 0 ||
-                isPollingForClassification) ? (
-                <div className="mt-5 space-y-3">
-                  {activePostJob ? (
-                    <PortfolioPostProgressBanner
-                      job={activePostJob}
-                      onDismiss={
-                        activePostJob.status === "failed"
-                          ? clearPortfolioPostJob
-                          : undefined
-                      }
-                    />
-                  ) : null}
-
-                  <div className="flex flex-wrap gap-2 text-xs">
-                    {failedClassificationCount > 0 ? (
-                      <span className="rounded-full bg-red-50 px-3 py-1 font-medium text-red-600">
-                        {failedClassificationCount} need retry
-                      </span>
-                    ) : null}
-
-                    {queuedOrProcessingCount > 0 ? (
-                      <span className="rounded-full bg-ai/15 px-3 py-1 font-medium text-foreground">
-                        {queuedOrProcessingCount} AI running
-                      </span>
-                    ) : null}
-
-                    {isPollingForClassification ? (
-                      <span className="rounded-full bg-background px-3 py-1 font-medium text-muted">
-                        Auto-refreshing
-                      </span>
-                    ) : null}
-                  </div>
+                  <Link
+                    href="/"
+                    className={buttonVariants({
+                      variant: "secondary",
+                      size: "lg",
+                      className: "rounded-full",
+                    })}
+                  >
+                    Back to homepage
+                  </Link>
                 </div>
-              ) : null}
-            </section>
-
-            {sortedItems.length === 0 ? (
-              <div className="px-4 pt-8 sm:px-0">
-                <PortfolioEmptyState />
-              </div>
-            ) : (
-              <section>
-                <div className="grid h-12 grid-cols-3 border-b border-border text-muted sm:h-14">
-                  <button
-                    type="button"
-                    className="flex items-center justify-center border-b border-foreground text-lg text-foreground"
-                    aria-label="Posts"
-                  >
-                    ▦
-                  </button>
-
-                  <button
-                    type="button"
-                    className="flex items-center justify-center text-lg"
-                    aria-label="AI styles"
-                    disabled
-                  >
-                    ◎
-                  </button>
-
-                  <button
-                    type="button"
-                    className="flex items-center justify-center text-lg"
-                    aria-label="Featured"
-                    disabled
-                  >
-                    ★
-                  </button>
-                </div>
-
-                <PortfolioGrid
-                  items={sortedItems}
-                  onOpenItem={openPortfolioItem}
-                />
-              </section>
-            )}
-          </div>
+              </CardContent>
+            </Card>
+          </Container>
         </main>
+
         <Footer />
       </>
     );
@@ -880,141 +655,227 @@ export const PhotographerPortfolioPage = () =>
     <>
       <Navbar />
 
-      <main className="pb-16 pt-10">
-        <Container className="space-y-8">
-          <section className="space-y-6">
-            <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
-              <div className="space-y-4">
-                <Badge variant="ai">AI-first portfolio gallery</Badge>
+      <main className="pb-10 pt-6 sm:pt-10">
+        <div className="mx-auto w-full max-w-[935px] px-0 sm:px-6">
+          <section className="border-b border-border px-4 pb-8 sm:px-0">
+            <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-6 sm:gap-10">
+              <div className="pt-1">
+                {profileAvatarUrl ? (
+                  <img
+                    src={profileAvatarUrl}
+                    alt={profileDisplayName}
+                    className="h-20 w-20 rounded-full border border-border object-cover sm:h-36 sm:w-36"
+                  />
+                ) : (
+                  <div className="flex h-20 w-20 items-center justify-center rounded-full border border-border bg-surface font-serif text-2xl text-foreground sm:h-36 sm:w-36 sm:text-4xl">
+                    {getInitials(profileDisplayName)}
+                  </div>
+                )}
+              </div>
 
-                <div className="space-y-3">
-                  <h1 className="max-w-4xl font-serif text-4xl text-foreground sm:text-5xl">
-                    Your portfolio collections, {displayName}.
+              <div className="min-w-0 space-y-4">
+                <div className="flex min-w-0 items-center gap-3">
+                  <h1 className="truncate text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+                    {profileDisplayName}
                   </h1>
 
-                  {/* <p className="max-w-3xl text-sm leading-7 text-muted sm:text-base">
-                    This page now focuses on the saved image collections first.
-                    Add or edit portfolio work in a separate screen, then return
-                    here to review AI classification status and detected style
-                    results.
+                  <Link
+                    href="/photographer/portfolio/new"
+                    className={buttonVariants({
+                      variant: "secondary",
+                      size: "sm",
+                      className:
+                        "hidden rounded-lg bg-[#efefef] px-5 text-sm font-semibold shadow-none hover:bg-[#e5e5e5] sm:inline-flex",
+                    })}
+                  >
+                    Add work
+                  </Link>
+
+                  <Link
+                    href="/profile"
+                    className={buttonVariants({
+                      variant: "secondary",
+                      size: "sm",
+                      className:
+                        "hidden rounded-lg bg-[#efefef] px-5 text-sm font-semibold shadow-none hover:bg-[#e5e5e5] sm:inline-flex",
+                    })}
+                  >
+                    Edit profile
+                  </Link>
+                </div>
+
+                <div className="grid max-w-md grid-cols-3 gap-3 text-center text-sm sm:text-left">
+                  <div>
+                    <span className="block font-semibold text-foreground sm:inline">
+                      {sortedItems.length}
+                    </span>{" "}
+                    <span className="text-foreground">posts</span>
+                  </div>
+
+                  <div>
+                    <span className="block font-semibold text-foreground sm:inline">
+                      {featuredCount}
+                    </span>{" "}
+                    <span className="text-foreground">featured</span>
+                  </div>
+
+                  <div>
+                    <span className="block font-semibold text-foreground sm:inline">
+                      {stylesReadyCount}
+                    </span>{" "}
+                    <span className="text-foreground">styles</span>
+                  </div>
+                </div>
+
+                <div className="hidden max-w-md space-y-0.5 text-sm leading-5 sm:block">
+                  <p className="font-semibold text-foreground">
+                    {profileDisplayName}
+                  </p>
+
+                  <p className="text-muted">Photographer</p>
+
+                  {profileLocation ? (
+                    <p className="text-foreground">Based in {profileLocation}</p>
+                  ) : null}
+
+                  {typeof profileExperienceYears === "number" ? (
+                    <p className="text-foreground">
+                      {profileExperienceYears} year(s) experience
+                    </p>
+                  ) : null}
+
+                  {/* <p className="text-foreground">
+                    AI-assisted portfolio gallery for visual style discovery.
                   </p> */}
                 </div>
               </div>
+            </div>
+
+            <div className="mt-4 space-y-0.5 text-sm leading-5 sm:hidden">
+              <p className="font-semibold text-foreground">{profileDisplayName}</p>
+              <p className="text-muted">Photographer</p>
+
+              {profileLocation ? (
+                <p className="text-foreground">Based in {profileLocation}</p>
+              ) : null}
+
+              {typeof profileExperienceYears === "number" ? (
+                <p className="text-foreground">
+                  {profileExperienceYears} year(s) experience
+                </p>
+              ) : null}
+
+              {/* <p className="text-foreground">
+                AI-assisted portfolio gallery for visual style discovery.
+              </p> */}
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 gap-2 sm:hidden">
+              <Link
+                href="/profile"
+                className={buttonVariants({
+                  variant: "secondary",
+                  size: "sm",
+                  className:
+                    "rounded-lg bg-[#efefef] text-sm font-semibold shadow-none hover:bg-[#e5e5e5]",
+                })}
+              >
+                Edit profile
+              </Link>
 
               <Link
                 href="/photographer/portfolio/new"
                 className={buttonVariants({
-                  size: "lg",
-                  className: "rounded-full",
+                  variant: "secondary",
+                  size: "sm",
+                  className:
+                    "rounded-lg bg-[#efefef] text-sm font-semibold shadow-none hover:bg-[#e5e5e5]",
                 })}
               >
-                Add portfolio item
+                Add work
               </Link>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-4">
-              <Card className="rounded-[2rem] border-border bg-surface shadow-sm">
-                <CardContent className="space-y-2 p-6">
-                  <p className="text-xs uppercase tracking-[0.22em] text-muted">
-                    Portfolio items
-                  </p>
-                  <p className="font-serif text-3xl text-foreground">
-                    {sortedItems.length}
-                  </p>
-                </CardContent>
-              </Card>
+            {(activePostJob ||
+              failedClassificationCount > 0 ||
+              isPollingForClassification) ? (
+              <div className="mt-5 space-y-3">
+                {activePostJob ? (
+                  <PortfolioPostProgressBanner
+                    job={activePostJob}
+                    onDismiss={
+                      activePostJob.status === "failed"
+                        ? clearPortfolioPostJob
+                        : undefined
+                    }
+                  />
+                ) : null}
 
-              <Card className="rounded-[2rem] border-border bg-surface shadow-sm">
-                <CardContent className="space-y-2 p-6">
-                  <p className="text-xs uppercase tracking-[0.22em] text-muted">
-                    Featured works
-                  </p>
-                  <p className="font-serif text-3xl text-foreground">
-                    {featuredCount}
-                  </p>
-                </CardContent>
-              </Card>
+                <div className="flex flex-wrap gap-2 text-xs">
+                  {failedClassificationCount > 0 ? (
+                    <span className="rounded-full bg-red-50 px-3 py-1 font-medium text-red-600">
+                      {failedClassificationCount} need retry
+                    </span>
+                  ) : null}
 
-              <Card className="rounded-[2rem] border-border bg-surface shadow-sm">
-                <CardContent className="space-y-2 p-6">
-                  <p className="text-xs uppercase tracking-[0.22em] text-muted">
-                    AI in progress
-                  </p>
-                  <p className="font-serif text-3xl text-foreground">
-                    {queuedOrProcessingCount}
-                  </p>
-                </CardContent>
-              </Card>
+                  {queuedOrProcessingCount > 0 ? (
+                    <span className="rounded-full bg-ai/15 px-3 py-1 font-medium text-foreground">
+                      {queuedOrProcessingCount} AI running
+                    </span>
+                  ) : null}
 
-              <Card className="rounded-[2rem] border-border bg-surface shadow-sm">
-                <CardContent className="space-y-2 p-6">
-                  <p className="text-xs uppercase tracking-[0.22em] text-muted">
-                    Styles ready
-                  </p>
-                  <p className="font-serif text-3xl text-foreground">
-                    {stylesReadyCount}
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-
-            {activePostJob ? (
-              <PortfolioPostProgressBanner
-                job={activePostJob}
-                onDismiss={
-                  activePostJob.status === "failed" ? clearPortfolioPostJob : undefined
-                }
-              />
+                  {isPollingForClassification ? (
+                    <span className="rounded-full bg-background px-3 py-1 font-medium text-muted">
+                      Auto-refreshing
+                    </span>
+                  ) : null}
+                </div>
+              </div>
             ) : null}
-
-            <div className="flex flex-wrap gap-3">
-              {failedClassificationCount > 0 ? (
-                <Badge variant="neutral">
-                  {failedClassificationCount} need retry
-                </Badge>
-              ) : null}
-
-              {isPollingForClassification ? (
-                <Badge variant="ai">
-                  Refreshing every {CLASSIFICATION_POLL_INTERVAL_MS / 1000}s
-                  while AI runs
-                </Badge>
-              ) : null}
-            </div>
           </section>
 
           {sortedItems.length === 0 ? (
-            <PortfolioEmptyState />
+            <div className="px-4 pt-8 sm:px-0">
+              <PortfolioEmptyState />
+            </div>
           ) : (
-            <section className="space-y-4">
-              <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
-                <div className="space-y-2">
-                  <p className="text-xs uppercase tracking-[0.22em] text-muted">
-                    Portfolio gallery
-                  </p>
+            <section>
+              <div className="grid h-12 grid-cols-1 border-b border-border text-muted sm:h-14">
+                <button
+                  type="button"
+                  className="flex items-center justify-center border-b border-foreground text-lg text-foreground"
+                  aria-label="Posts"
+                >
+                  ▦
+                </button>
 
-                  <h2 className="font-serif text-4xl text-foreground">
-                    Saved image collections
-                  </h2>
+                {/* <button
+                  type="button"
+                  className="flex items-center justify-center text-lg"
+                  aria-label="AI styles"
+                  disabled
+                >
+                  ◎
+                </button>
 
-                  {/* <p className="max-w-3xl text-sm leading-7 text-muted">
-                    Each collection keeps its cover image, optional gallery
-                    images, AI status, detected primary style, and management
-                    actions.
-                  </p> */}
-                </div>
+                <button
+                  type="button"
+                  className="flex items-center justify-center text-lg"
+                  aria-label="Featured"
+                  disabled
+                >
+                  ★
+                </button> */}
               </div>
 
               <PortfolioGrid
                 items={sortedItems}
-                onOpenItem={setSelectedItem}
+                onOpenItem={openPortfolioItem}
               />
             </section>
           )}
-        </Container>
+        </div>
       </main>
-
-      <Footer />
 
       <PortfolioItemDetailDialog
         item={selectedPortfolioItem}
