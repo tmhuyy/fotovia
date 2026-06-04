@@ -1,93 +1,125 @@
+"use client";
+
 import Link from "next/link";
 
+import { useAuthStore } from "../../store/auth.store";
 import { Container } from "../layout/container";
 import { Badge } from "../ui/badge";
 import { buttonVariants } from "../ui/button";
-import { Card, CardContent } from "../ui/card";
 
-const flowSteps = [
+const clientStyleCards = [
     {
-        number: "01",
-        title: "Choose a visual direction",
-        description:
-            "Pick the mood, style, and type of photography you want before comparing profiles.",
+        label: "Wedding",
+        title: "Soft wedding stories",
+        description: "Romantic light, emotion, clean editorial frames.",
+        href: "/photographers?style=Wedding",
     },
     {
-        number: "02",
-        title: "Compare suitable profiles",
-        description:
-            "Use portfolio work and AI style signals to understand which photographer fits best.",
+        label: "Fashion",
+        title: "Fashion portraits",
+        description: "Styled poses, strong mood, and visual direction.",
+        href: "/photographers?style=Fashion",
     },
     {
-        number: "03",
-        title: "Request the session",
-        description:
-            "Open the strongest profile and send a focused booking brief with your key details.",
+        label: "Street",
+        title: "Street moments",
+        description: "Natural movement, city rhythm, candid energy.",
+        href: "/photographers?style=Street",
+    },
+    {
+        label: "Food",
+        title: "Food styling",
+        description: "Warm details, texture, color, and table scenes.",
+        href: "/photographers?style=Food",
     },
 ];
 
 export const HomeValueStrip = () =>
 {
+    const { user, isAuthenticated, hasHydrated, isHydrating } = useAuthStore();
+
+    const isPhotographerHome =
+        hasHydrated &&
+        !isHydrating &&
+        isAuthenticated &&
+        user?.role === "photographer";
+
+    if (isPhotographerHome) {
+        return null;
+    }
+
     return (
         <section className="pb-12 pt-2">
-            <Container className="space-y-6">
-                <div className="grid gap-5 lg:grid-cols-[0.75fr_1.25fr] lg:items-end">
-                    <div className="space-y-4">
-                        <Badge variant="neutral">Booking flow</Badge>
+            <Container>
+                <div className="overflow-hidden rounded-[2.5rem] border border-border bg-surface p-5 shadow-sm sm:p-6 lg:p-8">
+                    <div className="grid gap-8 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
+                        <div className="space-y-5">
+                            <Badge variant="ai">Start with a style</Badge>
 
-                        <h2 className="max-w-2xl font-serif text-4xl leading-tight text-foreground sm:text-5xl">
-                            From style discovery to a real request.
-                        </h2>
-                    </div>
+                            <div className="space-y-4">
+                                <h2 className="max-w-2xl font-serif text-4xl leading-tight text-foreground sm:text-5xl">
+                                    Choose the look first. Pick the photographer after.
+                                </h2>
 
-                    <p className="max-w-2xl text-sm leading-7 text-muted sm:text-base lg:justify-self-end lg:text-right">
-                        Fotovia keeps the journey clear: choose the visual direction,
-                        compare suitable photographers, then request the session from the
-                        profile that feels right.
-                    </p>
-                </div>
+                                <p className="max-w-xl text-sm leading-7 text-muted sm:text-base">
+                                    Fotovia starts from visual taste. Browse by the kind
+                                    of photos you want, then compare real portfolio work
+                                    before sending a request.
+                                </p>
+                            </div>
 
-                <div className="grid gap-4 md:grid-cols-3">
-                    {flowSteps.map((step, index) => (
-                        <Card
-                            key={step.number}
-                            className="rounded-[1.75rem] border-border bg-surface shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-                        >
-                            <CardContent className="space-y-8 p-7">
-                                <div className="flex items-center justify-between gap-4">
-                                    {/* <span className="text-xs uppercase tracking-[0.24em] text-muted">
-                                        {step.number}
-                                    </span> */}
+                            <div className="flex flex-col gap-3 sm:flex-row">
+                                <Link
+                                    href="/photographers"
+                                    className={buttonVariants({
+                                        size: "lg",
+                                        className: "rounded-full",
+                                    })}
+                                >
+                                    Browse photographers
+                                </Link>
 
-                                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border bg-background text-sm text-muted">
-                                        {index + 1}
-                                    </span>
-                                </div>
+                                <Link
+                                    href="/bookings/new"
+                                    className={buttonVariants({
+                                        variant: "secondary",
+                                        size: "lg",
+                                        className: "rounded-full",
+                                    })}
+                                >
+                                    Start a booking brief
+                                </Link>
+                            </div>
+                        </div>
 
-                                <div className="space-y-4">
-                                    <h3 className="font-serif text-3xl leading-tight text-foreground">
-                                        {step.title}
+                        <div className="grid gap-3 sm:grid-cols-2">
+                            {clientStyleCards.map((item) => (
+                                <Link
+                                    key={item.label}
+                                    href={item.href}
+                                    className="group rounded-[1.5rem] border border-border bg-background p-5 transition hover:-translate-y-0.5 hover:border-accent hover:shadow-md"
+                                >
+                                    <div className="mb-8 flex items-center justify-between gap-4">
+                                        <span className="rounded-full bg-surface px-3 py-1 text-xs font-semibold text-muted">
+                                            {item.label}
+                                        </span>
+
+                                        <span className="text-muted transition group-hover:translate-x-0.5 group-hover:text-accent">
+                                            →
+                                        </span>
+                                    </div>
+
+                                    <h3 className="font-serif text-2xl leading-tight text-foreground">
+                                        {item.title}
                                     </h3>
 
-                                    <p className="text-base leading-7 text-muted">
-                                        {step.description}
+                                    <p className="mt-2 text-sm leading-6 text-muted">
+                                        {item.description}
                                     </p>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    ))}
-                </div>
-
-                <div className="flex justify-center pt-2">
-                    <Link
-                        href="/photographers"
-                        className={buttonVariants({
-                            size: "lg",
-                            className: "rounded-full",
-                        })}
-                    >
-                        Browse photographers
-                    </Link>
+                                </Link>
+                            ))}
+                        </div>
+                    </div>
                 </div>
             </Container>
         </section>
