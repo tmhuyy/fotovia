@@ -1,18 +1,79 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { useAuthStore } from "../../store/auth.store";
 import { Container } from "../layout/container";
 import { Badge } from "../ui/badge";
 import { buttonVariants } from "../ui/button";
-import { HomeHeroVisual } from "./home-hero-visual";
+import { getHomeDemoImage } from "./home-demo-images";
+
+type BookingMenuKey = "type" | "date" | "location" | null;
+
+interface BookingOption
+{
+    label: string;
+    value: string;
+}
+
+interface IconProps
+{
+    className?: string;
+}
+
+const SHOOT_STYLE_LABELS = [
+    "aerial",
+    "architecture",
+    "event",
+    "fashion",
+    "food",
+    "nature",
+    "sports",
+    "street",
+    "wedding",
+    "wildlife",
+];
+
+const MONTH_NAMES = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+];
+
+const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+const shootTypeOptions: BookingOption[] = SHOOT_STYLE_LABELS.map((label) => ({
+    label,
+    value: label,
+}));
+
+const locationOptions: BookingOption[] = [
+    { label: "Thu Duc City", value: "Thu Duc City" },
+    { label: "Ho Chi Minh City", value: "Ho Chi Minh City" },
+    { label: "Da Nang", value: "Da Nang" },
+    { label: "Ha Noi", value: "Ha Noi" },
+    { label: "Da Lat", value: "Da Lat" },
+    { label: "Can Tho", value: "Can Tho" },
+    { label: "Nha Trang", value: "Nha Trang" },
+    { label: "Hoi An", value: "Hoi An" },
+];
 
 const quickStyleLinks = [
-    { label: "Wedding", href: "/photographers?style=Wedding" },
-    { label: "Fashion", href: "/photographers?style=Fashion" },
-    { label: "Street", href: "/photographers?style=Street" },
-    { label: "Food", href: "/photographers?style=Food" },
+    { label: "Wedding", href: "/photographers?style=wedding" },
+    { label: "Fashion", href: "/photographers?style=fashion" },
+    { label: "Street", href: "/photographers?style=street" },
+    { label: "Food", href: "/photographers?style=food" },
 ];
 
 const photographerQuickActions = [
@@ -41,6 +102,149 @@ const photographerPanelItems = [
             "Review booking requests after clients find your portfolio and decide the visual fit is right.",
     },
 ];
+
+const toTitleCase = (value: string) =>
+{
+    return value
+        .split(/[\s-]+/)
+        .filter(Boolean)
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(" ");
+};
+
+const startOfDay = (date: Date) =>
+{
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+};
+
+const toDateValue = (date: Date) =>
+{
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+};
+
+const toDateLabel = (date: Date) =>
+{
+    return date.toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+    });
+};
+
+const isSameDate = (firstDate: Date, secondDate: Date) =>
+{
+    return (
+        firstDate.getFullYear() === secondDate.getFullYear() &&
+        firstDate.getMonth() === secondDate.getMonth() &&
+        firstDate.getDate() === secondDate.getDate()
+    );
+};
+
+const createInitialCalendarMonth = () =>
+{
+    const today = new Date();
+
+    return new Date(today.getFullYear(), today.getMonth(), 1);
+};
+
+const getCalendarDays = (monthDate: Date) =>
+{
+    const year = monthDate.getFullYear();
+    const month = monthDate.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    const mondayBasedBlankCount = (firstDay.getDay() + 6) % 7;
+
+    return {
+        blankDays: Array.from({ length: mondayBasedBlankCount }),
+        days: Array.from({ length: daysInMonth }, (_, index) =>
+            new Date(year, month, index + 1),
+        ),
+    };
+};
+
+const CameraIcon = ({ className = "h-5 w-5" }: IconProps) =>
+{
+    return (
+        <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={className}
+            aria-hidden="true"
+        >
+            <path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h1.8l1.4-2h4.6l1.4 2h1.8A2.5 2.5 0 0 1 20 8.5v8A2.5 2.5 0 0 1 17.5 19h-11A2.5 2.5 0 0 1 4 16.5v-8Z" />
+            <path d="M12 15.5a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Z" />
+        </svg>
+    );
+};
+
+const CalendarIcon = ({ className = "h-5 w-5" }: IconProps) =>
+{
+    return (
+        <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={className}
+            aria-hidden="true"
+        >
+            <path d="M7 3v4" />
+            <path d="M17 3v4" />
+            <path d="M4 8h16" />
+            <path d="M6.5 5h11A2.5 2.5 0 0 1 20 7.5v10A2.5 2.5 0 0 1 17.5 20h-11A2.5 2.5 0 0 1 4 17.5v-10A2.5 2.5 0 0 1 6.5 5Z" />
+        </svg>
+    );
+};
+
+const LocationIcon = ({ className = "h-5 w-5" }: IconProps) =>
+{
+    return (
+        <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={className}
+            aria-hidden="true"
+        >
+            <path d="M12 21s7-5.1 7-11.2A7 7 0 0 0 5 9.8C5 15.9 12 21 12 21Z" />
+            <path d="M12 12.2a2.4 2.4 0 1 0 0-4.8 2.4 2.4 0 0 0 0 4.8Z" />
+        </svg>
+    );
+};
+
+const ArrowRightIcon = ({ className = "h-5 w-5" }: IconProps) =>
+{
+    return (
+        <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.9"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={className}
+            aria-hidden="true"
+        >
+            <path d="M5 12h14" />
+            <path d="m13 6 6 6-6 6" />
+        </svg>
+    );
+};
 
 const PhotographerHeroPanel = () =>
 {
@@ -101,6 +305,416 @@ const PhotographerHeroPanel = () =>
     );
 };
 
+const ClientHeroBanner = () =>
+{
+    const mainImage = getHomeDemoImage(0);
+
+    return (
+        <div className="relative overflow-hidden rounded-[2rem] border border-border bg-surface shadow-sm">
+            <div className="relative h-[28rem] overflow-hidden bg-background sm:h-[34rem] lg:h-[38rem]">
+                <img
+                    src={mainImage.src}
+                    alt={mainImage.alt}
+                    className="h-full w-full object-cover"
+                />
+
+                <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(23,23,23,0.68),rgba(23,23,23,0.28),rgba(23,23,23,0.08))]" />
+                <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-foreground/82 via-foreground/40 to-transparent" />
+
+                <div className="absolute left-5 top-5 rounded-full bg-surface/90 px-4 py-2 text-sm font-semibold text-foreground shadow-sm">
+                    AI style ready
+                </div>
+
+                <div className="absolute bottom-24 left-6 right-6 max-w-3xl text-background sm:bottom-28 sm:left-10 lg:left-14">
+                    <p className="hidden text-xs uppercase tracking-[0.3em] text-background/70 sm:block">
+                        Fotovia booking
+                    </p>
+
+                    <h1 className="mt-3 max-w-3xl font-serif text-5xl leading-[1.02] tracking-tight sm:text-6xl lg:text-7xl">
+                        Book the right photographer faster.
+                    </h1>
+
+                    <p className="mt-5 max-w-2xl text-base leading-8 text-background/78 sm:text-lg">
+                        Choose your shoot style, date, and location. Fotovia helps
+                        you compare real portfolio work before sending a clear
+                        booking request.
+                    </p>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const OptionDropdown = ({
+    options,
+    onSelect,
+    formatLabel = (value) => value,
+}: {
+    options: BookingOption[];
+    onSelect: (option: BookingOption) => void;
+    formatLabel?: (value: string) => string;
+}) =>
+{
+    return (
+        <div className="absolute left-0 top-[calc(100%+0.75rem)] z-50 w-72 rounded-[1.5rem] border border-border bg-surface p-2 shadow-2xl">
+            <div className="max-h-72 overflow-y-auto">
+                {options.map((option) => (
+                    <button
+                        key={option.value}
+                        type="button"
+                        className="flex w-full items-center rounded-2xl px-4 py-3 text-left text-sm font-medium text-foreground transition hover:bg-background"
+                        onClick={() => onSelect(option)}
+                    >
+                        {formatLabel(option.label)}
+                    </button>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+const DateCalendarDropdown = ({
+    calendarMonth,
+    selectedDate,
+    onChangeMonth,
+    onSelectDate,
+}: {
+    calendarMonth: Date;
+    selectedDate: Date | null;
+    onChangeMonth: (nextMonth: Date) => void;
+    onSelectDate: (date: Date) => void;
+}) =>
+{
+    const { blankDays, days } = getCalendarDays(calendarMonth);
+    const today = startOfDay(new Date());
+
+    const handlePreviousMonth = () =>
+    {
+        onChangeMonth(
+            new Date(
+                calendarMonth.getFullYear(),
+                calendarMonth.getMonth() - 1,
+                1,
+            ),
+        );
+    };
+
+    const handleNextMonth = () =>
+    {
+        onChangeMonth(
+            new Date(
+                calendarMonth.getFullYear(),
+                calendarMonth.getMonth() + 1,
+                1,
+            ),
+        );
+    };
+
+    return (
+        <div className="absolute left-1/2 top-[calc(100%+0.75rem)] z-50 w-[22rem] -translate-x-1/2 rounded-[1.5rem] border border-border bg-surface p-4 shadow-2xl">
+            <div className="flex items-center justify-between gap-3">
+                <button
+                    type="button"
+                    className="flex h-9 w-9 items-center justify-center rounded-full text-muted transition hover:bg-background hover:text-foreground"
+                    onClick={handlePreviousMonth}
+                    aria-label="Previous month"
+                >
+                    ‹
+                </button>
+
+                <div className="text-center">
+                    <p className="text-sm font-semibold text-foreground">
+                        {MONTH_NAMES[calendarMonth.getMonth()]}{" "}
+                        {calendarMonth.getFullYear()}
+                    </p>
+                </div>
+
+                <button
+                    type="button"
+                    className="flex h-9 w-9 items-center justify-center rounded-full text-muted transition hover:bg-background hover:text-foreground"
+                    onClick={handleNextMonth}
+                    aria-label="Next month"
+                >
+                    ›
+                </button>
+            </div>
+
+            <div className="mt-4 grid grid-cols-7 gap-1 text-center">
+                {WEEKDAY_LABELS.map((weekday) => (
+                    <div
+                        key={weekday}
+                        className="py-2 text-xs font-medium text-muted"
+                    >
+                        {weekday}
+                    </div>
+                ))}
+
+                {blankDays.map((_, index) => (
+                    <div key={`blank-${index}`} />
+                ))}
+
+                {days.map((date) =>
+                {
+                    const isDisabled = startOfDay(date) < today;
+                    const isSelected =
+                        selectedDate !== null && isSameDate(date, selectedDate);
+                    const isToday = isSameDate(date, today);
+
+                    return (
+                        <button
+                            key={toDateValue(date)}
+                            type="button"
+                            disabled={isDisabled}
+                            className={[
+                                "flex h-10 items-center justify-center rounded-xl text-sm font-medium transition",
+                                isSelected
+                                    ? "bg-foreground text-background"
+                                    : "text-foreground hover:bg-background",
+                                isToday && !isSelected
+                                    ? "border border-border"
+                                    : "",
+                                isDisabled
+                                    ? "cursor-not-allowed text-muted/40 hover:bg-transparent"
+                                    : "",
+                            ]
+                                .filter(Boolean)
+                                .join(" ")}
+                            onClick={() => onSelectDate(date)}
+                        >
+                            {date.getDate()}
+                        </button>
+                    );
+                })}
+            </div>
+        </div>
+    );
+};
+
+const HeroBookingBar = () =>
+{
+    const router = useRouter();
+    const bookingBarRef = useRef<HTMLDivElement | null>(null);
+
+    const [activeMenu, setActiveMenu] = useState<BookingMenuKey>(null);
+    const [selectedShootType, setSelectedShootType] =
+        useState<BookingOption | null>(null);
+    const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+    const [selectedLocation, setSelectedLocation] =
+        useState<BookingOption | null>(null);
+    const [calendarMonth, setCalendarMonth] = useState<Date>(
+        createInitialCalendarMonth,
+    );
+
+    useEffect(() =>
+    {
+        const handlePointerDown = (event: MouseEvent) =>
+        {
+            if (!bookingBarRef.current?.contains(event.target as Node)) {
+                setActiveMenu(null);
+            }
+        };
+
+        const handleEscape = (event: KeyboardEvent) =>
+        {
+            if (event.key === "Escape") {
+                setActiveMenu(null);
+            }
+        };
+
+        document.addEventListener("mousedown", handlePointerDown);
+        document.addEventListener("keydown", handleEscape);
+
+        return () =>
+        {
+            document.removeEventListener("mousedown", handlePointerDown);
+            document.removeEventListener("keydown", handleEscape);
+        };
+    }, []);
+
+    const handleBookNow = () =>
+    {
+        const params = new URLSearchParams();
+
+        if (selectedShootType) {
+            params.set("style", selectedShootType.value);
+        }
+
+        if (selectedDate) {
+            params.set("date", toDateValue(selectedDate));
+        }
+
+        if (selectedLocation) {
+            params.set("location", selectedLocation.value);
+        }
+
+        const queryString = params.toString();
+
+        router.push(queryString ? `/bookings/new?${queryString}` : "/bookings/new");
+    };
+
+    const handleSelectShootType = (option: BookingOption) =>
+    {
+        setSelectedShootType(option);
+        setActiveMenu(null);
+    };
+
+    const handleSelectDate = (date: Date) =>
+    {
+        setSelectedDate(date);
+        setCalendarMonth(new Date(date.getFullYear(), date.getMonth(), 1));
+        setActiveMenu(null);
+    };
+
+    const handleSelectLocation = (option: BookingOption) =>
+    {
+        setSelectedLocation(option);
+        setActiveMenu(null);
+    };
+
+    return (
+        <div
+            ref={bookingBarRef}
+            className="relative z-20 mx-auto -mt-14 max-w-[980px] px-4 md:-mt-12"
+        >
+            <div className="rounded-[1.75rem] border border-border bg-surface p-2 shadow-[0_24px_70px_rgba(23,23,23,0.18)] md:rounded-[1.75rem]">
+                <div className="grid gap-2 md:grid-cols-[1fr_1fr_1fr_220px] md:items-center">
+                    <div className="relative">
+                        <button
+                            type="button"
+                            className={[
+                                "flex h-16 w-full items-center gap-4 rounded-[1.25rem] px-5 text-left transition hover:bg-background",
+                                activeMenu === "type"
+                                    ? "bg-background ring-2 ring-foreground/10"
+                                    : "",
+                            ]
+                                .filter(Boolean)
+                                .join(" ")}
+                            onClick={() =>
+                                setActiveMenu((current) =>
+                                    current === "type" ? null : "type",
+                                )
+                            }
+                        >
+                            <CameraIcon className="h-5 w-5 shrink-0 text-foreground" />
+
+                            <span className="min-w-0 truncate text-base font-semibold text-foreground">
+                                {selectedShootType
+                                    ? toTitleCase(selectedShootType.label)
+                                    : "Shoot Type"}
+                            </span>
+                        </button>
+
+                        {activeMenu === "type" ? (
+                            <OptionDropdown
+                                options={shootTypeOptions}
+                                formatLabel={toTitleCase}
+                                onSelect={handleSelectShootType}
+                            />
+                        ) : null}
+                    </div>
+
+                    <div className="relative">
+                        <button
+                            type="button"
+                            className={[
+                                "flex h-16 w-full items-center gap-4 rounded-[1.25rem] px-5 text-left transition hover:bg-background",
+                                activeMenu === "date"
+                                    ? "bg-background ring-2 ring-foreground/10"
+                                    : "",
+                            ]
+                                .filter(Boolean)
+                                .join(" ")}
+                            onClick={() =>
+                                setActiveMenu((current) =>
+                                    current === "date" ? null : "date",
+                                )
+                            }
+                        >
+                            <CalendarIcon className="h-5 w-5 shrink-0 text-foreground" />
+
+                            <span className="min-w-0 truncate text-base font-semibold text-foreground">
+                                {selectedDate ? toDateLabel(selectedDate) : "Date"}
+                            </span>
+                        </button>
+
+                        {activeMenu === "date" ? (
+                            <DateCalendarDropdown
+                                calendarMonth={calendarMonth}
+                                selectedDate={selectedDate}
+                                onChangeMonth={setCalendarMonth}
+                                onSelectDate={handleSelectDate}
+                            />
+                        ) : null}
+                    </div>
+
+                    <div className="relative">
+                        <button
+                            type="button"
+                            className={[
+                                "flex h-16 w-full items-center gap-4 rounded-[1.25rem] px-5 text-left transition hover:bg-background",
+                                activeMenu === "location"
+                                    ? "bg-background ring-2 ring-foreground/10"
+                                    : "",
+                            ]
+                                .filter(Boolean)
+                                .join(" ")}
+                            onClick={() =>
+                                setActiveMenu((current) =>
+                                    current === "location" ? null : "location",
+                                )
+                            }
+                        >
+                            <LocationIcon className="h-5 w-5 shrink-0 text-foreground" />
+
+                            <span className="min-w-0 truncate text-base font-semibold text-foreground">
+                                {selectedLocation?.label ?? "Location"}
+                            </span>
+                        </button>
+
+                        {activeMenu === "location" ? (
+                            <OptionDropdown
+                                options={locationOptions}
+                                onSelect={handleSelectLocation}
+                            />
+                        ) : null}
+                    </div>
+
+                    <button
+                        type="button"
+                        className="flex h-16 w-full items-center justify-center gap-3 rounded-[1.25rem] bg-foreground px-6 text-base font-semibold text-background transition hover:bg-foreground/85"
+                        onClick={handleBookNow}
+                    >
+                        <ArrowRightIcon className="h-5 w-5" />
+                        <span>Book now</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const ClientHeroExperience = () =>
+{
+    return (
+        <div>
+            <ClientHeroBanner />
+            <HeroBookingBar />
+
+            <div className="mt-8 flex flex-wrap justify-center gap-2">
+                {quickStyleLinks.map((entry) => (
+                    <Link
+                        key={entry.label}
+                        href={entry.href}
+                        className="rounded-full border border-border bg-surface px-4 py-2 text-sm text-foreground transition hover:border-accent hover:text-accent"
+                    >
+                        {entry.label}
+                    </Link>
+                ))}
+            </div>
+        </div>
+    );
+};
+
 export const HeroSection = () =>
 {
     const { user, isAuthenticated, hasHydrated, isHydrating } = useAuthStore();
@@ -112,34 +726,30 @@ export const HeroSection = () =>
         user?.role === "photographer";
 
     return (
-        <section className="overflow-hidden pb-12 pt-10 sm:pb-16 sm:pt-14">
-            <Container className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(420px,0.95fr)] lg:items-center lg:gap-16">
-                <div className="space-y-8">
-                    <div className="space-y-5">
-                        <Badge variant={isPhotographerHome ? "neutral" : "ai"}>
-                            {isPhotographerHome
-                                ? "Photographer tools"
-                                : "AI-powered photography booking"}
-                        </Badge>
+        <section className="overflow-visible pb-12 pt-8 sm:pb-16 sm:pt-12">
+            <Container>
+                {isPhotographerHome ? (
+                    <div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(420px,0.95fr)] lg:items-center lg:gap-16">
+                        <div className="space-y-8">
+                            <div className="space-y-5">
+                                <Badge variant="neutral">
+                                    Photographer tools
+                                </Badge>
 
-                        <div className="space-y-5">
-                            <h1 className="max-w-4xl font-serif text-5xl leading-[1.02] tracking-tight text-foreground sm:text-6xl lg:text-7xl">
-                                {isPhotographerHome
-                                    ? "Manage your photography portfolio."
-                                    : "Find a photographer by the photos you like."}
-                            </h1>
+                                <div className="space-y-5">
+                                    <h1 className="max-w-4xl font-serif text-5xl leading-[1.02] tracking-tight text-foreground sm:text-6xl lg:text-7xl">
+                                        Manage your photography portfolio.
+                                    </h1>
 
-                            <p className="max-w-2xl text-base leading-8 text-muted sm:text-lg">
-                                {isPhotographerHome
-                                    ? "Upload your best work, let Fotovia analyze your visual style, and keep your public profile ready for real booking requests."
-                                    : "Choose a visual style, compare real portfolio work, and send a focused booking request when the photographer feels right."}
-                            </p>
-                        </div>
-                    </div>
+                                    <p className="max-w-2xl text-base leading-8 text-muted sm:text-lg">
+                                        Upload your best work, let Fotovia analyze
+                                        your visual style, and keep your public
+                                        profile ready for real booking requests.
+                                    </p>
+                                </div>
+                            </div>
 
-                    <div className="flex flex-col gap-3 sm:flex-row">
-                        {isPhotographerHome ? (
-                            <>
+                            <div className="flex flex-col gap-3 sm:flex-row">
                                 <Link
                                     href="/photographer/portfolio"
                                     className={buttonVariants({
@@ -160,58 +770,32 @@ export const HeroSection = () =>
                                 >
                                     Add work
                                 </Link>
-                            </>
-                        ) : (
-                            <>
-                                <Link
-                                    href="/photographers"
-                                    className={buttonVariants({
-                                        size: "lg",
-                                        className: "rounded-full",
-                                    })}
-                                >
-                                    Find photographers
-                                </Link>
+                            </div>
 
-                                <Link
-                                    href="/photographers"
-                                    className={buttonVariants({
-                                        size: "lg",
-                                        variant: "secondary",
-                                        className: "rounded-full",
-                                    })}
-                                >
-                                    Explore styles
-                                </Link>
-                            </>
-                        )}
-                    </div>
+                            <div className="space-y-3">
+                                <p className="text-xs uppercase tracking-[0.24em] text-muted">
+                                    Quick photographer actions
+                                </p>
 
-                    <div className="space-y-3">
-                        <p className="text-xs uppercase tracking-[0.24em] text-muted">
-                            {isPhotographerHome
-                                ? "Quick photographer actions"
-                                : "Popular discovery paths"}
-                        </p>
-
-                        <div className="flex flex-wrap gap-2">
-                            {(isPhotographerHome
-                                ? photographerQuickActions
-                                : quickStyleLinks
-                            ).map((entry) => (
-                                <Link
-                                    key={entry.label}
-                                    href={entry.href}
-                                    className="rounded-full border border-border bg-surface px-4 py-2 text-sm text-foreground transition hover:border-accent hover:text-accent"
-                                >
-                                    {entry.label}
-                                </Link>
-                            ))}
+                                <div className="flex flex-wrap gap-2">
+                                    {photographerQuickActions.map((entry) => (
+                                        <Link
+                                            key={entry.label}
+                                            href={entry.href}
+                                            className="rounded-full border border-border bg-surface px-4 py-2 text-sm text-foreground transition hover:border-accent hover:text-accent"
+                                        >
+                                            {entry.label}
+                                        </Link>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
 
-                <HomeHeroVisual />
+                        <PhotographerHeroPanel />
+                    </div>
+                ) : (
+                    <ClientHeroExperience />
+                )}
             </Container>
         </section>
     );
