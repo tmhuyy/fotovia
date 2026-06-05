@@ -2,15 +2,15 @@
 
 import { isAxiosError } from "axios";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import
-  {
-    useCallback,
-    useEffect,
-    useMemo,
-    useRef,
-    useState,
-  } from "react";
+{
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { FormProvider, useForm, type FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -23,19 +23,18 @@ import { bookingService } from "../../../services/booking.service";
 import { useAuthStore } from "../../../store/auth.store";
 import type { CreateOpenBookingPayload } from "../types/booking.types";
 import
-  {
-    bookingBriefSchema,
-    type BookingBriefFormValues,
-  } from "../schemas/booking-brief.schema";
+{
+  bookingBriefSchema,
+  type BookingBriefFormValues,
+} from "../schemas/booking-brief.schema";
 import
-  {
-    BUDGET_MIN_VND,
-    parseBudgetRangeValue,
-    serializeBudgetRange,
-  } from "../utils/booking-budget";
+{
+  BUDGET_MIN_VND,
+  parseBudgetRangeValue,
+  serializeBudgetRange,
+} from "../utils/booking-budget";
 import { BookingBriefForm } from "./booking-brief-form";
 import { BookingBriefSummaryCard } from "./booking-brief-summary-card";
-import { BookingBriefSuccess } from "./booking-brief-success";
 
 const BOOKING_BRIEF_DRAFT_STORAGE_KEY = "fotovia.bookingBriefDraft";
 
@@ -357,6 +356,7 @@ const BookingAuthPrompt = ({
 export const BookingBriefPage = ({ prefill }: BookingBriefPageProps) =>
 {
   const pathname = usePathname();
+  const router = useRouter();
   const searchParams = useSearchParams();
 
   const {
@@ -364,10 +364,6 @@ export const BookingBriefPage = ({ prefill }: BookingBriefPageProps) =>
     hasHydrated,
     isHydrating,
   } = useAuthStore();
-
-  const [submittedValues, setSubmittedValues] = useState<
-    BookingBriefFormValues | null
-  >(null);
 
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isAuthPromptOpen, setIsAuthPromptOpen] = useState(false);
@@ -444,17 +440,29 @@ export const BookingBriefPage = ({ prefill }: BookingBriefPageProps) =>
       setSubmitError(null);
 
       try {
-        await bookingService.createOpenBooking(
+        const createdBooking = await bookingService.createOpenBooking(
           buildOpenBookingPayload(values),
         );
 
         clearBookingDraft();
-        setSubmittedValues(values);
+
+        const createdBookingId = createdBooking.id?.trim();
+
+        if (createdBookingId) {
+          router.push(
+            `/my-bookings?bookingId=${encodeURIComponent(
+              createdBookingId,
+            )}&created=1`,
+          );
+          return;
+        }
+
+        router.push("/my-bookings?created=1");
       } catch (error) {
         setSubmitError(getSubmitErrorMessage(error));
       }
     },
-    [],
+    [router],
   );
 
   useEffect(() =>
@@ -533,15 +541,6 @@ export const BookingBriefPage = ({ prefill }: BookingBriefPageProps) =>
     }
   };
 
-  const handleReset = () =>
-  {
-    setSubmittedValues(null);
-    setSubmitError(null);
-    setIsAuthPromptOpen(false);
-    clearBookingDraft();
-    form.reset(defaultValues);
-  };
-
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -555,34 +554,27 @@ export const BookingBriefPage = ({ prefill }: BookingBriefPageProps) =>
               </h1>
             </div>
 
-            {submittedValues ? (
-              <BookingBriefSuccess
-                values={submittedValues}
-                onReset={handleReset}
-              />
-            ) : (
-              <FormProvider {...form}>
-                <form
-                  onSubmit={form.handleSubmit(
-                    handleSubmit,
-                    handleInvalid,
-                  )}
-                  className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]"
-                >
-                  <div className="space-y-6">
-                    <BookingBriefForm />
-                  </div>
+            <FormProvider {...form}>
+              <form
+                onSubmit={form.handleSubmit(
+                  handleSubmit,
+                  handleInvalid,
+                )}
+                className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]"
+              >
+                <div className="space-y-6">
+                  <BookingBriefForm />
+                </div>
 
-                  <div className="space-y-6 lg:sticky lg:top-24 lg:self-start">
-                    <BookingBriefSummaryCard
-                      errorMessage={submitError}
-                      submitLabel="Send booking request"
-                      submittingLabel="Sending..."
-                    />
-                  </div>
-                </form>
-              </FormProvider>
-            )}
+                <div className="space-y-6 lg:sticky lg:top-24 lg:self-start">
+                  <BookingBriefSummaryCard
+                    errorMessage={submitError}
+                    submitLabel="Send booking request"
+                    submittingLabel="Sending..."
+                  />
+                </div>
+              </form>
+            </FormProvider>
           </Container>
         </Section>
       </main>

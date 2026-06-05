@@ -2,17 +2,22 @@ import Link from "next/link";
 
 import { Button, buttonVariants } from "../../../components/ui/button";
 import { Card, CardContent } from "../../../components/ui/card";
-import
-    {
-        budgetOptions,
-        durationOptions,
-        sessionTypeOptions,
-    } from "../data/booking-options";
 import type {
     BookingRequestRecord,
     ClientBookingActionStatus,
 } from "../types/booking.types";
 import type { BookingEventRecord } from "../types/booking-event.types";
+import
+{
+    formatBookingDate,
+    formatBookingTime,
+    formatBudgetLabel,
+    formatContactLabel,
+    formatShootTypeLabel,
+    formatSubmittedAt,
+    getBookingDisplayTitle,
+    hasAssignedPhotographer,
+} from "../utils/booking-display";
 import { BookingStatusPill } from "./booking-status-pill";
 import { BookingActivityTimeline } from "./booking-activity-timeline";
 
@@ -27,28 +32,6 @@ interface ClientBookingDetailCardProps
     timelineError?: string | null;
 }
 
-const resolveLabel = (
-    value: string,
-    options: { value: string; label: string }[],
-): string =>
-{
-    return options.find((option) => option.value === value)?.label ?? value;
-};
-
-const formatDateTime = (value: string): string =>
-{
-    const parsed = new Date(value);
-
-    if (Number.isNaN(parsed.getTime())) {
-        return "just now";
-    }
-
-    return new Intl.DateTimeFormat("en-US", {
-        dateStyle: "medium",
-        timeStyle: "short",
-    }).format(parsed);
-};
-
 const statusCopy: Record<
     BookingRequestRecord["status"],
     {
@@ -57,29 +40,29 @@ const statusCopy: Record<
     }
 > = {
     pending: {
-        title: "Awaiting photographer response",
+        title: "Waiting for response",
         description:
-            "Your request was sent successfully and is still waiting for the photographer's first response. You can still cancel it in this phase while it remains pending.",
+            "Your request was sent successfully. It is waiting for a photographer response.",
     },
     confirmed: {
         title: "Request confirmed",
         description:
-            "The photographer has confirmed this booking request. The next lifecycle step in this phase happens on the photographer side when the booking is completed.",
+            "The photographer has confirmed this booking request.",
     },
     declined: {
         title: "Request declined",
         description:
-            "This photographer declined the request. You can review the brief, explore more photographers, and submit another request.",
+            "This request was declined. You can review the brief and explore other photographers.",
     },
     completed: {
         title: "Booking completed",
         description:
-            "The photographer marked this booking as completed. This request has now reached the final lifecycle state supported in the current phase.",
+            "This booking has been marked as completed.",
     },
     cancelled: {
         title: "Request cancelled",
         description:
-            "You cancelled this booking request while it was still pending. It remains in your history for tracking, but it is no longer active.",
+            "You cancelled this booking request. It remains here for tracking.",
     },
 };
 
@@ -120,7 +103,7 @@ export const ClientBookingDetailCard = ({
                     </p>
                     <div className="rounded-2xl border border-dashed border-brand-border bg-brand-background/70 p-6 text-sm text-brand-muted">
                         Select one booking request from the list to review the
-                        saved brief and the current photographer response.
+                        saved brief and current status.
                     </div>
                 </CardContent>
             </Card>
@@ -129,6 +112,7 @@ export const ClientBookingDetailCard = ({
 
     const currentStatusCopy = statusCopy[booking.status];
     const canCancel = booking.status === "pending";
+    const hasPhotographer = hasAssignedPhotographer(booking);
 
     return (
         <div className="space-y-6">
@@ -140,10 +124,10 @@ export const ClientBookingDetailCard = ({
                                 Request details
                             </p>
                             <h2 className="text-2xl font-semibold text-brand-primary">
-                                {booking.photographerName}
+                                {getBookingDisplayTitle(booking)}
                             </h2>
                             <p className="text-sm text-brand-muted">
-                                Submitted {formatDateTime(booking.createdAt)}
+                                Submitted {formatSubmittedAt(booking.createdAt)}
                             </p>
                         </div>
 
@@ -152,47 +136,49 @@ export const ClientBookingDetailCard = ({
 
                     <div className="grid gap-3 sm:grid-cols-2">
                         <DetailItem
-                            label="Session type"
-                            value={resolveLabel(
-                                booking.sessionType,
-                                sessionTypeOptions,
+                            label="Shoot type"
+                            value={formatShootTypeLabel(
+                                booking.shootType || booking.sessionType,
                             )}
                         />
                         <DetailItem
                             label="Date & time"
-                            value={`${booking.sessionDate || "Date not set"} · ${booking.sessionTime || "Time not set"
-                                }`}
+                            value={`${formatBookingDate(
+                                booking.sessionDate,
+                            )} · ${formatBookingTime(booking.sessionTime)}`}
                         />
                         <DetailItem
-                            label="Duration"
-                            value={resolveLabel(
-                                booking.duration,
-                                durationOptions,
-                            )}
+                            label="Photographer"
+                            value={
+                                hasPhotographer
+                                    ? booking.photographerName ||
+                                    "Assigned photographer"
+                                    : "Not selected yet"
+                            }
                         />
                         <DetailItem
                             label="Budget"
-                            value={resolveLabel(booking.budget, budgetOptions)}
+                            value={formatBudgetLabel(booking.budget)}
                         />
                         <DetailItem
                             label="Location"
                             value={booking.location || "Location not set"}
                         />
                         <DetailItem
-                            label="Preferred contact"
-                            value={
-                                booking.contactPreference || "Not specified yet"
-                            }
+                            label="Contact"
+                            value={formatContactLabel(
+                                booking.contactPreference,
+                            )}
                         />
                     </div>
 
                     <div className="space-y-4 border-t border-brand-border pt-6">
                         <div>
                             <p className="text-xs uppercase tracking-[0.14em] text-brand-muted">
-                                Shoot concept
+                                Shoot brief
                             </p>
                             <p className="mt-2 whitespace-pre-line text-sm leading-7 text-brand-primary">
-                                {booking.concept || "No concept provided."}
+                                {booking.concept || "No brief provided."}
                             </p>
                         </div>
 
@@ -202,7 +188,7 @@ export const ClientBookingDetailCard = ({
                             </p>
                             <p className="mt-2 whitespace-pre-line text-sm leading-7 text-brand-primary">
                                 {booking.inspiration ||
-                                    "No inspiration notes were added."}
+                                    "No inspiration link was added."}
                             </p>
                         </div>
 
@@ -230,7 +216,7 @@ export const ClientBookingDetailCard = ({
                             {currentStatusCopy.description}
                         </p>
                         <p className="mt-3 text-xs uppercase tracking-[0.14em] text-brand-muted">
-                            Last updated {formatDateTime(booking.updatedAt)}
+                            Last updated {formatSubmittedAt(booking.updatedAt)}
                         </p>
                     </div>
 
@@ -245,15 +231,31 @@ export const ClientBookingDetailCard = ({
                             </Button>
                         ) : null}
 
-                        <Link
-                            href={`/photographers/${booking.photographerSlug}`}
-                            className={buttonVariants({
-                                variant: "secondary",
-                                size: "md",
-                            })}
-                        >
-                            View photographer
-                        </Link>
+                        {hasPhotographer && booking.photographerSlug ? (
+                            <Link
+                                href={`/photographers/${booking.photographerSlug}`}
+                                className={buttonVariants({
+                                    variant: "secondary",
+                                    size: "md",
+                                })}
+                            >
+                                View photographer
+                            </Link>
+                        ) : (
+                            <Link
+                                href={`/photographers?style=${encodeURIComponent(
+                                    booking.shootType || booking.sessionType,
+                                )}&location=${encodeURIComponent(
+                                    booking.location,
+                                )}`}
+                                className={buttonVariants({
+                                    variant: "secondary",
+                                    size: "md",
+                                })}
+                            >
+                                Find matching photographers
+                            </Link>
+                        )}
 
                         <Link
                             href="/photographers"

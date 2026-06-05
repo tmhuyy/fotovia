@@ -1,8 +1,18 @@
+import { Card, CardContent } from "../../../components/ui/card";
 import type {
     BookingRequestRecord,
     ClientBookingFilter,
 } from "../types/booking.types";
-import { Card, CardContent } from "../../../components/ui/card";
+import
+{
+    formatBookingDate,
+    formatBookingTime,
+    formatShootTypeLabel,
+    formatSubmittedAt,
+    getBookingDisplayTitle,
+    getBookingPrimaryLabel,
+    hasAssignedPhotographer,
+} from "../utils/booking-display";
 import { BookingStatusPill } from "./booking-status-pill";
 
 interface ClientBookingsListProps
@@ -24,32 +34,6 @@ const filterOptions: { value: ClientBookingFilter; label: string }[] = [
     { value: "completed", label: "Completed" },
 ];
 
-const formatSessionType = (value: string) =>
-{
-    if (!value.trim()) {
-        return "Untitled session";
-    }
-
-    return value
-        .split("-")
-        .join(" ")
-        .replace(/\b\w/g, (char) => char.toUpperCase());
-};
-
-const formatSubmittedAt = (value: string) =>
-{
-    const parsed = new Date(value);
-
-    if (Number.isNaN(parsed.getTime())) {
-        return "just now";
-    }
-
-    return new Intl.DateTimeFormat("en-US", {
-        dateStyle: "medium",
-        timeStyle: "short",
-    }).format(parsed);
-};
-
 export const ClientBookingsList = ({
     bookings,
     selectedBookingId,
@@ -70,8 +54,7 @@ export const ClientBookingsList = ({
                         Booking history
                     </h2>
                     <p className="text-sm leading-6 text-brand-muted">
-                        Review the requests you have already sent and keep track
-                        of the photographer response status.
+                        Choose a request to review its brief and current status.
                     </p>
                 </div>
 
@@ -86,15 +69,15 @@ export const ClientBookingsList = ({
                                 type="button"
                                 onClick={() => onFilterChange(option.value)}
                                 className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm transition ${isActive
-                                        ? "border-brand-primary bg-brand-primary text-white"
-                                        : "border-brand-border bg-brand-background text-brand-muted hover:text-brand-primary"
+                                    ? "border-brand-primary bg-brand-primary text-white"
+                                    : "border-brand-border bg-brand-background text-brand-muted hover:text-brand-primary"
                                     }`}
                             >
                                 <span>{option.label}</span>
                                 <span
                                     className={`rounded-full px-2 py-0.5 text-xs ${isActive
-                                            ? "bg-white/15 text-white"
-                                            : "bg-brand-surface text-brand-primary"
+                                        ? "bg-white/15 text-white"
+                                        : "bg-brand-surface text-brand-primary"
                                         }`}
                                 >
                                     {counts[option.value]}
@@ -113,6 +96,7 @@ export const ClientBookingsList = ({
                         {bookings.map((booking) =>
                         {
                             const isSelected = booking.id === selectedBookingId;
+                            const isOpenRequest = !hasAssignedPhotographer(booking);
 
                             return (
                                 <button
@@ -120,18 +104,18 @@ export const ClientBookingsList = ({
                                     type="button"
                                     onClick={() => onSelect(booking.id)}
                                     className={`w-full rounded-2xl border p-4 text-left transition ${isSelected
-                                            ? "border-brand-primary bg-brand-background"
-                                            : "border-brand-border bg-brand-surface hover:bg-brand-background/60"
+                                        ? "border-brand-primary bg-brand-background"
+                                        : "border-brand-border bg-brand-surface hover:bg-brand-background/60"
                                         }`}
                                 >
                                     <div className="flex items-start justify-between gap-3">
                                         <div className="space-y-1">
                                             <p className="font-medium text-brand-primary">
-                                                {booking.photographerName ||
-                                                    "Photographer"}
+                                                {getBookingDisplayTitle(booking)}
                                             </p>
                                             <p className="text-sm text-brand-muted">
-                                                {formatSessionType(
+                                                {formatShootTypeLabel(
+                                                    booking.shootType ||
                                                     booking.sessionType,
                                                 )}
                                             </p>
@@ -144,15 +128,24 @@ export const ClientBookingsList = ({
 
                                     <div className="mt-4 grid gap-2 text-sm text-brand-muted">
                                         <span>
-                                            {booking.sessionDate ||
-                                                "Date not set"}{" "}
+                                            {formatBookingDate(
+                                                booking.sessionDate,
+                                            )}{" "}
                                             ·{" "}
-                                            {booking.sessionTime ||
-                                                "Time not set"}
+                                            {formatBookingTime(
+                                                booking.sessionTime,
+                                            )}
                                         </span>
                                         <span>
                                             {booking.location ||
                                                 "Location not set"}
+                                        </span>
+                                        <span>
+                                            {isOpenRequest
+                                                ? "Open request"
+                                                : getBookingPrimaryLabel(
+                                                    booking,
+                                                )}
                                         </span>
                                         <span>
                                             Submitted{" "}

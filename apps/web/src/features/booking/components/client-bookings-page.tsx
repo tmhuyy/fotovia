@@ -2,13 +2,14 @@
 
 import { isAxiosError } from "axios";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import
-    {
-        useMutation,
-        useQuery,
-        useQueryClient,
-    } from "@tanstack/react-query";
+{
+    useMutation,
+    useQuery,
+    useQueryClient,
+} from "@tanstack/react-query";
 
 import { Section } from "../../../components/common/section";
 import { Footer } from "../../../components/home/footer";
@@ -88,74 +89,39 @@ const BookingHistorySkeleton = () =>
     );
 };
 
-const BookingCounts = ({
-    counts,
-}: {
-    counts: Record<ClientBookingFilter, number>;
-}) =>
-{
-    const items = [
-        { label: "All requests", value: counts.all },
-        { label: "Pending", value: counts.pending },
-        { label: "Confirmed", value: counts.confirmed },
-        { label: "Declined", value: counts.declined },
-        { label: "Cancelled", value: counts.cancelled },
-        { label: "Completed", value: counts.completed },
-    ];
-
-    return (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {items.map((item) => (
-                <div
-                    key={item.label}
-                    className="rounded-2xl border border-brand-border bg-brand-surface p-4"
-                >
-                    <p className="text-xs uppercase tracking-[0.14em] text-brand-muted">
-                        {item.label}
-                    </p>
-                    <p className="mt-3 text-2xl font-semibold text-brand-primary">
-                        {item.value}
-                    </p>
-                </div>
-            ))}
-        </div>
-    );
-};
-
 const EmptyBookingHistory = () =>
 {
     return (
         <Card className="border-brand-border bg-brand-surface">
             <CardContent className="space-y-4 p-6 sm:p-8">
                 <p className="text-sm font-medium uppercase tracking-[0.18em] text-brand-muted">
-                    Booking history
+                    Booking requests
                 </p>
                 <h2 className="text-2xl font-semibold text-brand-primary">
                     You have not sent any booking requests yet.
                 </h2>
                 <p className="max-w-2xl text-sm leading-7 text-brand-muted">
-                    Once you start a booking request from a photographer profile,
-                    it will appear here so you can review the brief and track the
-                    latest response status.
+                    Start from the homepage search bar or open a photographer
+                    portfolio to send your first request.
                 </p>
                 <div className="flex flex-wrap gap-3">
                     <Link
-                        href="/photographers"
+                        href="/"
                         className={buttonVariants({
                             variant: "primary",
                             size: "md",
                         })}
                     >
-                        Explore photographers
+                        Create booking request
                     </Link>
                     <Link
-                        href="/"
+                        href="/photographers"
                         className={buttonVariants({
                             variant: "secondary",
                             size: "md",
                         })}
                     >
-                        Back to homepage
+                        Browse photographers
                     </Link>
                 </div>
             </CardContent>
@@ -165,8 +131,12 @@ const EmptyBookingHistory = () =>
 
 export const ClientBookingsPage = () =>
 {
+    const searchParams = useSearchParams();
     const { user, isAuthenticated, isHydrating, hasHydrated } = useAuthStore();
     const queryClient = useQueryClient();
+
+    const queryBookingId = searchParams.get("bookingId");
+    const isCreatedRedirect = searchParams.get("created") === "1";
 
     const bookingHistoryQueryKey = [
         "client-bookings",
@@ -216,6 +186,24 @@ export const ClientBookingsPage = () =>
 
         return bookings.filter((booking) => booking.status === activeFilter);
     }, [activeFilter, bookings]);
+
+    useEffect(() =>
+    {
+        if (!queryBookingId || bookings.length === 0) {
+            return;
+        }
+
+        const matchedBooking = bookings.find(
+            (booking) => booking.id === queryBookingId,
+        );
+
+        if (!matchedBooking) {
+            return;
+        }
+
+        setActiveFilter("all");
+        setSelectedBookingId(matchedBooking.id);
+    }, [bookings, queryBookingId]);
 
     useEffect(() =>
     {
@@ -304,7 +292,7 @@ export const ClientBookingsPage = () =>
     const listErrorMessage = bookingsQuery.error
         ? getErrorMessage(
             bookingsQuery.error,
-            "We couldn’t load your booking history right now.",
+            "We couldn’t load your booking requests right now.",
         )
         : null;
 
@@ -355,31 +343,26 @@ export const ClientBookingsPage = () =>
             <Navbar />
 
             <main className="min-h-screen bg-brand-background">
-                <Section className="pt-10 pb-16 sm:pt-14">
+                <Section className="pt-8 pb-16 sm:pt-10">
                     <Container className="space-y-8">
-                        <div className="space-y-4">
-                            <Link
-                                href="/"
-                                className="inline-flex text-sm font-medium text-brand-muted transition hover:text-brand-primary"
-                            >
-                                Back to homepage
-                            </Link>
-
-                            <div className="space-y-3">
-                                <p className="text-sm font-medium uppercase tracking-[0.22em] text-brand-muted">
-                                    Client dashboard
-                                </p>
-                                <h1 className="text-3xl font-semibold tracking-tight text-brand-primary sm:text-4xl">
-                                    Track and understand your booking lifecycle.
-                                </h1>
-                                <p className="max-w-2xl text-base text-brand-muted">
-                                    You can now review submitted requests, track
-                                    the photographer response, cancel a pending
-                                    request, and read the full activity timeline
-                                    behind each booking.
-                                </p>
-                            </div>
+                        <div className="space-y-3">
+                            <p className="text-sm font-medium uppercase tracking-[0.22em] text-brand-muted">
+                                My bookings
+                            </p>
+                            <h1 className="font-display text-4xl text-brand-primary md:text-5xl">
+                                Booking requests.
+                            </h1>
+                            <p className="max-w-2xl text-base leading-7 text-brand-muted">
+                                Review the requests you sent and track photographer
+                                responses in one place.
+                            </p>
                         </div>
+
+                        {isCreatedRedirect ? (
+                            <div className="rounded-[1.5rem] border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-200">
+                                Your booking request was sent successfully.
+                            </div>
+                        ) : null}
 
                         {bookingsQuery.isLoading ? (
                             <BookingHistorySkeleton />
@@ -387,10 +370,10 @@ export const ClientBookingsPage = () =>
                             <Card className="border-brand-border bg-brand-surface">
                                 <CardContent className="space-y-4 p-6 sm:p-8">
                                     <p className="text-sm font-medium uppercase tracking-[0.18em] text-brand-muted">
-                                        Booking history
+                                        Booking requests
                                     </p>
                                     <h2 className="text-2xl font-semibold text-brand-primary">
-                                        We couldn’t load your booking history
+                                        We couldn’t load your booking requests
                                         right now.
                                     </h2>
                                     <p className="text-sm leading-7 text-brand-muted">
@@ -409,30 +392,26 @@ export const ClientBookingsPage = () =>
                         ) : bookings.length === 0 ? (
                             <EmptyBookingHistory />
                         ) : (
-                            <>
-                                {/* <BookingCounts counts={counts} /> */}
+                            <div className="grid gap-6 xl:grid-cols-[380px_minmax(0,1fr)]">
+                                <ClientBookingsList
+                                    bookings={filteredBookings}
+                                    selectedBookingId={selectedBookingId}
+                                    activeFilter={activeFilter}
+                                    counts={counts}
+                                    onSelect={setSelectedBookingId}
+                                    onFilterChange={setActiveFilter}
+                                />
 
-                                <div className="grid gap-6 xl:grid-cols-[380px_minmax(0,1fr)]">
-                                    <ClientBookingsList
-                                        bookings={filteredBookings}
-                                        selectedBookingId={selectedBookingId}
-                                        activeFilter={activeFilter}
-                                        counts={counts}
-                                        onSelect={setSelectedBookingId}
-                                        onFilterChange={setActiveFilter}
-                                    />
-
-                                    <ClientBookingDetailCard
-                                        booking={selectedBooking}
-                                        isUpdating={cancelBookingMutation.isPending}
-                                        actionError={actionErrorMessage}
-                                        onCancel={handleCancel}
-                                        timelineEvents={timelineQuery.data ?? []}
-                                        isTimelineLoading={timelineQuery.isLoading}
-                                        timelineError={timelineErrorMessage}
-                                    />
-                                </div>
-                            </>
+                                <ClientBookingDetailCard
+                                    booking={selectedBooking}
+                                    isUpdating={cancelBookingMutation.isPending}
+                                    actionError={actionErrorMessage}
+                                    onCancel={handleCancel}
+                                    timelineEvents={timelineQuery.data ?? []}
+                                    isTimelineLoading={timelineQuery.isLoading}
+                                    timelineError={timelineErrorMessage}
+                                />
+                            </div>
                         )}
                     </Container>
                 </Section>
