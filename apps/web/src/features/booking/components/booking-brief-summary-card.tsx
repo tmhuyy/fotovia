@@ -33,6 +33,7 @@ const SummaryRow = ({ label, value, hasValue }: SummaryRowProps) =>
     return (
         <div className="flex items-center justify-between gap-4 text-sm">
             <span className="text-muted">{label}</span>
+
             <span
                 className={[
                     "max-w-[12rem] truncate text-right",
@@ -112,10 +113,6 @@ export const BookingBriefSummaryCard = ({
                     <h2 className="font-serif text-2xl text-foreground">
                         Review before sending.
                     </h2>
-
-                    <p className="text-sm leading-6 text-muted">
-                        Sign-in is only required when you send the request.
-                    </p>
                 </div>
 
                 <div className="rounded-2xl border border-border bg-background px-4 py-3">
@@ -125,10 +122,6 @@ export const BookingBriefSummaryCard = ({
 
                     <p className="text-lg font-semibold text-foreground">
                         {completedCount} / {requiredFields.length} essentials
-                    </p>
-
-                    <p className="text-xs text-muted">
-                        Complete the essentials to make the request clearer.
                     </p>
                 </div>
 
@@ -190,11 +183,6 @@ export const BookingBriefSummaryCard = ({
                 >
                     {formState.isSubmitting ? submittingLabel : submitLabel}
                 </Button>
-
-                <p className="text-xs leading-5 text-muted">
-                    Your brief is saved before authentication, so the booking flow
-                    will not be lost after sign-in.
-                </p>
             </CardContent>
         </Card>
     );

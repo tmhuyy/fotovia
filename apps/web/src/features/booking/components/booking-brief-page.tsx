@@ -14,12 +14,6 @@ import { buttonVariants } from "../../../components/ui/button";
 import { useAuthStore } from "../../../store/auth.store";
 import
   {
-    budgetOptions,
-    sessionTypeOptions,
-    styleOptions,
-  } from "../data/booking-options";
-import
-  {
     bookingBriefSchema,
     type BookingBriefFormValues,
   } from "../schemas/booking-brief.schema";
@@ -294,48 +288,6 @@ export const BookingBriefPage = ({ prefill }: BookingBriefPageProps) =>
     };
   }, [resolvedPrefill]);
 
-  const prefilledItems = useMemo(() =>
-  {
-    const items: string[] = [];
-
-    if (resolvedPrefill.sessionType) {
-      const label =
-        sessionTypeOptions.find(
-          (option) => option.value === resolvedPrefill.sessionType,
-        )?.label ?? resolvedPrefill.sessionType;
-
-      items.push(`Session type: ${label}`);
-    }
-
-    if (resolvedPrefill.style) {
-      const label =
-        styleOptions.find(
-          (option) => option.value === resolvedPrefill.style,
-        )?.label ?? resolvedPrefill.style;
-
-      items.push(`Style: ${label}`);
-    }
-
-    if (resolvedPrefill.location) {
-      items.push(`Location: ${resolvedPrefill.location}`);
-    }
-
-    if (resolvedPrefill.date) {
-      items.push(`Preferred date: ${resolvedPrefill.date}`);
-    }
-
-    if (resolvedPrefill.budget) {
-      const label =
-        budgetOptions.find(
-          (option) => option.value === resolvedPrefill.budget,
-        )?.label ?? resolvedPrefill.budget;
-
-      items.push(`Budget: ${label}`);
-    }
-
-    return items;
-  }, [resolvedPrefill]);
-
   const form = useForm<BookingBriefFormValues>({
     resolver: zodResolver(bookingBriefSchema),
     defaultValues,
@@ -429,33 +381,23 @@ export const BookingBriefPage = ({ prefill }: BookingBriefPageProps) =>
       <Navbar />
 
       <main>
-        <Section className="pt-10">
-          <Container className="space-y-8">
-            <Link
-              href="/"
-              className="text-xs uppercase tracking-[0.3em] text-muted"
-            >
-              Back to homepage
-            </Link>
-
+        <Section className="py-6 sm:py-8 md:py-10">
+          <Container className="space-y-6">
             <div className="space-y-3">
-              <p className="text-xs uppercase tracking-[0.3em] text-muted">
-                Guided booking
-              </p>
-
               <h1 className="font-display text-3xl text-foreground md:text-4xl">
                 Complete your booking brief.
               </h1>
 
-              <p className="max-w-2xl text-sm text-muted md:text-base">
-                Add the details first. Fotovia will only ask you to sign in
-                when you send the request.
-              </p>
+              {/* <div className="flex flex-wrap items-center gap-2 rounded-2xl bg-accent/10 px-4 py-3 text-sm text-foreground">
+                <span className="rounded-full bg-accent px-3 py-1 text-xs font-semibold text-white">
+                  New
+                </span>
 
-              <p className="text-xs text-muted">
-                Already chosen a photographer? Start a direct request from
-                their profile.
-              </p>
+                <span>
+                  Add the shoot details now. Sign-in is only required when you
+                  send the request.
+                </span>
+              </div> */}
             </div>
 
             {submittedValues ? (
@@ -470,23 +412,9 @@ export const BookingBriefPage = ({ prefill }: BookingBriefPageProps) =>
                     handleSubmit,
                     handleInvalid,
                   )}
-                  className="grid gap-8 lg:grid-cols-[2fr_1fr]"
+                  className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]"
                 >
                   <div className="space-y-6">
-                    {/* {prefilledItems.length ? (
-                      <div className="rounded-2xl border border-border bg-surface px-4 py-3 text-sm text-muted">
-                        <p className="text-xs uppercase tracking-[0.3em] text-muted">
-                          Prefilled from homepage
-                        </p>
-
-                        <ul className="mt-2 space-y-1">
-                          {prefilledItems.map((item) => (
-                            <li key={item}>{item}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    ) : null} */}
-
                     <BookingBriefForm />
                   </div>
 

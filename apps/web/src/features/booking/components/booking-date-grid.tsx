@@ -150,26 +150,14 @@ export const BookingDateGrid = () =>
 
     return (
         <div className="space-y-3">
-            <div className="flex items-end justify-between gap-4">
-                <div>
-                    <label className="text-base font-semibold text-foreground">
-                        Expected shoot date <span className="text-red-500">*</span>
-                    </label>
-
-                    <p className="mt-1 text-sm text-muted">
-                        Pick the date clients and photographers will use as the main
-                        booking reference.
-                    </p>
-                </div>
+            <div className="flex items-center justify-between gap-4">
+                <label className="text-base font-semibold text-foreground">
+                    Expected shoot date <span className="text-red-500">*</span>
+                </label>
 
                 <p className="shrink-0 text-sm font-semibold text-foreground">
                     {selectedDateValue || "Not selected"}
                 </p>
-            </div>
-
-            <div className="rounded-2xl border border-accent/20 bg-accent/10 px-4 py-3 text-sm text-foreground">
-                Need an urgent shoot? You can still send the request, but clear
-                timing helps photographers respond faster.
             </div>
 
             <div className="rounded-[1.5rem] border border-border bg-surface p-4">
@@ -198,7 +186,7 @@ export const BookingDateGrid = () =>
                     </button>
                 </div>
 
-                <div className="grid grid-cols-7 gap-3 text-center">
+                <div className="grid grid-cols-7 gap-2 text-center">
                     {WEEKDAY_LABELS.map((weekday) => (
                         <div
                             key={weekday}
@@ -226,7 +214,7 @@ export const BookingDateGrid = () =>
                                 type="button"
                                 disabled={isDisabled}
                                 className={[
-                                    "flex h-12 items-center justify-center rounded-2xl text-sm font-semibold transition",
+                                    "flex h-11 items-center justify-center rounded-2xl text-sm font-semibold transition",
                                     isSelected
                                         ? "bg-foreground text-background"
                                         : "bg-background text-foreground hover:bg-accent/20",

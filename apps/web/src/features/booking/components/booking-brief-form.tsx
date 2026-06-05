@@ -9,12 +9,12 @@ import { Select } from "../../../components/ui/select";
 import { Textarea } from "../../../components/ui/textarea";
 import { VIETNAM_LOCATION_OPTIONS } from "../../../shared/data/vietnam-locations";
 import
-  {
-    budgetOptions,
-    contactOptions,
-    sessionTypeOptions,
-    styleOptions,
-  } from "../data/booking-options";
+{
+  budgetOptions,
+  contactOptions,
+  sessionTypeOptions,
+  styleOptions,
+} from "../data/booking-options";
 import type { BookingBriefFormValues } from "../schemas/booking-brief.schema";
 import { BookingDateGrid } from "./booking-date-grid";
 
@@ -60,21 +60,14 @@ export const BookingBriefForm = () =>
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader className="space-y-2">
+        <CardHeader className="space-y-1 pb-4">
           <p className="text-xs uppercase tracking-[0.3em] text-muted">
             Step 01
           </p>
 
-          <div>
-            <h2 className="text-2xl font-semibold text-foreground">
-              Choose your session type.
-            </h2>
-
-            <p className="text-sm leading-6 text-muted">
-              Start with the type of shoot, similar to how clients
-              choose a booking category before adding details.
-            </p>
-          </div>
+          <h2 className="text-2xl font-semibold text-foreground">
+            Choose your session type.
+          </h2>
         </CardHeader>
 
         <CardContent className="space-y-4">
@@ -103,7 +96,7 @@ export const BookingBriefForm = () =>
                   />
 
                   <div className="flex h-full flex-col">
-                    <div className="flex h-32 items-center justify-center bg-gradient-to-br from-background via-surface to-accent/20 text-5xl">
+                    <div className="flex h-28 items-center justify-center bg-gradient-to-br from-background via-surface to-accent/20 text-5xl">
                       {option.visual}
                     </div>
 
@@ -124,10 +117,6 @@ export const BookingBriefForm = () =>
                       <p className="text-sm text-muted">
                         {option.subtitle}
                       </p>
-
-                      <p className="line-clamp-2 text-xs leading-5 text-muted">
-                        {option.description}
-                      </p>
                     </div>
                   </div>
                 </label>
@@ -142,21 +131,14 @@ export const BookingBriefForm = () =>
       </Card>
 
       <Card>
-        <CardHeader className="space-y-2">
+        <CardHeader className="space-y-1 pb-4">
           <p className="text-xs uppercase tracking-[0.3em] text-muted">
             Step 02
           </p>
 
-          <div>
-            <h2 className="text-2xl font-semibold text-foreground">
-              Choose place and visual direction.
-            </h2>
-
-            <p className="text-sm leading-6 text-muted">
-              Keep the main location simple first. More detailed
-              address notes can be added in the brief below.
-            </p>
-          </div>
+          <h2 className="text-2xl font-semibold text-foreground">
+            Choose place and style.
+          </h2>
         </CardHeader>
 
         <CardContent className="space-y-5">
@@ -218,21 +200,14 @@ export const BookingBriefForm = () =>
       </Card>
 
       <Card>
-        <CardHeader className="space-y-2">
+        <CardHeader className="space-y-1 pb-4">
           <p className="text-xs uppercase tracking-[0.3em] text-muted">
             Step 03
           </p>
 
-          <div>
-            <h2 className="text-2xl font-semibold text-foreground">
-              Pick the shoot date.
-            </h2>
-
-            <p className="text-sm leading-6 text-muted">
-              The date is the most important scheduling signal. Time can
-              stay flexible at this stage.
-            </p>
-          </div>
+          <h2 className="text-2xl font-semibold text-foreground">
+            Pick the shoot date.
+          </h2>
         </CardHeader>
 
         <CardContent className="space-y-5">
@@ -261,21 +236,14 @@ export const BookingBriefForm = () =>
       </Card>
 
       <Card>
-        <CardHeader className="space-y-2">
+        <CardHeader className="space-y-1 pb-4">
           <p className="text-xs uppercase tracking-[0.3em] text-muted">
             Step 04
           </p>
 
-          <div>
-            <h2 className="text-2xl font-semibold text-foreground">
-              Add shoot details.
-            </h2>
-
-            <p className="text-sm leading-6 text-muted">
-              Tell photographers what you want to shoot, the mood, and
-              any specific location or deliverable notes.
-            </p>
-          </div>
+          <h2 className="text-2xl font-semibold text-foreground">
+            Add shoot details.
+          </h2>
         </CardHeader>
 
         <CardContent className="space-y-5">
@@ -287,7 +255,7 @@ export const BookingBriefForm = () =>
             <Textarea
               id="description"
               className="min-h-36 rounded-2xl px-4 py-3"
-              placeholder="Example: I want a soft outdoor portrait concept with natural light, warm colors, and around 20 edited photos."
+              placeholder="Example: outdoor portrait concept, natural light, warm colors, around 20 edited photos."
               maxLength={500}
               {...register("description")}
             />
