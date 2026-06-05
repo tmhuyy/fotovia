@@ -44,6 +44,7 @@ export interface BookingRequestRecord extends CreateBookingPayload {
 export interface BookingEntrySearchParams {
     photographerSlug?: string;
     sessionType?: string;
+    style?: string;
     location?: string;
     date?: string;
     budget?: string;

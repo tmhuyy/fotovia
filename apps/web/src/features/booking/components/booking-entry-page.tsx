@@ -35,6 +35,7 @@ export const BookingEntryPage = () =>
         return {
             photographerSlug: readParam(params, "photographerSlug"),
             sessionType: readParam(params, "sessionType"),
+            style: readParam(params, "style"),
             location: readParam(params, "location"),
             date: readParam(params, "date"),
             budget: readParam(params, "budget"),
@@ -56,6 +57,7 @@ export const BookingEntryPage = () =>
             <BookingBriefPage
                 prefill={{
                     sessionType: resolvedParams.sessionType,
+                    style: resolvedParams.style,
                     location: resolvedParams.location,
                     date: resolvedParams.date,
                     budget: resolvedParams.budget,

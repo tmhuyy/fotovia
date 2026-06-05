@@ -1,17 +1,6 @@
-import { AuthenticatedRoute } from "../../../features/auth/components/authenticated-route";
 import { BookingEntryPage } from "../../../features/booking/components/booking-entry-page";
-import type { BookingEntrySearchParams } from "../../../features/booking/types/booking.types";
 
-interface BookingRouteProps
+export default function BookingRoute()
 {
-    searchParams: BookingEntrySearchParams;
-}
-
-export default function BookingRoute({ searchParams }: BookingRouteProps)
-{
-    return (
-        <AuthenticatedRoute>
-            <BookingEntryPage searchParams={searchParams} />
-        </AuthenticatedRoute>
-    );
+    return <BookingEntryPage />;
 }

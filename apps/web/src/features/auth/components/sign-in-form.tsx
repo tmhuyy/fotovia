@@ -4,11 +4,12 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-    FormProvider,
-    type SubmitErrorHandler,
-    useForm,
-} from "react-hook-form";
+import
+    {
+        FormProvider,
+        type SubmitErrorHandler,
+        useForm,
+    } from "react-hook-form";
 import { toast } from "sonner";
 
 import { Button } from "../../../components/ui/button";
@@ -18,10 +19,11 @@ import { sessionUserService } from "../../../services/session-user.service";
 import { useAuthStore } from "../../../store/auth.store";
 
 import { signInSchema, type SignInFormValues } from "../schemas/sign-in.schema";
-import {
-    getSafeInternalRoute,
-    resolvePostAuthRoute,
-} from "../lib/get-default-post-auth-route";
+import
+    {
+        getSafeInternalRoute,
+        resolvePostAuthRoute,
+    } from "../lib/get-default-post-auth-route";
 import { AuthFormAlert } from "./auth-form-alert";
 import { AuthTextField } from "./auth-text-field";
 import { PasswordField } from "./password-field";
@@ -31,7 +33,8 @@ type FormAlertState = {
     description?: string;
 } | null;
 
-export const SignInForm = () => {
+export const SignInForm = () =>
+{
     const router = useRouter();
     const searchParams = useSearchParams();
 
@@ -41,7 +44,8 @@ export const SignInForm = () => {
         [nextPath],
     );
 
-    const signUpHref = useMemo(() => {
+    const signUpHref = useMemo(() =>
+    {
         if (!safeNextPath) return "/sign-up";
         return `/sign-up?next=${encodeURIComponent(safeNextPath)}`;
     }, [safeNextPath]);
@@ -65,7 +69,8 @@ export const SignInForm = () => {
         criteriaMode: "firstError",
     });
 
-    useEffect(() => {
+    useEffect(() =>
+    {
         if (!registeredEmail) return;
 
         if (!form.getValues("email")) {
@@ -75,7 +80,8 @@ export const SignInForm = () => {
         }
     }, [form, registeredEmail]);
 
-    const onSubmit = async (values: SignInFormValues) => {
+    const onSubmit = async (values: SignInFormValues) =>
+    {
         setFormError(null);
 
         try {
@@ -91,11 +97,11 @@ export const SignInForm = () => {
             });
 
             const redirectAfterSignIn = resolvePostAuthRoute({
-                nextPath,
+                nextPath: safeNextPath,
                 role: sessionUser?.role,
             });
 
-            router.push(redirectAfterSignIn);
+            router.replace(redirectAfterSignIn);
             router.refresh();
 
             toast.success("Sign In", {
@@ -144,7 +150,8 @@ export const SignInForm = () => {
         }
     };
 
-    const handleInvalidSubmit: SubmitErrorHandler<SignInFormValues> = () => {
+    const handleInvalidSubmit: SubmitErrorHandler<SignInFormValues> = () =>
+    {
         setFormError(null);
     };
 

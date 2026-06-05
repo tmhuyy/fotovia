@@ -12,12 +12,17 @@ import { Container } from "../../../components/layout/container";
 import { Section } from "../../../components/common/section";
 import { buttonVariants } from "../../../components/ui/button";
 import { useAuthStore } from "../../../store/auth.store";
-import { budgetOptions, sessionTypeOptions } from "../data/booking-options";
 import
-{
-  bookingBriefSchema,
-  type BookingBriefFormValues,
-} from "../schemas/booking-brief.schema";
+  {
+    budgetOptions,
+    sessionTypeOptions,
+    styleOptions,
+  } from "../data/booking-options";
+import
+  {
+    bookingBriefSchema,
+    type BookingBriefFormValues,
+  } from "../schemas/booking-brief.schema";
 import { BookingBriefForm } from "./booking-brief-form";
 import { BookingBriefSummaryCard } from "./booking-brief-summary-card";
 import { BookingBriefSuccess } from "./booking-brief-success";
@@ -27,6 +32,7 @@ const BOOKING_BRIEF_DRAFT_STORAGE_KEY = "fotovia.bookingBriefDraft";
 interface BookingBriefPrefill
 {
   sessionType?: string;
+  style?: string;
   location?: string;
   date?: string;
   budget?: string;
@@ -37,19 +43,66 @@ interface BookingBriefPageProps
   prefill?: BookingBriefPrefill;
 }
 
-const saveBookingDraft = (values: BookingBriefFormValues) =>
+interface BookingBriefDraft
+{
+  values: BookingBriefFormValues;
+  intent: "send-booking-request";
+  returnTo: string;
+  savedAt: string;
+}
+
+const isBookingBriefFormValues = (
+  value: unknown,
+): value is BookingBriefFormValues =>
+{
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "sessionType" in value &&
+    "preferredDate" in value &&
+    "preferredTime" in value &&
+    "location" in value &&
+    "budget" in value &&
+    "style" in value &&
+    "description" in value &&
+    "contactPreference" in value
+  );
+};
+
+const isBookingBriefDraft = (value: unknown): value is BookingBriefDraft =>
+{
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "values" in value &&
+    "intent" in value &&
+    "returnTo" in value
+  );
+};
+
+const saveBookingDraft = (
+  values: BookingBriefFormValues,
+  returnTo: string,
+) =>
 {
   if (typeof window === "undefined") {
     return;
   }
 
+  const draft: BookingBriefDraft = {
+    values,
+    intent: "send-booking-request",
+    returnTo,
+    savedAt: new Date().toISOString(),
+  };
+
   window.sessionStorage.setItem(
     BOOKING_BRIEF_DRAFT_STORAGE_KEY,
-    JSON.stringify(values),
+    JSON.stringify(draft),
   );
 };
 
-const readBookingDraft = (): BookingBriefFormValues | null =>
+const readBookingDraft = (): BookingBriefDraft | null =>
 {
   if (typeof window === "undefined") {
     return null;
@@ -64,7 +117,23 @@ const readBookingDraft = (): BookingBriefFormValues | null =>
   }
 
   try {
-    return JSON.parse(storedValue) as BookingBriefFormValues;
+    const parsedValue = JSON.parse(storedValue) as unknown;
+
+    if (isBookingBriefDraft(parsedValue)) {
+      return parsedValue;
+    }
+
+    if (isBookingBriefFormValues(parsedValue)) {
+      return {
+        values: parsedValue,
+        intent: "send-booking-request",
+        returnTo: "/bookings/new",
+        savedAt: new Date().toISOString(),
+      };
+    }
+
+    window.sessionStorage.removeItem(BOOKING_BRIEF_DRAFT_STORAGE_KEY);
+    return null;
   } catch {
     window.sessionStorage.removeItem(BOOKING_BRIEF_DRAFT_STORAGE_KEY);
     return null;
@@ -106,7 +175,7 @@ const BookingAuthPrompt = ({
             </p>
 
             <h2 className="font-serif text-3xl leading-tight text-foreground">
-              Sign in to confirm your booking request.
+              Sign in to send your booking request.
             </h2>
           </div>
 
@@ -121,8 +190,8 @@ const BookingAuthPrompt = ({
         </div>
 
         <p className="mt-4 text-sm leading-7 text-muted">
-          Your brief is saved in this browser. Sign in or create an
-          account when you are ready to confirm the request.
+          Your booking brief is saved in this browser. After signing in,
+          Fotovia will bring you back here and continue the request.
         </p>
 
         <div className="mt-6 space-y-3">
@@ -202,6 +271,7 @@ export const BookingBriefPage = ({ prefill }: BookingBriefPageProps) =>
 
     return {
       sessionType: getValue("sessionType"),
+      style: getValue("style"),
       location: getValue("location"),
       date: getValue("date"),
       budget: getValue("budget"),
@@ -216,7 +286,7 @@ export const BookingBriefPage = ({ prefill }: BookingBriefPageProps) =>
       preferredTime: "",
       location: resolvedPrefill.location ?? "",
       budget: resolvedPrefill.budget ?? "",
-      style: "",
+      style: resolvedPrefill.style ?? "",
       description: "",
       contactPreference: "email",
       inspiration: "",
@@ -235,6 +305,15 @@ export const BookingBriefPage = ({ prefill }: BookingBriefPageProps) =>
         )?.label ?? resolvedPrefill.sessionType;
 
       items.push(`Session type: ${label}`);
+    }
+
+    if (resolvedPrefill.style) {
+      const label =
+        styleOptions.find(
+          (option) => option.value === resolvedPrefill.style,
+        )?.label ?? resolvedPrefill.style;
+
+      items.push(`Style: ${label}`);
     }
 
     if (resolvedPrefill.location) {
@@ -279,12 +358,27 @@ export const BookingBriefPage = ({ prefill }: BookingBriefPageProps) =>
       return;
     }
 
-    form.reset({
+    const restoredValues: BookingBriefFormValues = {
       ...defaultValues,
-      ...storedDraft,
-    });
+      ...storedDraft.values,
+    };
 
+    form.reset(restoredValues);
     clearBookingDraft();
+
+    if (storedDraft.intent !== "send-booking-request") {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() =>
+    {
+      setSubmittedValues(restoredValues);
+    }, 450);
+
+    return () =>
+    {
+      window.clearTimeout(timeoutId);
+    };
   }, [defaultValues, form, hasHydrated, isAuthenticated]);
 
   const handleSubmit = async (values: BookingBriefFormValues) =>
@@ -297,7 +391,7 @@ export const BookingBriefPage = ({ prefill }: BookingBriefPageProps) =>
     }
 
     if (!isAuthenticated) {
-      saveBookingDraft(values);
+      saveBookingDraft(values, currentRoute);
       setIsAuthPromptOpen(true);
       return;
     }
@@ -354,13 +448,13 @@ export const BookingBriefPage = ({ prefill }: BookingBriefPageProps) =>
               </h1>
 
               <p className="max-w-2xl text-sm text-muted md:text-base">
-                Add the details first. Fotovia will only ask you to
-                sign in when you confirm the request.
+                Add the details first. Fotovia will only ask you to sign in
+                when you send the request.
               </p>
 
               <p className="text-xs text-muted">
-                Already chosen a photographer? Start a direct request
-                from their profile.
+                Already chosen a photographer? Start a direct request from
+                their profile.
               </p>
             </div>
 
@@ -399,8 +493,8 @@ export const BookingBriefPage = ({ prefill }: BookingBriefPageProps) =>
                   <div className="space-y-6 lg:sticky lg:top-24 lg:self-start">
                     <BookingBriefSummaryCard
                       errorMessage={submitError}
-                      submitLabel="Confirm booking request"
-                      submittingLabel="Preparing..."
+                      submitLabel="Send booking request"
+                      submittingLabel="Sending..."
                     />
                   </div>
                 </form>

@@ -9,6 +9,7 @@ import { Container } from "../layout/container";
 import { Badge } from "../ui/badge";
 import { buttonVariants } from "../ui/button";
 import { getHomeDemoImage } from "./home-demo-images";
+import { VIETNAM_LOCATION_OPTIONS } from "../../shared/data/vietnam-locations";
 
 type BookingMenuKey = "type" | "date" | "location" | null;
 
@@ -57,17 +58,6 @@ const shootTypeOptions: BookingOption[] = SHOOT_STYLE_LABELS.map((label) => ({
     label,
     value: label,
 }));
-
-const locationOptions: BookingOption[] = [
-    { label: "Thu Duc City", value: "Thu Duc City" },
-    { label: "Ho Chi Minh City", value: "Ho Chi Minh City" },
-    { label: "Da Nang", value: "Da Nang" },
-    { label: "Ha Noi", value: "Ha Noi" },
-    { label: "Da Lat", value: "Da Lat" },
-    { label: "Can Tho", value: "Can Tho" },
-    { label: "Nha Trang", value: "Nha Trang" },
-    { label: "Hoi An", value: "Hoi An" },
-];
 
 const quickStyleLinks = [
     { label: "Wedding", href: "/photographers?style=wedding" },
@@ -673,7 +663,7 @@ const HeroBookingBar = () =>
 
                         {activeMenu === "location" ? (
                             <OptionDropdown
-                                options={locationOptions}
+                                options={VIETNAM_LOCATION_OPTIONS}
                                 onSelect={handleSelectLocation}
                             />
                         ) : null}
