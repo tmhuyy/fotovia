@@ -15,10 +15,7 @@ export type ClientBookingActionStatus = Extract<BookingStatus, "cancelled">;
 export type BookingInboxFilter = "all" | BookingStatus;
 export type ClientBookingFilter = "all" | BookingStatus;
 
-export interface CreateBookingPayload {
-    photographerProfileId: string;
-    photographerSlug: string;
-    photographerName: string;
+export interface BaseBookingPayload {
     title?: string;
     shootType?: string;
     sessionType: string;
@@ -33,11 +30,22 @@ export interface CreateBookingPayload {
     notes?: string;
 }
 
-export interface BookingRequestRecord extends CreateBookingPayload {
+export interface CreateBookingPayload extends BaseBookingPayload {
+    photographerProfileId: string;
+    photographerSlug: string;
+    photographerName: string;
+}
+
+export type CreateOpenBookingPayload = BaseBookingPayload;
+
+export interface BookingRequestRecord extends BaseBookingPayload {
     id: string;
     clientUserId: string;
     clientEmail?: string;
+    photographerProfileId?: string;
     photographerUserId?: string;
+    photographerSlug?: string;
+    photographerName?: string;
     status: BookingStatus;
     createdAt: string;
     updatedAt: string;

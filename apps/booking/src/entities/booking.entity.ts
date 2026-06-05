@@ -28,21 +28,21 @@ export class Booking {
     @Column({ type: 'varchar', length: 255, nullable: true })
     clientEmail: string | null;
 
-    @ApiProperty({ format: 'uuid' })
-    @Column({ type: 'uuid' })
-    photographerProfileId: string;
+    @ApiPropertyOptional({ format: 'uuid' })
+    @Column({ type: 'uuid', nullable: true })
+    photographerProfileId: string | null;
 
     @ApiPropertyOptional({ format: 'uuid' })
     @Column({ type: 'uuid', nullable: true })
     photographerUserId: string | null;
 
-    @ApiProperty()
-    @Column({ type: 'varchar', length: 255 })
-    photographerSlug: string;
+    @ApiPropertyOptional()
+    @Column({ type: 'varchar', length: 255, nullable: true })
+    photographerSlug: string | null;
 
-    @ApiProperty()
-    @Column({ type: 'varchar', length: 255 })
-    photographerName: string;
+    @ApiPropertyOptional()
+    @Column({ type: 'varchar', length: 255, nullable: true })
+    photographerName: string | null;
 
     @ApiPropertyOptional()
     @Column({ type: 'varchar', length: 160, nullable: true })

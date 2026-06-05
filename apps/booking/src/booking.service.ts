@@ -9,6 +9,7 @@ import { DataSource, Repository } from 'typeorm';
 import { UserRole } from '@repo/types';
 
 import { CreateBookingDto } from './dtos/create-booking.dto';
+import { CreateOpenBookingDto } from './dtos/create-open-booking.dto';
 import { UpdateBookingStatusDto } from './dtos/update-booking-status.dto';
 import { Booking } from './entities/booking.entity';
 import {
@@ -86,6 +87,56 @@ export class BookingService {
             actorUserId: userId,
             actorLabel: userEmail?.trim() || 'Client',
             note: 'Booking request created.',
+        });
+
+        return savedBooking;
+    }
+
+    async createOpenBooking(
+        createOpenBookingDto: CreateOpenBookingDto,
+        userId: string,
+        userEmail?: string,
+    ): Promise<Booking> {
+        const resolvedShootType =
+            createOpenBookingDto.shootType?.trim() ||
+            createOpenBookingDto.sessionType?.trim();
+
+        if (!resolvedShootType) {
+            throw new BadRequestException('Shoot type is required.');
+        }
+
+        const booking = this.bookingRepository.create({
+            clientUserId: userId,
+            clientEmail: userEmail?.trim() || null,
+            photographerProfileId: null,
+            photographerUserId: null,
+            photographerSlug: null,
+            photographerName: null,
+            title: createOpenBookingDto.title?.trim() || null,
+            shootType: resolvedShootType,
+            sessionType:
+                createOpenBookingDto.sessionType?.trim() || resolvedShootType,
+            sessionDate: createOpenBookingDto.sessionDate.trim(),
+            sessionTime: createOpenBookingDto.sessionTime.trim(),
+            duration: createOpenBookingDto.duration.trim(),
+            location: createOpenBookingDto.location.trim(),
+            budget: createOpenBookingDto.budget.trim(),
+            contactPreference: createOpenBookingDto.contactPreference.trim(),
+            concept: createOpenBookingDto.concept.trim(),
+            inspiration: createOpenBookingDto.inspiration?.trim() || null,
+            notes: createOpenBookingDto.notes?.trim() || null,
+            status: 'pending',
+        });
+
+        const savedBooking = await this.bookingRepository.save(booking);
+
+        await this.recordBookingEvent({
+            bookingId: savedBooking.id,
+            eventType: 'created',
+            actorRole: 'client',
+            actorUserId: userId,
+            actorLabel: userEmail?.trim() || 'Client',
+            note: 'Open booking request created.',
         });
 
         return savedBooking;
@@ -252,7 +303,7 @@ export class BookingService {
                 eventType: 'completed',
                 actorRole: 'photographer',
                 actorUserId: userId,
-                actorLabel: booking.photographerName,
+                actorLabel: booking.photographerName ?? 'Photographer',
                 note: 'Photographer marked the booking as completed.',
             });
 
@@ -276,7 +327,7 @@ export class BookingService {
             >,
             actorRole: 'photographer',
             actorUserId: userId,
-            actorLabel: booking.photographerName,
+            actorLabel: booking.photographerName ?? 'Photographer',
             note:
                 updateBookingStatusDto.status === 'confirmed'
                     ? 'Photographer confirmed the booking request.'

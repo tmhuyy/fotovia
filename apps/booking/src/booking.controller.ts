@@ -20,6 +20,7 @@ import { GetUser, IUser, JwtAuthGuard } from '@repo/common';
 
 import { BookingService } from './booking.service';
 import { CreateBookingDto } from './dtos/create-booking.dto';
+import { CreateOpenBookingDto } from './dtos/create-open-booking.dto';
 import { UpdateBookingStatusDto } from './dtos/update-booking-status.dto';
 import { Booking } from './entities/booking.entity';
 import { BookingEvent } from './entities/booking-event.entity';
@@ -28,6 +29,27 @@ import { BookingEvent } from './entities/booking-event.entity';
 @Controller('booking')
 export class BookingController {
     constructor(private readonly bookingService: BookingService) {}
+
+    @UseGuards(JwtAuthGuard)
+    @Post('/open')
+    @ApiOperation({
+        summary:
+            'Create an open booking request before the client chooses a photographer',
+    })
+    @ApiCreatedResponse({
+        description: 'Open booking request created successfully',
+        type: Booking,
+    })
+    async createOpenBooking(
+        @Body() createOpenBookingDto: CreateOpenBookingDto,
+        @GetUser() user: IUser,
+    ): Promise<Booking> {
+        return this.bookingService.createOpenBooking(
+            createOpenBookingDto,
+            user.id,
+            user.email,
+        );
+    }
 
     @UseGuards(JwtAuthGuard)
     @Post()

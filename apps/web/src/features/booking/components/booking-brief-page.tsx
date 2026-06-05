@@ -1,8 +1,16 @@
 "use client";
 
+import { isAxiosError } from "axios";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import
+  {
+    useCallback,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+  } from "react";
 import { FormProvider, useForm, type FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -11,16 +19,19 @@ import { Footer } from "../../../components/home/footer";
 import { Container } from "../../../components/layout/container";
 import { Section } from "../../../components/common/section";
 import { buttonVariants } from "../../../components/ui/button";
+import { bookingService } from "../../../services/booking.service";
 import { useAuthStore } from "../../../store/auth.store";
+import type { CreateOpenBookingPayload } from "../types/booking.types";
 import
-{
-  bookingBriefSchema,
-  type BookingBriefFormValues,
-} from "../schemas/booking-brief.schema";
+  {
+    bookingBriefSchema,
+    type BookingBriefFormValues,
+  } from "../schemas/booking-brief.schema";
 import
   {
     BUDGET_MIN_VND,
     parseBudgetRangeValue,
+    serializeBudgetRange,
   } from "../utils/booking-budget";
 import { BookingBriefForm } from "./booking-brief-form";
 import { BookingBriefSummaryCard } from "./booking-brief-summary-card";
@@ -223,6 +234,51 @@ const clearBookingDraft = () =>
   window.sessionStorage.removeItem(BOOKING_BRIEF_DRAFT_STORAGE_KEY);
 };
 
+const buildOpenBookingPayload = (
+  values: BookingBriefFormValues,
+): CreateOpenBookingPayload =>
+{
+  const shootType = values.shootType.trim();
+
+  return {
+    title: values.title.trim(),
+    shootType,
+    sessionType: shootType,
+    sessionDate: values.preferredDate.trim(),
+    sessionTime: values.preferredTime?.trim() || "flexible",
+    duration: "flexible",
+    location: values.location.trim(),
+    budget: serializeBudgetRange(values.budgetFrom, values.budgetTo),
+    contactPreference: values.contactPreference.trim(),
+    concept: values.concept.trim(),
+    inspiration: values.inspiration?.trim() || undefined,
+    notes: values.notes?.trim() || undefined,
+  };
+};
+
+const getSubmitErrorMessage = (error: unknown): string =>
+{
+  if (isAxiosError(error)) {
+    const payload = error.response?.data as
+      | { message?: string | string[] }
+      | undefined;
+
+    if (typeof payload?.message === "string" && payload.message.trim()) {
+      return payload.message;
+    }
+
+    if (Array.isArray(payload?.message) && payload.message.length > 0) {
+      return payload.message[0] ?? "We could not send your booking request.";
+    }
+
+    if (error.response?.status === 401) {
+      return "Your session expired. Please sign in again to send this request.";
+    }
+  }
+
+  return "We could not send your booking request. Please try again.";
+};
+
 const BookingAuthPrompt = ({
   isOpen,
   onClose,
@@ -315,6 +371,7 @@ export const BookingBriefPage = ({ prefill }: BookingBriefPageProps) =>
 
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isAuthPromptOpen, setIsAuthPromptOpen] = useState(false);
+  const processedDraftKeyRef = useRef<string | null>(null);
 
   const currentRoute = useMemo(() =>
   {
@@ -381,6 +438,25 @@ export const BookingBriefPage = ({ prefill }: BookingBriefPageProps) =>
     defaultValues,
   });
 
+  const submitBookingBrief = useCallback(
+    async (values: BookingBriefFormValues) =>
+    {
+      setSubmitError(null);
+
+      try {
+        await bookingService.createOpenBooking(
+          buildOpenBookingPayload(values),
+        );
+
+        clearBookingDraft();
+        setSubmittedValues(values);
+      } catch (error) {
+        setSubmitError(getSubmitErrorMessage(error));
+      }
+    },
+    [],
+  );
+
   useEffect(() =>
   {
     form.reset(defaultValues);
@@ -398,28 +474,33 @@ export const BookingBriefPage = ({ prefill }: BookingBriefPageProps) =>
       return;
     }
 
+    const draftKey = storedDraft.savedAt;
+
+    if (processedDraftKeyRef.current === draftKey) {
+      return;
+    }
+
+    processedDraftKeyRef.current = draftKey;
+
     const restoredValues: BookingBriefFormValues = {
       ...defaultValues,
       ...storedDraft.values,
     };
 
     form.reset(restoredValues);
-    clearBookingDraft();
 
     if (storedDraft.intent !== "send-booking-request") {
       return;
     }
 
-    const timeoutId = window.setTimeout(() =>
-    {
-      setSubmittedValues(restoredValues);
-    }, 450);
-
-    return () =>
-    {
-      window.clearTimeout(timeoutId);
-    };
-  }, [defaultValues, form, hasHydrated, isAuthenticated]);
+    void submitBookingBrief(restoredValues);
+  }, [
+    defaultValues,
+    form,
+    hasHydrated,
+    isAuthenticated,
+    submitBookingBrief,
+  ]);
 
   const handleSubmit = async (values: BookingBriefFormValues) =>
   {
@@ -436,10 +517,7 @@ export const BookingBriefPage = ({ prefill }: BookingBriefPageProps) =>
       return;
     }
 
-    clearBookingDraft();
-
-    await new Promise((resolve) => setTimeout(resolve, 450));
-    setSubmittedValues(values);
+    await submitBookingBrief(values);
   };
 
   const handleInvalid = (errors: FieldErrors<BookingBriefFormValues>) =>

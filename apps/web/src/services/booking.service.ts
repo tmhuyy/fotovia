@@ -3,6 +3,7 @@ import type {
     BookingStatus,
     ClientBookingActionStatus,
     CreateBookingPayload,
+    CreateOpenBookingPayload,
     PhotographerBookingActionStatus,
 } from "../features/booking/types/booking.types";
 import type { BookingEventRecord } from "../features/booking/types/booking-event.types";
@@ -14,6 +15,7 @@ type AnyRecord = Record<string, unknown>;
 
 const BOOKING_ENDPOINTS = {
     create: "/booking",
+    createOpen: "/booking/open",
     clientMine: "/booking/client/me",
     clientCancel: (bookingId: string) =>
         `/booking/client/me/${bookingId}/cancel`,
@@ -55,11 +57,16 @@ const normalizeBooking = (payload: AnyRecord): BookingRequestRecord => {
         id: normalizeString(payload.id),
         clientUserId: normalizeString(payload.clientUserId),
         clientEmail: normalizeNullableString(payload.clientEmail) ?? undefined,
-        photographerProfileId: normalizeString(payload.photographerProfileId),
+        photographerProfileId:
+            normalizeNullableString(payload.photographerProfileId) ?? undefined,
         photographerUserId:
             normalizeNullableString(payload.photographerUserId) ?? undefined,
-        photographerSlug: normalizeString(payload.photographerSlug),
-        photographerName: normalizeString(payload.photographerName),
+        photographerSlug:
+            normalizeNullableString(payload.photographerSlug) ?? undefined,
+        photographerName:
+            normalizeNullableString(payload.photographerName) ?? undefined,
+        title: normalizeNullableString(payload.title) ?? undefined,
+        shootType: normalizeString(payload.shootType),
         sessionType: normalizeString(payload.sessionType),
         sessionDate: normalizeString(payload.sessionDate),
         sessionTime: normalizeString(payload.sessionTime),
@@ -141,6 +148,17 @@ export const bookingService = {
         const response = await bookingClient.post<
             ApiResponse<AnyRecord> | AnyRecord
         >(BOOKING_ENDPOINTS.create, payload);
+
+        const data = unwrapResponse<AnyRecord>(response.data);
+        return normalizeBooking(data);
+    },
+
+    async createOpenBooking(
+        payload: CreateOpenBookingPayload,
+    ): Promise<BookingRequestRecord> {
+        const response = await bookingClient.post<
+            ApiResponse<AnyRecord> | AnyRecord
+        >(BOOKING_ENDPOINTS.createOpen, payload);
 
         const data = unwrapResponse<AnyRecord>(response.data);
         return normalizeBooking(data);
