@@ -2,14 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import
-    {
-        FormProvider,
-        type SubmitErrorHandler,
-        useForm,
-    } from "react-hook-form";
+{
+    FormProvider,
+    type SubmitErrorHandler,
+    useForm,
+} from "react-hook-form";
 import { toast } from "sonner";
 
 import { Button } from "../../../components/ui/button";
@@ -20,10 +20,10 @@ import { useAuthStore } from "../../../store/auth.store";
 
 import { signInSchema, type SignInFormValues } from "../schemas/sign-in.schema";
 import
-    {
-        getSafeInternalRoute,
-        resolvePostAuthRoute,
-    } from "../lib/get-default-post-auth-route";
+{
+    getSafeInternalRoute,
+    resolvePostAuthRoute,
+} from "../lib/get-default-post-auth-route";
 import { AuthFormAlert } from "./auth-form-alert";
 import { AuthTextField } from "./auth-text-field";
 import { PasswordField } from "./password-field";
@@ -33,9 +33,63 @@ type FormAlertState = {
     description?: string;
 } | null;
 
+const BOOKING_BRIEF_DRAFT_STORAGE_KEY = "fotovia.bookingBriefDraft";
+const PENDING_BOOKING_DRAFT_MAX_AGE_MS = 1000 * 60 * 60;
+
+const readPendingBookingReturnTo = () =>
+{
+    if (typeof window === "undefined") {
+        return null;
+    }
+
+    const storedValue = window.sessionStorage.getItem(
+        BOOKING_BRIEF_DRAFT_STORAGE_KEY,
+    );
+
+    if (!storedValue) {
+        return null;
+    }
+
+    try {
+        const parsedValue = JSON.parse(storedValue) as {
+            intent?: unknown;
+            returnTo?: unknown;
+            savedAt?: unknown;
+        };
+
+        if (parsedValue.intent !== "send-booking-request") {
+            return null;
+        }
+
+        if (typeof parsedValue.returnTo !== "string") {
+            return null;
+        }
+
+        const safeReturnTo = getSafeInternalRoute(parsedValue.returnTo);
+
+        if (!safeReturnTo) {
+            return null;
+        }
+
+        if (typeof parsedValue.savedAt === "string") {
+            const savedAtTime = new Date(parsedValue.savedAt).getTime();
+            const isExpired =
+                Number.isFinite(savedAtTime) &&
+                Date.now() - savedAtTime > PENDING_BOOKING_DRAFT_MAX_AGE_MS;
+
+            if (isExpired) {
+                return null;
+            }
+        }
+
+        return safeReturnTo;
+    } catch {
+        return null;
+    }
+};
+
 export const SignInForm = () =>
 {
-    const router = useRouter();
     const searchParams = useSearchParams();
 
     const nextPath = searchParams.get("next");
@@ -96,17 +150,18 @@ export const SignInForm = () =>
                 user: sessionUser,
             });
 
+            const pendingBookingReturnTo = readPendingBookingReturnTo();
+
             const redirectAfterSignIn = resolvePostAuthRoute({
-                nextPath: safeNextPath,
+                nextPath: safeNextPath ?? pendingBookingReturnTo,
                 role: sessionUser?.role,
             });
-
-            router.replace(redirectAfterSignIn);
-            router.refresh();
 
             toast.success("Sign In", {
                 description: "You have been signed in successfully.",
             });
+
+            window.location.assign(redirectAfterSignIn);
         } catch (error) {
             clearAuth();
 

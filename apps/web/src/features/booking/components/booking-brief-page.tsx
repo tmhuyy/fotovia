@@ -263,11 +263,6 @@ const BookingAuthPrompt = ({
           </button>
         </div>
 
-        <p className="mt-4 text-sm leading-7 text-muted">
-          Your booking brief is saved in this browser. After signing in,
-          Fotovia will bring you back here and continue the request.
-        </p>
-
         <div className="mt-6 space-y-3">
           <Link
             href={signInHref}
