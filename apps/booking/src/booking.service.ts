@@ -5,7 +5,7 @@ import {
     NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, IsNull, Repository } from 'typeorm';
 import { UserRole } from '@repo/types';
 
 import { CreateBookingDto } from './dtos/create-booking.dto';
@@ -140,6 +140,21 @@ export class BookingService {
         });
 
         return savedBooking;
+    }
+
+    async getOpenBookingFeed(): Promise<Booking[]> {
+        return this.bookingRepository.find({
+            where: {
+                photographerProfileId: IsNull(),
+                photographerUserId: IsNull(),
+                status: 'pending',
+            },
+            order: {
+                sessionDate: 'ASC',
+                createdAt: 'DESC',
+            },
+            take: 6,
+        });
     }
 
     async getMyClientBookings(userId: string): Promise<Booking[]> {

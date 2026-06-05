@@ -4,6 +4,7 @@ import type {
     ClientBookingActionStatus,
     CreateBookingPayload,
     CreateOpenBookingPayload,
+    OpenBookingRequestRecord,
     PhotographerBookingActionStatus,
 } from "../features/booking/types/booking.types";
 import type { BookingEventRecord } from "../features/booking/types/booking-event.types";
@@ -16,6 +17,7 @@ type AnyRecord = Record<string, unknown>;
 const BOOKING_ENDPOINTS = {
     create: "/booking",
     createOpen: "/booking/open",
+    openFeed: "/booking/open",
     clientMine: "/booking/client/me",
     clientCancel: (bookingId: string) =>
         `/booking/client/me/${bookingId}/cancel`,
@@ -162,6 +164,15 @@ export const bookingService = {
 
         const data = unwrapResponse<AnyRecord>(response.data);
         return normalizeBooking(data);
+    },
+
+    async getOpenBookingFeed(): Promise<OpenBookingRequestRecord[]> {
+        const response = await bookingClient.get<
+            ApiResponse<unknown> | unknown
+        >(BOOKING_ENDPOINTS.openFeed);
+
+        const data = unwrapResponse<unknown>(response.data);
+        return normalizeBookingArray(data);
     },
 
     async getMyClientBookings(): Promise<BookingRequestRecord[]> {

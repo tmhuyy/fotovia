@@ -30,6 +30,20 @@ import { BookingEvent } from './entities/booking-event.entity';
 export class BookingController {
     constructor(private readonly bookingService: BookingService) {}
 
+    @Get('/open')
+    @ApiOperation({
+        summary:
+            'Get public open booking requests that are still waiting for a photographer',
+    })
+    @ApiOkResponse({
+        description: 'Open booking request feed fetched successfully',
+        type: Booking,
+        isArray: true,
+    })
+    async getOpenBookingFeed(): Promise<Booking[]> {
+        return this.bookingService.getOpenBookingFeed();
+    }
+
     @UseGuards(JwtAuthGuard)
     @Post('/open')
     @ApiOperation({

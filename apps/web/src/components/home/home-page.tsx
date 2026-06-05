@@ -3,6 +3,7 @@ import { Footer } from "./footer";
 import { HeroSection } from "./hero-section";
 import { HomeValueStrip } from "./home-value-strip";
 import { Navbar } from "./navbar";
+import { OpeningBookingRequests } from "./opening-booking-requests";
 
 export const HomePage = () =>
 {
@@ -12,6 +13,7 @@ export const HomePage = () =>
 
             <main>
                 <HeroSection />
+                <OpeningBookingRequests />
                 <HomeValueStrip />
                 <FeaturedPhotographers />
             </main>

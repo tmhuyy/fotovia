@@ -51,6 +51,8 @@ export interface BookingRequestRecord extends BaseBookingPayload {
     updatedAt: string;
 }
 
+export type OpenBookingRequestRecord = BookingRequestRecord;
+
 export interface BookingEntrySearchParams {
     photographerSlug?: string;
     sessionType?: string;
