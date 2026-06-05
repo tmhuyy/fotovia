@@ -339,14 +339,18 @@ const OptionDropdown = ({
     options,
     onSelect,
     formatLabel = (value) => value,
+    className = "absolute left-0 top-[calc(100%+0.75rem)] w-72",
 }: {
     options: BookingOption[];
     onSelect: (option: BookingOption) => void;
     formatLabel?: (value: string) => string;
+    className?: string;
 }) =>
 {
     return (
-        <div className="absolute left-0 top-[calc(100%+0.75rem)] z-50 w-72 rounded-[1.5rem] border border-border bg-surface p-2 shadow-2xl">
+        <div
+            className={`${className} z-50 rounded-[1.5rem] border border-border bg-surface p-2 shadow-2xl`}
+        >
             <div className="max-h-72 overflow-y-auto">
                 {options.map((option) => (
                     <button
@@ -368,11 +372,13 @@ const DateCalendarDropdown = ({
     selectedDate,
     onChangeMonth,
     onSelectDate,
+    className = "absolute left-1/2 top-[calc(100%+0.75rem)] w-[22rem] -translate-x-1/2",
 }: {
     calendarMonth: Date;
     selectedDate: Date | null;
     onChangeMonth: (nextMonth: Date) => void;
     onSelectDate: (date: Date) => void;
+    className?: string;
 }) =>
 {
     const { blankDays, days } = getCalendarDays(calendarMonth);
@@ -401,7 +407,9 @@ const DateCalendarDropdown = ({
     };
 
     return (
-        <div className="absolute left-1/2 top-[calc(100%+0.75rem)] z-50 w-[22rem] -translate-x-1/2 rounded-[1.5rem] border border-border bg-surface p-4 shadow-2xl">
+        <div
+            className={`${className} z-50 rounded-[1.5rem] border border-border bg-surface p-4 shadow-2xl`}
+        >
             <div className="flex items-center justify-between gap-3">
                 <button
                     type="button"
@@ -479,7 +487,6 @@ const DateCalendarDropdown = ({
         </div>
     );
 };
-
 const HeroBookingBar = () =>
 {
     const router = useRouter();
@@ -561,24 +568,29 @@ const HeroBookingBar = () =>
         setActiveMenu(null);
     };
 
+    const fieldClassName = (menuKey: BookingMenuKey) =>
+    {
+        return [
+            "flex h-14 w-full items-center justify-start gap-3 rounded-2xl px-4 text-left transition hover:bg-background md:h-16 md:rounded-[1.25rem] md:bg-transparent md:px-5",
+            activeMenu === menuKey
+                ? "ring-1 ring-foreground/10 md:bg-background md:ring-2"
+                : "",
+        ]
+            .filter(Boolean)
+            .join(" ");
+    };
+
     return (
         <div
             ref={bookingBarRef}
-            className="relative z-20 mx-auto -mt-14 max-w-[980px] px-4 md:-mt-12"
+            className="relative z-20 mx-auto -mt-14 max-w-[980px] px-5 sm:px-6 md:-mt-12"
         >
-            <div className="rounded-[1.75rem] border border-border bg-surface p-2 shadow-[0_24px_70px_rgba(23,23,23,0.18)] md:rounded-[1.75rem]">
-                <div className="grid gap-2 md:grid-cols-[1fr_1fr_1fr_220px] md:items-center">
+            <div className="rounded-[1.5rem] border border-border/70 bg-[#f6f8fb] p-3 shadow-[0_24px_70px_rgba(23,23,23,0.18)] md:rounded-[1.75rem] md:bg-surface md:p-2">
+                <div className="grid grid-cols-2 gap-3 md:grid-cols-[1fr_1fr_1fr_220px] md:items-center md:gap-2">
                     <div className="relative">
                         <button
                             type="button"
-                            className={[
-                                "flex h-16 w-full items-center gap-4 rounded-[1.25rem] px-5 text-left transition hover:bg-background",
-                                activeMenu === "type"
-                                    ? "bg-background ring-2 ring-foreground/10"
-                                    : "",
-                            ]
-                                .filter(Boolean)
-                                .join(" ")}
+                            className={fieldClassName("type")}
                             onClick={() =>
                                 setActiveMenu((current) =>
                                     current === "type" ? null : "type",
@@ -595,25 +607,20 @@ const HeroBookingBar = () =>
                         </button>
 
                         {activeMenu === "type" ? (
-                            <OptionDropdown
-                                options={shootTypeOptions}
-                                formatLabel={toTitleCase}
-                                onSelect={handleSelectShootType}
-                            />
+                            <div className="hidden md:block">
+                                <OptionDropdown
+                                    options={shootTypeOptions}
+                                    formatLabel={toTitleCase}
+                                    onSelect={handleSelectShootType}
+                                />
+                            </div>
                         ) : null}
                     </div>
 
                     <div className="relative">
                         <button
                             type="button"
-                            className={[
-                                "flex h-16 w-full items-center gap-4 rounded-[1.25rem] px-5 text-left transition hover:bg-background",
-                                activeMenu === "date"
-                                    ? "bg-background ring-2 ring-foreground/10"
-                                    : "",
-                            ]
-                                .filter(Boolean)
-                                .join(" ")}
+                            className={fieldClassName("date")}
                             onClick={() =>
                                 setActiveMenu((current) =>
                                     current === "date" ? null : "date",
@@ -628,26 +635,21 @@ const HeroBookingBar = () =>
                         </button>
 
                         {activeMenu === "date" ? (
-                            <DateCalendarDropdown
-                                calendarMonth={calendarMonth}
-                                selectedDate={selectedDate}
-                                onChangeMonth={setCalendarMonth}
-                                onSelectDate={handleSelectDate}
-                            />
+                            <div className="hidden md:block">
+                                <DateCalendarDropdown
+                                    calendarMonth={calendarMonth}
+                                    selectedDate={selectedDate}
+                                    onChangeMonth={setCalendarMonth}
+                                    onSelectDate={handleSelectDate}
+                                />
+                            </div>
                         ) : null}
                     </div>
 
                     <div className="relative">
                         <button
                             type="button"
-                            className={[
-                                "flex h-16 w-full items-center gap-4 rounded-[1.25rem] px-5 text-left transition hover:bg-background",
-                                activeMenu === "location"
-                                    ? "bg-background ring-2 ring-foreground/10"
-                                    : "",
-                            ]
-                                .filter(Boolean)
-                                .join(" ")}
+                            className={fieldClassName("location")}
                             onClick={() =>
                                 setActiveMenu((current) =>
                                     current === "location" ? null : "location",
@@ -662,22 +664,57 @@ const HeroBookingBar = () =>
                         </button>
 
                         {activeMenu === "location" ? (
-                            <OptionDropdown
-                                options={VIETNAM_LOCATION_OPTIONS}
-                                onSelect={handleSelectLocation}
-                            />
+                            <div className="hidden md:block">
+                                <OptionDropdown
+                                    options={VIETNAM_LOCATION_OPTIONS}
+                                    onSelect={handleSelectLocation}
+                                />
+                            </div>
                         ) : null}
                     </div>
 
                     <button
                         type="button"
-                        className="flex h-16 w-full items-center justify-center gap-3 rounded-[1.25rem] bg-foreground px-6 text-base font-semibold text-background transition hover:bg-foreground/85"
+                        className="flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-[#ff5a1f] px-4 text-base font-semibold text-white transition hover:bg-[#e94f17] md:h-16 md:rounded-[1.25rem] md:bg-foreground md:px-6 md:text-background md:hover:bg-foreground/85"
                         onClick={handleBookNow}
                     >
                         <ArrowRightIcon className="h-5 w-5" />
                         <span>Book now</span>
                     </button>
                 </div>
+
+                {activeMenu === "type" ? (
+                    <div className="md:hidden">
+                        <OptionDropdown
+                            className="relative mt-3 w-full"
+                            options={shootTypeOptions}
+                            formatLabel={toTitleCase}
+                            onSelect={handleSelectShootType}
+                        />
+                    </div>
+                ) : null}
+
+                {activeMenu === "date" ? (
+                    <div className="md:hidden">
+                        <DateCalendarDropdown
+                            className="relative mt-3 w-full"
+                            calendarMonth={calendarMonth}
+                            selectedDate={selectedDate}
+                            onChangeMonth={setCalendarMonth}
+                            onSelectDate={handleSelectDate}
+                        />
+                    </div>
+                ) : null}
+
+                {activeMenu === "location" ? (
+                    <div className="md:hidden">
+                        <OptionDropdown
+                            className="relative mt-3 w-full"
+                            options={VIETNAM_LOCATION_OPTIONS}
+                            onSelect={handleSelectLocation}
+                        />
+                    </div>
+                ) : null}
             </div>
         </div>
     );
@@ -690,7 +727,7 @@ const ClientHeroExperience = () =>
             <ClientHeroBanner />
             <HeroBookingBar />
 
-            <div className="mt-8 flex flex-wrap justify-center gap-2">
+            {/* <div className="mt-8 flex flex-wrap justify-center gap-2">
                 {quickStyleLinks.map((entry) => (
                     <Link
                         key={entry.label}
@@ -700,7 +737,7 @@ const ClientHeroExperience = () =>
                         {entry.label}
                     </Link>
                 ))}
-            </div>
+            </div> */}
         </div>
     );
 };

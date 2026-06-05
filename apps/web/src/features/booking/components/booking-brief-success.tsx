@@ -1,49 +1,77 @@
 import Link from "next/link";
-import { Card, CardContent } from "../../../components/ui/card";
+
 import { buttonVariants } from "../../../components/ui/button";
-import {
-  budgetOptions,
-  sessionTypeOptions,
-  styleOptions,
-} from "../data/booking-options";
+import { Card, CardContent } from "../../../components/ui/card";
+import
+  {
+    budgetOptions,
+    contactOptions,
+    sessionTypeOptions,
+    styleOptions,
+  } from "../data/booking-options";
 import type { BookingBriefFormValues } from "../schemas/booking-brief.schema";
 
-interface BookingBriefSuccessProps {
+interface BookingBriefSuccessProps
+{
   values: BookingBriefFormValues;
   onReset: () => void;
 }
 
-const resolveLabel = (value: string, options: { value: string; label: string }[]) => {
+const resolveLabel = (
+  value: string | undefined,
+  options: { value: string; label: string }[],
+) =>
+{
+  if (!value) {
+    return "";
+  }
+
   return options.find((option) => option.value === value)?.label ?? value;
 };
 
 export const BookingBriefSuccess = ({
   values,
   onReset,
-}: BookingBriefSuccessProps) => {
+}: BookingBriefSuccessProps) =>
+{
+  const sessionLabel = resolveLabel(values.sessionType, sessionTypeOptions);
+  const styleLabel = resolveLabel(values.style, styleOptions);
+  const budgetLabel = resolveLabel(values.budget, budgetOptions);
+  const contactLabel = resolveLabel(values.contactPreference, contactOptions);
+
   return (
-    <Card>
-      <CardContent className="space-y-5">
+    <Card className="rounded-[1.75rem]">
+      <CardContent className="space-y-5 pt-6">
         <div className="space-y-2">
           <p className="text-xs uppercase tracking-[0.3em] text-muted">
-            Brief submitted
+            Booking request sent
           </p>
-          <h2 className="font-display text-2xl text-foreground">
+
+          <h2 className="font-serif text-3xl text-foreground">
             Your booking brief is ready.
           </h2>
-          <p className="text-sm text-muted">
-            Next, you will review photographers who match this brief. Recommendations will appear in the next phase.
+
+          <p className="text-sm leading-6 text-muted">
+            Next, Fotovia can use this brief to help you compare
+            photographers who match the requested style and location.
           </p>
         </div>
 
-        <div className="rounded-2xl border border-border bg-background px-4 py-3 text-sm">
-          <p className="font-medium text-foreground">Brief summary</p>
+        <div className="rounded-2xl border border-border bg-background px-4 py-4 text-sm">
+          <p className="font-semibold text-foreground">Brief summary</p>
+
           <div className="mt-3 space-y-2 text-muted">
-            <p>Session type: {resolveLabel(values.sessionType, sessionTypeOptions)}</p>
-            <p>Style: {resolveLabel(values.style, styleOptions)}</p>
-            <p>Date: {values.preferredDate} · {values.preferredTime}</p>
+            <p>Type: {sessionLabel}</p>
+            <p>Style: {styleLabel}</p>
+            <p>
+              Date: {values.preferredDate}
+              {values.preferredTime
+                ? ` · ${values.preferredTime}`
+                : " · Flexible time"}
+            </p>
             <p>Location: {values.location}</p>
-            <p>Budget: {resolveLabel(values.budget, budgetOptions)}</p>
+            <p>Budget: {budgetLabel}</p>
+            <p>Contact: {contactLabel}</p>
           </div>
         </div>
 
@@ -54,10 +82,14 @@ export const BookingBriefSuccess = ({
           >
             View matching photographers
           </Link>
+
           <button
             type="button"
             onClick={onReset}
-            className={buttonVariants({ variant: "secondary", size: "sm" })}
+            className={buttonVariants({
+              variant: "secondary",
+              size: "sm",
+            })}
           >
             Edit brief
           </button>

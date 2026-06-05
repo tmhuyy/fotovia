@@ -473,7 +473,7 @@ export const BookingBriefPage = ({ prefill }: BookingBriefPageProps) =>
                   className="grid gap-8 lg:grid-cols-[2fr_1fr]"
                 >
                   <div className="space-y-6">
-                    {prefilledItems.length ? (
+                    {/* {prefilledItems.length ? (
                       <div className="rounded-2xl border border-border bg-surface px-4 py-3 text-sm text-muted">
                         <p className="text-xs uppercase tracking-[0.3em] text-muted">
                           Prefilled from homepage
@@ -485,7 +485,7 @@ export const BookingBriefPage = ({ prefill }: BookingBriefPageProps) =>
                           ))}
                         </ul>
                       </div>
-                    ) : null}
+                    ) : null} */}
 
                     <BookingBriefForm />
                   </div>

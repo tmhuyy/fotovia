@@ -3,11 +3,12 @@
 import { useMemo } from "react";
 import { useFormContext, useWatch } from "react-hook-form";
 
-import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
+import { Card, CardContent } from "../../../components/ui/card";
 import
     {
         budgetOptions,
+        contactOptions,
         sessionTypeOptions,
         styleOptions,
     } from "../data/booking-options";
@@ -32,7 +33,14 @@ const SummaryRow = ({ label, value, hasValue }: SummaryRowProps) =>
     return (
         <div className="flex items-center justify-between gap-4 text-sm">
             <span className="text-muted">{label}</span>
-            <span className={hasValue ? "text-foreground" : "text-muted"}>
+            <span
+                className={[
+                    "max-w-[12rem] truncate text-right",
+                    hasValue ? "text-foreground" : "text-muted",
+                ]
+                    .filter(Boolean)
+                    .join(" ")}
+            >
                 {value}
             </span>
         </div>
@@ -40,47 +48,49 @@ const SummaryRow = ({ label, value, hasValue }: SummaryRowProps) =>
 };
 
 const resolveLabel = (
-    value: string,
+    value: string | undefined,
     options: { value: string; label: string }[],
 ) =>
 {
-    return options.find((option) => option.value === value)?.label;
+    if (!value) {
+        return "";
+    }
+
+    return options.find((option) => option.value === value)?.label ?? value;
 };
 
 export const BookingBriefSummaryCard = ({
     errorMessage,
-    submitLabel = "Find matching photographers",
-    submittingLabel = "Preparing...",
+    submitLabel = "Send booking request",
+    submittingLabel = "Sending...",
 }: BookingBriefSummaryCardProps) =>
 {
     const { control, formState } = useFormContext<BookingBriefFormValues>();
     const formValues = useWatch({ control });
 
-    const sessionLabel = useMemo(() =>
-    {
-        return formValues.sessionType
-            ? resolveLabel(formValues.sessionType, sessionTypeOptions)
-            : "";
-    }, [formValues.sessionType]);
+    const sessionLabel = useMemo(
+        () => resolveLabel(formValues.sessionType, sessionTypeOptions),
+        [formValues.sessionType],
+    );
 
-    const styleLabel = useMemo(() =>
-    {
-        return formValues.style
-            ? resolveLabel(formValues.style, styleOptions)
-            : "";
-    }, [formValues.style]);
+    const styleLabel = useMemo(
+        () => resolveLabel(formValues.style, styleOptions),
+        [formValues.style],
+    );
 
-    const budgetLabel = useMemo(() =>
-    {
-        return formValues.budget
-            ? resolveLabel(formValues.budget, budgetOptions)
-            : "";
-    }, [formValues.budget]);
+    const budgetLabel = useMemo(
+        () => resolveLabel(formValues.budget, budgetOptions),
+        [formValues.budget],
+    );
+
+    const contactLabel = useMemo(
+        () => resolveLabel(formValues.contactPreference, contactOptions),
+        [formValues.contactPreference],
+    );
 
     const requiredFields = [
         formValues.sessionType,
         formValues.preferredDate,
-        formValues.preferredTime,
         formValues.location,
         formValues.budget,
         formValues.style,
@@ -92,16 +102,19 @@ export const BookingBriefSummaryCard = ({
     ).length;
 
     return (
-        <Card>
-            <CardContent className="space-y-5">
+        <Card className="rounded-[1.75rem]">
+            <CardContent className="space-y-5 pt-6">
                 <div className="space-y-2">
                     <p className="text-xs uppercase tracking-[0.3em] text-muted">
-                        Brief summary
+                        Booking summary
                     </p>
 
-                    <p className="text-sm text-muted">
-                        Fill the brief first. Sign-in is only required when you
-                        confirm the request.
+                    <h2 className="font-serif text-2xl text-foreground">
+                        Review before sending.
+                    </h2>
+
+                    <p className="text-sm leading-6 text-muted">
+                        Sign-in is only required when you send the request.
                     </p>
                 </div>
 
@@ -111,49 +124,55 @@ export const BookingBriefSummaryCard = ({
                     </p>
 
                     <p className="text-lg font-semibold text-foreground">
-                        {completedCount} / {requiredFields.length} fields complete
+                        {completedCount} / {requiredFields.length} essentials
                     </p>
 
                     <p className="text-xs text-muted">
-                        Complete the essentials to get stronger matches.
+                        Complete the essentials to make the request clearer.
                     </p>
                 </div>
 
                 <div className="space-y-3">
                     <SummaryRow
-                        label="Session type"
-                        value={sessionLabel ?? "Select a session type"}
+                        label="Type"
+                        value={sessionLabel || "Select type"}
                         hasValue={Boolean(sessionLabel)}
                     />
 
                     <SummaryRow
                         label="Style"
-                        value={styleLabel ?? "Select a style"}
+                        value={styleLabel || "Select style"}
                         hasValue={Boolean(styleLabel)}
                     />
 
                     <SummaryRow
                         label="Date"
-                        value={formValues.preferredDate || "Select a date"}
+                        value={formValues.preferredDate || "Select date"}
                         hasValue={Boolean(formValues.preferredDate)}
                     />
 
                     <SummaryRow
                         label="Time"
-                        value={formValues.preferredTime || "Select a time"}
+                        value={formValues.preferredTime || "Flexible"}
                         hasValue={Boolean(formValues.preferredTime)}
                     />
 
                     <SummaryRow
                         label="Location"
-                        value={formValues.location || "Add a location"}
+                        value={formValues.location || "Select location"}
                         hasValue={Boolean(formValues.location)}
                     />
 
                     <SummaryRow
                         label="Budget"
-                        value={budgetLabel ?? "Select budget"}
+                        value={budgetLabel || "Select budget"}
                         hasValue={Boolean(budgetLabel)}
+                    />
+
+                    <SummaryRow
+                        label="Contact"
+                        value={contactLabel || "Select contact"}
+                        hasValue={Boolean(contactLabel)}
                     />
                 </div>
 
@@ -172,9 +191,9 @@ export const BookingBriefSummaryCard = ({
                     {formState.isSubmitting ? submittingLabel : submitLabel}
                 </Button>
 
-                <p className="text-xs text-muted">
-                    You can review or edit the brief before choosing a final
-                    photographer.
+                <p className="text-xs leading-5 text-muted">
+                    Your brief is saved before authentication, so the booking flow
+                    will not be lost after sign-in.
                 </p>
             </CardContent>
         </Card>
