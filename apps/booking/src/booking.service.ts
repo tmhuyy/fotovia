@@ -46,6 +46,14 @@ export class BookingService {
             throw new NotFoundException('Selected photographer was not found.');
         }
 
+        const resolvedShootType =
+            createBookingDto.shootType?.trim() ||
+            createBookingDto.sessionType?.trim();
+
+        if (!resolvedShootType) {
+            throw new BadRequestException('Shoot type is required.');
+        }
+
         const booking = this.bookingRepository.create({
             clientUserId: userId,
             clientEmail: userEmail?.trim() || null,
@@ -53,7 +61,10 @@ export class BookingService {
             photographerUserId: selectedPhotographer.userId,
             photographerSlug: createBookingDto.photographerSlug.trim(),
             photographerName: createBookingDto.photographerName.trim(),
-            sessionType: createBookingDto.sessionType.trim(),
+            title: createBookingDto.title?.trim() || null,
+            shootType: resolvedShootType,
+            sessionType:
+                createBookingDto.sessionType?.trim() || resolvedShootType,
             sessionDate: createBookingDto.sessionDate.trim(),
             sessionTime: createBookingDto.sessionTime.trim(),
             duration: createBookingDto.duration.trim(),

@@ -44,6 +44,14 @@ export class Booking {
     @Column({ type: 'varchar', length: 255 })
     photographerName: string;
 
+    @ApiPropertyOptional()
+    @Column({ type: 'varchar', length: 160, nullable: true })
+    title: string | null;
+
+    @ApiProperty()
+    @Column({ type: 'varchar', length: 100 })
+    shootType: string;
+
     @ApiProperty()
     @Column({ type: 'varchar', length: 100 })
     sessionType: string;

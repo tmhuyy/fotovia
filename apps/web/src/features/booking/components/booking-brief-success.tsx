@@ -3,13 +3,12 @@ import Link from "next/link";
 import { buttonVariants } from "../../../components/ui/button";
 import { Card, CardContent } from "../../../components/ui/card";
 import
-  {
-    budgetOptions,
-    contactOptions,
-    sessionTypeOptions,
-    styleOptions,
-  } from "../data/booking-options";
+{
+  contactOptions,
+  shootTypeOptions,
+} from "../data/booking-options";
 import type { BookingBriefFormValues } from "../schemas/booking-brief.schema";
+import { formatBudgetRange } from "../utils/booking-budget";
 
 interface BookingBriefSuccessProps
 {
@@ -34,10 +33,9 @@ export const BookingBriefSuccess = ({
   onReset,
 }: BookingBriefSuccessProps) =>
 {
-  const sessionLabel = resolveLabel(values.sessionType, sessionTypeOptions);
-  const styleLabel = resolveLabel(values.style, styleOptions);
-  const budgetLabel = resolveLabel(values.budget, budgetOptions);
+  const shootTypeLabel = resolveLabel(values.shootType, shootTypeOptions);
   const contactLabel = resolveLabel(values.contactPreference, contactOptions);
+  const budgetLabel = formatBudgetRange(values.budgetFrom, values.budgetTo);
 
   return (
     <Card className="rounded-[1.75rem]">
@@ -53,7 +51,7 @@ export const BookingBriefSuccess = ({
 
           <p className="text-sm leading-6 text-muted">
             Next, Fotovia can use this brief to help you compare
-            photographers who match the requested style and location.
+            photographers who match the requested shoot type and location.
           </p>
         </div>
 
@@ -61,8 +59,8 @@ export const BookingBriefSuccess = ({
           <p className="font-semibold text-foreground">Brief summary</p>
 
           <div className="mt-3 space-y-2 text-muted">
-            <p>Type: {sessionLabel}</p>
-            <p>Style: {styleLabel}</p>
+            <p>Title: {values.title}</p>
+            <p>Shoot type: {shootTypeLabel}</p>
             <p>
               Date: {values.preferredDate}
               {values.preferredTime

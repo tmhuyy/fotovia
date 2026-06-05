@@ -1,11 +1,27 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+    IsIn,
     IsNotEmpty,
     IsOptional,
     IsString,
     IsUUID,
+    MaxLength,
     MinLength,
+    ValidateIf,
 } from 'class-validator';
+
+export const BOOKING_SHOOT_TYPES = [
+    'aerial',
+    'architecture',
+    'event',
+    'fashion',
+    'food',
+    'nature',
+    'sports',
+    'street',
+    'wedding',
+    'wildlife',
+] as const;
 
 export class CreateBookingDto {
     @ApiProperty({
@@ -31,13 +47,43 @@ export class CreateBookingDto {
     @IsNotEmpty()
     photographerName: string;
 
-    @ApiProperty({
-        description: 'Requested session type',
-        example: 'editorial',
+    @ApiPropertyOptional({
+        description: 'Client-facing booking title',
+        example: 'Graduation portrait in Thu Duc City',
     })
+    @IsOptional()
+    @IsString()
+    @MaxLength(160)
+    title?: string;
+
+    @ApiPropertyOptional({
+        description:
+            'AI-aligned visual shoot type. This is the main Fotovia booking category.',
+        enum: BOOKING_SHOOT_TYPES,
+        example: 'fashion',
+    })
+    @ValidateIf(
+        (dto: CreateBookingDto) =>
+            !dto.sessionType || dto.shootType !== undefined,
+    )
     @IsString()
     @IsNotEmpty()
-    sessionType: string;
+    @IsIn(BOOKING_SHOOT_TYPES)
+    shootType?: string;
+
+    @ApiPropertyOptional({
+        description:
+            'Legacy session type mirror. Keep for backward compatibility while FE migrates to shootType.',
+        example: 'fashion',
+        deprecated: true,
+    })
+    @ValidateIf(
+        (dto: CreateBookingDto) =>
+            !dto.shootType || dto.sessionType !== undefined,
+    )
+    @IsString()
+    @IsNotEmpty()
+    sessionType?: string;
 
     @ApiProperty({
         description: 'Requested session date',
@@ -65,7 +111,7 @@ export class CreateBookingDto {
 
     @ApiProperty({
         description: 'Requested session location',
-        example: 'Ho Chi Minh City',
+        example: 'TP. Hồ Chí Minh',
     })
     @IsString()
     @MinLength(2)
@@ -73,7 +119,7 @@ export class CreateBookingDto {
 
     @ApiProperty({
         description: 'Budget range selection',
-        example: '1000-2500',
+        example: '1000000-1500000',
     })
     @IsString()
     @IsNotEmpty()
@@ -90,7 +136,7 @@ export class CreateBookingDto {
     @ApiProperty({
         description: 'Shoot concept / creative brief',
         example:
-            'Modern outdoor editorial portraits for a personal brand refresh.',
+            'Outdoor portrait concept with natural light, soft colors, and around 20 edited photos.',
     })
     @IsString()
     @MinLength(10)

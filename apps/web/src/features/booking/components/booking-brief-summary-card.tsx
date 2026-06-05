@@ -6,13 +6,12 @@ import { useFormContext, useWatch } from "react-hook-form";
 import { Button } from "../../../components/ui/button";
 import { Card, CardContent } from "../../../components/ui/card";
 import
-    {
-        budgetOptions,
-        contactOptions,
-        sessionTypeOptions,
-        styleOptions,
-    } from "../data/booking-options";
+{
+    contactOptions,
+    shootTypeOptions,
+} from "../data/booking-options";
 import type { BookingBriefFormValues } from "../schemas/booking-brief.schema";
+import { formatBudgetRange } from "../utils/booking-budget";
 
 interface BookingBriefSummaryCardProps
 {
@@ -60,6 +59,16 @@ const resolveLabel = (
     return options.find((option) => option.value === value)?.label ?? value;
 };
 
+const hasTextValue = (value?: string) =>
+{
+    return Boolean(value && value.trim() !== "");
+};
+
+const hasNumberValue = (value?: number) =>
+{
+    return typeof value === "number" && Number.isFinite(value);
+};
+
 export const BookingBriefSummaryCard = ({
     errorMessage,
     submitLabel = "Send booking request",
@@ -69,19 +78,9 @@ export const BookingBriefSummaryCard = ({
     const { control, formState } = useFormContext<BookingBriefFormValues>();
     const formValues = useWatch({ control });
 
-    const sessionLabel = useMemo(
-        () => resolveLabel(formValues.sessionType, sessionTypeOptions),
-        [formValues.sessionType],
-    );
-
-    const styleLabel = useMemo(
-        () => resolveLabel(formValues.style, styleOptions),
-        [formValues.style],
-    );
-
-    const budgetLabel = useMemo(
-        () => resolveLabel(formValues.budget, budgetOptions),
-        [formValues.budget],
+    const shootTypeLabel = useMemo(
+        () => resolveLabel(formValues.shootType, shootTypeOptions),
+        [formValues.shootType],
     );
 
     const contactLabel = useMemo(
@@ -89,18 +88,24 @@ export const BookingBriefSummaryCard = ({
         [formValues.contactPreference],
     );
 
+    const hasBudget =
+        hasNumberValue(formValues.budgetFrom) &&
+        hasNumberValue(formValues.budgetTo);
+
+    const budgetLabel = hasBudget
+        ? formatBudgetRange(formValues.budgetFrom, formValues.budgetTo)
+        : "Select budget";
+
     const requiredFields = [
-        formValues.sessionType,
-        formValues.preferredDate,
-        formValues.location,
-        formValues.budget,
-        formValues.style,
-        formValues.description,
+        hasTextValue(formValues.title),
+        hasTextValue(formValues.shootType),
+        hasTextValue(formValues.preferredDate),
+        hasTextValue(formValues.location),
+        hasBudget,
+        hasTextValue(formValues.concept),
     ];
 
-    const completedCount = requiredFields.filter(
-        (value) => value && value.trim() !== "",
-    ).length;
+    const completedCount = requiredFields.filter(Boolean).length;
 
     return (
         <Card className="rounded-[1.75rem]">
@@ -127,39 +132,39 @@ export const BookingBriefSummaryCard = ({
 
                 <div className="space-y-3">
                     <SummaryRow
-                        label="Type"
-                        value={sessionLabel || "Select type"}
-                        hasValue={Boolean(sessionLabel)}
+                        label="Title"
+                        value={formValues.title || "Add title"}
+                        hasValue={hasTextValue(formValues.title)}
                     />
 
                     <SummaryRow
-                        label="Style"
-                        value={styleLabel || "Select style"}
-                        hasValue={Boolean(styleLabel)}
+                        label="Shoot type"
+                        value={shootTypeLabel || "Select shoot type"}
+                        hasValue={Boolean(shootTypeLabel)}
                     />
 
                     <SummaryRow
                         label="Date"
                         value={formValues.preferredDate || "Select date"}
-                        hasValue={Boolean(formValues.preferredDate)}
+                        hasValue={hasTextValue(formValues.preferredDate)}
                     />
 
                     <SummaryRow
                         label="Time"
                         value={formValues.preferredTime || "Flexible"}
-                        hasValue={Boolean(formValues.preferredTime)}
+                        hasValue={hasTextValue(formValues.preferredTime)}
                     />
 
                     <SummaryRow
                         label="Location"
                         value={formValues.location || "Select location"}
-                        hasValue={Boolean(formValues.location)}
+                        hasValue={hasTextValue(formValues.location)}
                     />
 
                     <SummaryRow
                         label="Budget"
-                        value={budgetLabel || "Select budget"}
-                        hasValue={Boolean(budgetLabel)}
+                        value={budgetLabel}
+                        hasValue={hasBudget}
                     />
 
                     <SummaryRow

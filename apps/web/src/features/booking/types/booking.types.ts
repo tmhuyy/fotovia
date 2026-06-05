@@ -19,6 +19,8 @@ export interface CreateBookingPayload {
     photographerProfileId: string;
     photographerSlug: string;
     photographerName: string;
+    title?: string;
+    shootType?: string;
     sessionType: string;
     sessionDate: string;
     sessionTime: string;
@@ -44,6 +46,7 @@ export interface BookingRequestRecord extends CreateBookingPayload {
 export interface BookingEntrySearchParams {
     photographerSlug?: string;
     sessionType?: string;
+    shootType?: string;
     style?: string;
     location?: string;
     date?: string;

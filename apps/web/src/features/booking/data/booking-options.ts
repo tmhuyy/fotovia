@@ -1,60 +1,85 @@
-export const sessionTypeOptions = [
+export const aiShootTypeLabels = [
+    "aerial",
+    "architecture",
+    "event",
+    "fashion",
+    "food",
+    "nature",
+    "sports",
+    "street",
+    "wedding",
+    "wildlife",
+] as const;
+
+export const shootTypeOptions = [
     {
-        value: "personal",
-        label: "Personal",
-        subtitle: "1 person",
-        description: "Portraits, individual concepts, profile photos.",
-        visual: "🌿",
+        value: "aerial",
+        label: "Aerial",
+        subtitle: "Drone / overhead",
+        visual: "🚁",
     },
     {
-        value: "couple",
-        label: "Couple",
-        subtitle: "2 people",
-        description: "Couple, pre-wedding, anniversary, dating moments.",
-        visual: "✨",
-    },
-    {
-        value: "family",
-        label: "Family",
-        subtitle: "3-10 people",
-        description: "Family memories, casual outdoor or studio sessions.",
-        visual: "🍃",
-    },
-    {
-        value: "group",
-        label: "Group",
-        subtitle: "2-10 people",
-        description: "Friends, teams, small groups, creative concepts.",
-        visual: "📸",
-    },
-    {
-        value: "student",
-        label: "Student",
-        subtitle: "1-10 people",
-        description: "Graduation, uniform, yearbook, campus photos.",
-        visual: "🎓",
+        value: "architecture",
+        label: "Architecture",
+        subtitle: "Buildings / spaces",
+        visual: "🏛️",
     },
     {
         value: "event",
         label: "Event",
-        subtitle: "Flexible",
-        description: "Parties, ceremonies, gatherings, and live moments.",
+        subtitle: "Ceremony / gathering",
         visual: "🎉",
+    },
+    {
+        value: "fashion",
+        label: "Fashion",
+        subtitle: "Editorial / outfit",
+        visual: "✨",
+    },
+    {
+        value: "food",
+        label: "Food",
+        subtitle: "Restaurant / product",
+        visual: "🍽️",
+    },
+    {
+        value: "nature",
+        label: "Nature",
+        subtitle: "Outdoor / landscape",
+        visual: "🌿",
+    },
+    {
+        value: "sports",
+        label: "Sports",
+        subtitle: "Action / movement",
+        visual: "🏅",
+    },
+    {
+        value: "street",
+        label: "Street",
+        subtitle: "Urban / candid",
+        visual: "🏙️",
+    },
+    {
+        value: "wedding",
+        label: "Wedding",
+        subtitle: "Couple / ceremony",
+        visual: "💍",
+    },
+    {
+        value: "wildlife",
+        label: "Wildlife",
+        subtitle: "Animal / nature",
+        visual: "🦌",
     },
 ];
 
-export const styleOptions = [
-    { value: "aerial", label: "Aerial" },
-    { value: "architecture", label: "Architecture" },
-    { value: "event", label: "Event" },
-    { value: "fashion", label: "Fashion" },
-    { value: "food", label: "Food" },
-    { value: "nature", label: "Nature" },
-    { value: "sports", label: "Sports" },
-    { value: "street", label: "Street" },
-    { value: "wedding", label: "Wedding" },
-    { value: "wildlife", label: "Wildlife" },
-];
+export const styleOptions = shootTypeOptions;
+
+// Backward-compatible alias.
+// Older direct booking components still import sessionTypeOptions,
+// but the actual values should now be Fotovia AI shoot types.
+export const sessionTypeOptions = shootTypeOptions;
 
 export const budgetOptions = [
     { value: "flexible", label: "Flexible" },

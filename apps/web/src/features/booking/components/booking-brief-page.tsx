@@ -13,10 +13,15 @@ import { Section } from "../../../components/common/section";
 import { buttonVariants } from "../../../components/ui/button";
 import { useAuthStore } from "../../../store/auth.store";
 import
+{
+  bookingBriefSchema,
+  type BookingBriefFormValues,
+} from "../schemas/booking-brief.schema";
+import
   {
-    bookingBriefSchema,
-    type BookingBriefFormValues,
-  } from "../schemas/booking-brief.schema";
+    BUDGET_MIN_VND,
+    parseBudgetRangeValue,
+  } from "../utils/booking-budget";
 import { BookingBriefForm } from "./booking-brief-form";
 import { BookingBriefSummaryCard } from "./booking-brief-summary-card";
 import { BookingBriefSuccess } from "./booking-brief-success";
@@ -26,6 +31,7 @@ const BOOKING_BRIEF_DRAFT_STORAGE_KEY = "fotovia.bookingBriefDraft";
 interface BookingBriefPrefill
 {
   sessionType?: string;
+  shootType?: string;
   style?: string;
   location?: string;
   date?: string;
@@ -45,22 +51,80 @@ interface BookingBriefDraft
   savedAt: string;
 }
 
-const isBookingBriefFormValues = (
-  value: unknown,
-): value is BookingBriefFormValues =>
+const getStringValue = (
+  record: Record<string, unknown>,
+  key: string,
+): string =>
 {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    "sessionType" in value &&
-    "preferredDate" in value &&
-    "preferredTime" in value &&
-    "location" in value &&
-    "budget" in value &&
-    "style" in value &&
-    "description" in value &&
-    "contactPreference" in value
-  );
+  const value = record[key];
+
+  return typeof value === "string" ? value : "";
+};
+
+const getNumberValue = (
+  record: Record<string, unknown>,
+  key: string,
+): number | undefined =>
+{
+  const value = record[key];
+
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === "string" && value.trim() !== "") {
+    const parsedValue = Number(value);
+
+    if (Number.isFinite(parsedValue)) {
+      return parsedValue;
+    }
+  }
+
+  return undefined;
+};
+
+const normalizeBookingBriefValues = (
+  value: unknown,
+): BookingBriefFormValues | null =>
+{
+  if (typeof value !== "object" || value === null) {
+    return null;
+  }
+
+  const record = value as Record<string, unknown>;
+
+  const shootType =
+    getStringValue(record, "shootType") ||
+    getStringValue(record, "style") ||
+    getStringValue(record, "sessionType");
+
+  const concept =
+    getStringValue(record, "concept") ||
+    getStringValue(record, "description");
+
+  const parsedBudget = parseBudgetRangeValue(getStringValue(record, "budget"));
+  const budgetFrom =
+    getNumberValue(record, "budgetFrom") ??
+    parsedBudget?.from ??
+    BUDGET_MIN_VND;
+  const budgetTo =
+    getNumberValue(record, "budgetTo") ??
+    parsedBudget?.to ??
+    budgetFrom;
+
+  return {
+    title: getStringValue(record, "title"),
+    shootType,
+    preferredDate: getStringValue(record, "preferredDate"),
+    preferredTime: getStringValue(record, "preferredTime"),
+    location: getStringValue(record, "location"),
+    budgetFrom,
+    budgetTo,
+    concept,
+    contactPreference: getStringValue(record, "contactPreference") || "email",
+    inspiration: getStringValue(record, "inspiration"),
+    notes: getStringValue(record, "notes"),
+  };
 };
 
 const isBookingBriefDraft = (value: unknown): value is BookingBriefDraft =>
@@ -114,12 +178,28 @@ const readBookingDraft = (): BookingBriefDraft | null =>
     const parsedValue = JSON.parse(storedValue) as unknown;
 
     if (isBookingBriefDraft(parsedValue)) {
-      return parsedValue;
+      const normalizedValues = normalizeBookingBriefValues(
+        parsedValue.values,
+      );
+
+      if (!normalizedValues) {
+        window.sessionStorage.removeItem(
+          BOOKING_BRIEF_DRAFT_STORAGE_KEY,
+        );
+        return null;
+      }
+
+      return {
+        ...parsedValue,
+        values: normalizedValues,
+      };
     }
 
-    if (isBookingBriefFormValues(parsedValue)) {
+    const normalizedValues = normalizeBookingBriefValues(parsedValue);
+
+    if (normalizedValues) {
       return {
-        values: parsedValue,
+        values: normalizedValues,
         intent: "send-booking-request",
         returnTo: "/bookings/new",
         savedAt: new Date().toISOString(),
@@ -265,6 +345,7 @@ export const BookingBriefPage = ({ prefill }: BookingBriefPageProps) =>
 
     return {
       sessionType: getValue("sessionType"),
+      shootType: getValue("shootType"),
       style: getValue("style"),
       location: getValue("location"),
       date: getValue("date"),
@@ -274,14 +355,26 @@ export const BookingBriefPage = ({ prefill }: BookingBriefPageProps) =>
 
   const defaultValues = useMemo<BookingBriefFormValues>(() =>
   {
+    const prefilledShootType =
+      resolvedPrefill.shootType ??
+      resolvedPrefill.style ??
+      resolvedPrefill.sessionType ??
+      "";
+
+    const prefilledBudget = parseBudgetRangeValue(resolvedPrefill.budget);
+
     return {
-      sessionType: resolvedPrefill.sessionType ?? "",
+      title: "",
+      shootType: prefilledShootType,
       preferredDate: resolvedPrefill.date ?? "",
       preferredTime: "",
       location: resolvedPrefill.location ?? "",
-      budget: resolvedPrefill.budget ?? "",
-      style: resolvedPrefill.style ?? "",
-      description: "",
+      budgetFrom: prefilledBudget?.from ?? BUDGET_MIN_VND,
+      budgetTo:
+        prefilledBudget?.to ??
+        prefilledBudget?.from ??
+        BUDGET_MIN_VND,
+      concept: "",
       contactPreference: "email",
       inspiration: "",
       notes: "",
@@ -383,21 +476,10 @@ export const BookingBriefPage = ({ prefill }: BookingBriefPageProps) =>
       <main>
         <Section className="py-6 sm:py-8 md:py-10">
           <Container className="space-y-6">
-            <div className="space-y-3">
+            <div>
               <h1 className="font-display text-3xl text-foreground md:text-4xl">
                 Complete your booking brief.
               </h1>
-
-              {/* <div className="flex flex-wrap items-center gap-2 rounded-2xl bg-accent/10 px-4 py-3 text-sm text-foreground">
-                <span className="rounded-full bg-accent px-3 py-1 text-xs font-semibold text-white">
-                  New
-                </span>
-
-                <span>
-                  Add the shoot details now. Sign-in is only required when you
-                  send the request.
-                </span>
-              </div> */}
             </div>
 
             {submittedValues ? (
