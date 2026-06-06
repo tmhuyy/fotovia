@@ -33,6 +33,9 @@ interface OpenBookingFeedRow extends Booking {
     applicationsCount: number;
     applicationCount: number;
     photographerApplicationsCount: number;
+    isOwner?: boolean;
+    canManage?: boolean;
+    canViewApplications?: boolean;
 }
 
 @Injectable()
@@ -118,9 +121,11 @@ export class BookingService {
         if (!resolvedShootType) {
             throw new BadRequestException('Shoot type is required.');
         }
+
         const normalizedNotes = normalizeBookingAdditionalServices(
             createOpenBookingDto.notes,
         );
+
         const booking = this.bookingRepository.create({
             clientUserId: userId,
             clientEmail: userEmail?.trim() || null,
@@ -172,7 +177,10 @@ export class BookingService {
                 NULLIF(TRIM(client_profile.full_name), '') AS "clientProfileName",
                 0 AS "applicationsCount",
                 0 AS "applicationCount",
-                0 AS "photographerApplicationsCount"
+                0 AS "photographerApplicationsCount",
+                false AS "isOwner",
+                false AS "canManage",
+                false AS "canViewApplications"
             FROM public.bookings b
             LEFT JOIN public.profiles client_profile
                 ON client_profile.user_id = b."clientUserId"
@@ -189,39 +197,14 @@ export class BookingService {
     }
 
     async getOpenBookingDetail(bookingId: string): Promise<Booking> {
-        const rows = await this.dataSource.query<OpenBookingFeedRow[]>(
-            `
-            SELECT
-                b.*,
-                COALESCE(
-                    NULLIF(TRIM(client_profile.full_name), ''),
-                    NULLIF(TRIM(b."clientEmail"), ''),
-                    'Client'
-                ) AS "clientName",
-                NULLIF(TRIM(client_profile.full_name), '') AS "clientFullName",
-                NULLIF(TRIM(client_profile.full_name), '') AS "clientProfileName",
-                0 AS "applicationsCount",
-                0 AS "applicationCount",
-                0 AS "photographerApplicationsCount"
-            FROM public.bookings b
-            LEFT JOIN public.profiles client_profile
-                ON client_profile.user_id = b."clientUserId"
-            WHERE b.id = $1
-              AND b."photographerProfileId" IS NULL
-              AND b."photographerUserId" IS NULL
-              AND b.status = $2
-            LIMIT 1
-            `,
-            [bookingId, 'pending'],
-        );
+        return this.getOpenBookingDetailWithViewer(bookingId, null);
+    }
 
-        const booking = rows[0];
-
-        if (!booking) {
-            throw new NotFoundException('Open booking request was not found.');
-        }
-
-        return booking as Booking;
+    async getOpenBookingDetailForViewer(
+        bookingId: string,
+        viewerUserId: string,
+    ): Promise<Booking> {
+        return this.getOpenBookingDetailWithViewer(bookingId, viewerUserId);
     }
 
     async getMyClientBookings(userId: string): Promise<Booking[]> {
@@ -417,6 +400,62 @@ export class BookingService {
         });
 
         return savedBooking;
+    }
+
+    private async getOpenBookingDetailWithViewer(
+        bookingId: string,
+        viewerUserId: string | null,
+    ): Promise<Booking> {
+        const rows = await this.dataSource.query<OpenBookingFeedRow[]>(
+            `
+            SELECT
+                b.*,
+                COALESCE(
+                    NULLIF(TRIM(client_profile.full_name), ''),
+                    NULLIF(TRIM(b."clientEmail"), ''),
+                    'Client'
+                ) AS "clientName",
+                NULLIF(TRIM(client_profile.full_name), '') AS "clientFullName",
+                NULLIF(TRIM(client_profile.full_name), '') AS "clientProfileName",
+                0 AS "applicationsCount",
+                0 AS "applicationCount",
+                0 AS "photographerApplicationsCount",
+                CASE
+                    WHEN $2::uuid IS NOT NULL AND b."clientUserId" = $2::uuid
+                    THEN true
+                    ELSE false
+                END AS "isOwner",
+                CASE
+                    WHEN $2::uuid IS NOT NULL
+                     AND b."clientUserId" = $2::uuid
+                     AND b.status = 'pending'
+                    THEN true
+                    ELSE false
+                END AS "canManage",
+                CASE
+                    WHEN $2::uuid IS NOT NULL AND b."clientUserId" = $2::uuid
+                    THEN true
+                    ELSE false
+                END AS "canViewApplications"
+            FROM public.bookings b
+            LEFT JOIN public.profiles client_profile
+                ON client_profile.user_id = b."clientUserId"
+            WHERE b.id = $1
+              AND b."photographerProfileId" IS NULL
+              AND b."photographerUserId" IS NULL
+              AND b.status = $3
+            LIMIT 1
+            `,
+            [bookingId, viewerUserId, 'pending'],
+        );
+
+        const booking = rows[0];
+
+        if (!booking) {
+            throw new NotFoundException('Open booking request was not found.');
+        }
+
+        return booking as Booking;
     }
 
     private async recordBookingEvent(input: {

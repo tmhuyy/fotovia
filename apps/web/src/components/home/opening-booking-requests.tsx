@@ -1,14 +1,28 @@
 "use client";
 
 import Link from "next/link";
-import { ReactNode, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import
+{
+    ReactNode,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+} from "react";
+import
+{
+    useMutation,
+    useQuery,
+    useQueryClient,
+} from "@tanstack/react-query";
+import { toast } from "sonner";
 
 import type { BookingRequestRecord } from "../../features/booking/types/booking.types";
 import { formatShootTypeLabel } from "../../features/booking/utils/booking-display";
 import { bookingService } from "../../services/booking.service";
 import { useAuthStore } from "../../store/auth.store";
 import { Container } from "../layout/container";
+import { BookingOwnerActionsMenu } from "../../features/booking/components/booking-owner-actions-menu";
 
 type PublicBookingRequestRecord = BookingRequestRecord & {
     clientName?: string | null;
@@ -18,6 +32,8 @@ type PublicBookingRequestRecord = BookingRequestRecord & {
     applicationsCount?: number | null;
     applicationCount?: number | null;
     photographerApplicationsCount?: number | null;
+    isOwner?: boolean | null;
+    canManage?: boolean | null;
 };
 
 const MAX_VISIBLE_REQUESTS = 4;
@@ -85,6 +101,8 @@ const LocationIcon = ({ className = "h-4 w-4" }: IconProps) => (
     </svg>
 );
 
+
+
 const createBookingHref = (booking?: PublicBookingRequestRecord): string =>
 {
     if (!booking) {
@@ -92,7 +110,6 @@ const createBookingHref = (booking?: PublicBookingRequestRecord): string =>
     }
 
     const params = new URLSearchParams();
-
     const style = booking.shootType || booking.sessionType;
 
     if (style) {
@@ -126,6 +143,30 @@ const getDisplayTitle = (booking: PublicBookingRequestRecord): string =>
     return `${formatShootTypeLabel(booking.shootType || booking.sessionType)} photoshoot`;
 };
 
+const isBookingOwnedByCurrentUser = (
+    booking: PublicBookingRequestRecord,
+    currentUser?: { id?: string; email?: string } | null,
+): boolean =>
+{
+    if (booking.isOwner === true) {
+        return true;
+    }
+
+    const currentUserId = currentUser?.id?.trim();
+    const currentUserEmail = currentUser?.email?.trim().toLowerCase();
+    const bookingClientEmail = booking.clientEmail?.trim().toLowerCase();
+
+    if (currentUserId && booking.clientUserId === currentUserId) {
+        return true;
+    }
+
+    if (currentUserEmail && bookingClientEmail) {
+        return currentUserEmail === bookingClientEmail;
+    }
+
+    return false;
+};
+
 const getClientLabel = (
     booking: PublicBookingRequestRecord,
     currentUser?: { id?: string; email?: string; fullName?: string } | null,
@@ -141,15 +182,10 @@ const getClientLabel = (
         return directName.trim();
     }
 
-    const isCurrentUserBooking =
-        Boolean(currentUser?.id && booking.clientUserId === currentUser.id) ||
-        Boolean(
-            currentUser?.email &&
-            booking.clientEmail &&
-            booking.clientEmail === currentUser.email,
-        );
-
-    if (isCurrentUserBooking && currentUser?.fullName?.trim()) {
+    if (
+        isBookingOwnedByCurrentUser(booking, currentUser) &&
+        currentUser?.fullName?.trim()
+    ) {
         return currentUser.fullName.trim();
     }
 
@@ -199,26 +235,6 @@ const formatPhotoshootDate = (value?: string | null): string =>
         day: "2-digit",
         year: "numeric",
     }).format(parsedDate);
-};
-
-const formatDeadlineLabel = (value?: string | null): string =>
-{
-    const parsedDate = parseDate(value);
-
-    if (!parsedDate) {
-        return "Deadline pending";
-    }
-
-    const deadlineDate = new Date(parsedDate);
-    deadlineDate.setDate(deadlineDate.getDate() - 3);
-
-    const dateLabel = new Intl.DateTimeFormat("en-US", {
-        month: "short",
-        day: "2-digit",
-        year: "numeric",
-    }).format(deadlineDate);
-
-    return `${dateLabel} · 23:59`;
 };
 
 const formatFotoviaBudget = (value?: string | null): string =>
@@ -308,100 +324,110 @@ const OpeningBookingRequestsSkeleton = () =>
 const OpeningBookingRequestCard = ({
     booking,
     currentUser,
+    isCancelling,
+    onCancel,
 }: {
     booking: PublicBookingRequestRecord;
     currentUser?: { id?: string; email?: string; fullName?: string } | null;
+    isCancelling: boolean;
+    onCancel: (bookingId: string) => void;
 }) =>
 {
     const shootType = formatShootTypeLabel(booking.shootType || booking.sessionType);
     const serviceChips = getServiceChips(booking);
     const applicationCount = getApplicationCount(booking);
+    const isOwnedBooking = isBookingOwnedByCurrentUser(booking, currentUser);
 
     return (
-        <Link
-            href={createOpeningDetailHref(booking.id)}
-            className="block rounded-[1.75rem] border border-border bg-surface px-5 py-5 shadow-[0_18px_50px_rgba(23,23,23,0.06)] transition hover:-translate-y-0.5 hover:border-accent/50 hover:shadow-[0_22px_60px_rgba(23,23,23,0.08)] sm:px-6 sm:py-6"
-        >            <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_auto]">
-                <div className="min-w-0">
-                    <div className="flex min-w-0 flex-wrap items-baseline gap-2">
-                        <h3 className="max-w-full truncate text-[1.35rem] font-semibold leading-tight tracking-[-0.02em] text-foreground">
-                            {getDisplayTitle(booking)}
-                        </h3>
+        <article className="relative rounded-[1.75rem] border border-border bg-surface px-5 py-5 shadow-[0_18px_50px_rgba(23,23,23,0.06)] transition hover:-translate-y-0.5 hover:border-accent/50 hover:shadow-[0_22px_60px_rgba(23,23,23,0.08)] sm:px-6 sm:py-6">
+            <Link
+                href={createOpeningDetailHref(booking.id)}
+                className="absolute inset-0 z-0 rounded-[1.75rem]"
+                aria-label={`View ${getDisplayTitle(booking)}`}
+            />
 
-                    </div>
+            <div className="relative z-10 pointer-events-none space-y-4">
+                <div className="flex min-w-0 items-start justify-between gap-4 mb-0">
+                    <h3 className="min-w-0 flex-1 truncate text-[1.35rem] font-semibold leading-tight tracking-[-0.02em] text-foreground">
+                        {getDisplayTitle(booking)}
+                    </h3>
 
-                    <div className="mt-3 space-y-2.5">
-                        <InfoRow icon={<UserIcon />}>
-                            <span className="font-semibold">
-                                {getClientLabel(booking, currentUser)}
-                            </span>
-                            <span className="mx-1.5 text-muted">·</span>
-                            <span className="text-muted">
-                                {formatSubmittedDate(booking.createdAt)}
-                            </span>
-                        </InfoRow>
-
-                        <InfoRow icon={<CameraIcon />}>
-                            <span className="font-medium">{shootType}</span>
-                            <span className="mx-1.5 text-muted">·</span>
-                            <span>Flexible time</span>
-                        </InfoRow>
-
-                        <InfoRow icon={<CalendarIcon />}>
-                            <span>{formatPhotoshootDate(booking.sessionDate)}</span>
-                        </InfoRow>
-
-                        <InfoRow icon={<LocationIcon />}>
-                            <span className="break-words">{booking.location}</span>
-                        </InfoRow>
-                    </div>
-
-                    {serviceChips.length > 0 ? (
-                        <div className="mt-3 flex flex-wrap gap-2">
-                            {serviceChips.map((chip) => (
-                                <span
-                                    key={chip}
-                                    className="rounded-full border border-border bg-background px-3 py-1 text-sm font-medium text-muted"
-                                >
-                                    {chip}
-                                </span>
-                            ))}
-                        </div>
-                    ) : null}
-
-                    <p className="mt-3 text-[1.15rem] font-semibold leading-tight tracking-[0.02em] text-accent">
-                        {formatFotoviaBudget(booking.budget)}
-                    </p>
+                    {isOwnedBooking ? (
+                        <BookingOwnerActionsMenu
+                            bookingId={booking.id}
+                            isCancelling={isCancelling}
+                            onCancel={() => onCancel(booking.id)}
+                        />
+                    ) : (
+                        <span className="h-9 w-12 shrink-0" aria-hidden="true" />
+                    )}
                 </div>
 
-                <div className="flex flex-col items-start gap-3 md:items-end md:pt-1">
-                    <span className="rounded-full border border-accent/30 bg-accent/15 px-4 py-1.5 text-sm font-semibold text-foreground">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-0">
+                    <InfoRow icon={<UserIcon />}>
+                        <span className="font-semibold">
+                            {getClientLabel(booking, currentUser)}
+                        </span>
+                        <span className="mx-1.5 text-muted">·</span>
+                        <span className="text-muted">
+                            {formatSubmittedDate(booking.createdAt)}
+                        </span>
+                    </InfoRow>
+
+                    <span className="w-fit rounded-full border border-accent/30 bg-accent/15 px-4 py-1.5 text-sm font-semibold text-foreground">
                         Looking for photographer
                     </span>
-
-                    <div className="space-y-1 text-sm leading-6 text-muted md:text-right">
-                        {/* <p>
-                            Deadline{" "}
-                            <span className="font-semibold text-foreground">
-                                {formatDeadlineLabel(booking.sessionDate)}
-                            </span>
-                        </p> */}
-
-                        <p>
-                            Photographer applications:{" "}
-                            <span className="font-semibold text-foreground">
-                                {applicationCount}
-                            </span>
-                        </p>
-                    </div>
                 </div>
+
+                {applicationCount > 0 ? (
+                    <p className="text-sm leading-6 text-muted sm:text-right">
+                        Photographer applications:{" "}
+                        <span className="font-semibold text-foreground">
+                            {applicationCount}
+                        </span>
+                    </p>
+                ) : null}
+
+                <div className="space-y-2.5">
+                    <InfoRow icon={<CameraIcon />}>
+                        <span className="font-medium">{shootType}</span>
+                        <span className="mx-1.5 text-muted">·</span>
+                        <span>Flexible time</span>
+                    </InfoRow>
+
+                    <InfoRow icon={<CalendarIcon />}>
+                        <span>{formatPhotoshootDate(booking.sessionDate)}</span>
+                    </InfoRow>
+
+                    <InfoRow icon={<LocationIcon />}>
+                        <span className="break-words">{booking.location}</span>
+                    </InfoRow>
+                </div>
+
+                {serviceChips.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                        {serviceChips.map((chip) => (
+                            <span
+                                key={chip}
+                                className="rounded-full border border-border bg-background px-3 py-1 text-sm font-medium text-muted"
+                            >
+                                {chip}
+                            </span>
+                        ))}
+                    </div>
+                ) : null}
+
+                <p className="text-[1.15rem] font-semibold leading-tight tracking-[0.02em] text-accent">
+                    {formatFotoviaBudget(booking.budget)}
+                </p>
             </div>
-        </Link>
+        </article>
     );
 };
 
 export const OpeningBookingRequests = () =>
 {
+    const queryClient = useQueryClient();
     const { user, isAuthenticated, hasHydrated, isHydrating } = useAuthStore();
 
     const isPhotographerHome =
@@ -419,6 +445,36 @@ export const OpeningBookingRequests = () =>
         retry: false,
     });
 
+    const cancelBookingMutation = useMutation({
+        mutationFn: (bookingId: string) =>
+            bookingService.cancelMyClientBooking(bookingId),
+        onSuccess: async () =>
+        {
+            toast.success("Booking cancelled", {
+                description:
+                    "Your photoshoot request was removed from the upcoming list.",
+            });
+
+            await Promise.all([
+                queryClient.invalidateQueries({
+                    queryKey: ["opening-booking-requests"],
+                }),
+                queryClient.invalidateQueries({
+                    queryKey: ["open-booking-detail"],
+                }),
+                queryClient.invalidateQueries({
+                    queryKey: ["client-bookings"],
+                }),
+            ]);
+        },
+        onError: () =>
+        {
+            toast.error("We couldn’t cancel this booking", {
+                description: "Please try again in a moment.",
+            });
+        },
+    });
+
     const bookings = useMemo(() =>
     {
         return (openBookingsQuery.data ?? []).slice(0, MAX_VISIBLE_REQUESTS);
@@ -433,10 +489,6 @@ export const OpeningBookingRequests = () =>
             <Container size="wide">
                 <div className="space-y-8">
                     <div className="flex flex-col gap-4 text-center sm:items-center">
-                        {/* <p className="text-xs font-semibold uppercase tracking-[0.35em] text-muted">
-                            Open client requests
-                        </p> */}
-
                         <h2 className="font-display text-4xl leading-tight tracking-[-0.03em] text-foreground sm:text-5xl">
                             Upcoming Photoshoot List
                         </h2>
@@ -465,6 +517,13 @@ export const OpeningBookingRequests = () =>
                                     key={booking.id}
                                     booking={booking}
                                     currentUser={user}
+                                    isCancelling={
+                                        cancelBookingMutation.isPending &&
+                                        cancelBookingMutation.variables === booking.id
+                                    }
+                                    onCancel={(bookingId) =>
+                                        cancelBookingMutation.mutate(bookingId)
+                                    }
                                 />
                             ))}
                         </div>

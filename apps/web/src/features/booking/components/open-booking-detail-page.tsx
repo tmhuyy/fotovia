@@ -1,9 +1,23 @@
 "use client";
 
+import { isAxiosError } from "axios";
 import Link from "next/link";
 import { useParams, usePathname, useRouter } from "next/navigation";
-import { ReactNode, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import
+{
+    ReactNode,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+} from "react";
+import
+{
+    useMutation,
+    useQuery,
+    useQueryClient,
+} from "@tanstack/react-query";
+import { toast } from "sonner";
 
 import { Footer } from "../../../components/home/footer";
 import { Navbar } from "../../../components/home/navbar";
@@ -12,13 +26,14 @@ import { Button } from "../../../components/ui/button";
 import { bookingService } from "../../../services/booking.service";
 import { useAuthStore } from "../../../store/auth.store";
 import type { OpenBookingRequestRecord } from "../types/booking.types";
+import { BookingOwnerActionsMenu } from "./booking-owner-actions-menu";
 import
-    {
-        formatBookingDate,
-        formatBookingTime,
-        formatBudgetLabel,
-        formatShootTypeLabel,
-    } from "../utils/booking-display";
+{
+    formatBookingDate,
+    formatBookingTime,
+    formatBudgetLabel,
+    formatShootTypeLabel,
+} from "../utils/booking-display";
 
 interface IconProps
 {
@@ -113,21 +128,6 @@ const TagIcon = ({ className = "h-4 w-4" }: IconProps) => (
     </svg>
 );
 
-const ImageIcon = ({ className = "h-4 w-4" }: IconProps) => (
-    <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        className={className}
-        aria-hidden="true"
-    >
-        <path d="M5 5h14v14H5z" />
-        <path d="m5 16 4-4 3 3 2-2 5 5" />
-        <path d="M14.5 8.5h.01" />
-    </svg>
-);
-
 const getBookingTitle = (booking: OpenBookingRequestRecord): string =>
 {
     if (booking.title?.trim()) {
@@ -163,20 +163,6 @@ const parseDate = (value?: string | null): Date | null =>
     return parsedDate;
 };
 
-const formatSubmittedDate = (value?: string | null): string =>
-{
-    const parsedDate = parseDate(value);
-
-    if (!parsedDate) {
-        return "recently";
-    }
-
-    return new Intl.DateTimeFormat("en-US", {
-        month: "short",
-        day: "2-digit",
-    }).format(parsedDate);
-};
-
 const formatDetailedDate = (value?: string | null): string =>
 {
     const parsedDate = parseDate(value);
@@ -191,26 +177,6 @@ const formatDetailedDate = (value?: string | null): string =>
         day: "2-digit",
         year: "numeric",
     }).format(parsedDate);
-};
-
-const formatDeadline = (value?: string | null): string =>
-{
-    const parsedDate = parseDate(value);
-
-    if (!parsedDate) {
-        return "Deadline pending";
-    }
-
-    const deadlineDate = new Date(parsedDate);
-    deadlineDate.setDate(deadlineDate.getDate() - 3);
-
-    const label = new Intl.DateTimeFormat("en-US", {
-        month: "short",
-        day: "2-digit",
-        year: "numeric",
-    }).format(deadlineDate);
-
-    return `${label}, 23:59`;
 };
 
 const getApplicationCount = (booking: OpenBookingRequestRecord): number =>
@@ -244,13 +210,27 @@ const getServiceChips = (booking: OpenBookingRequestRecord): string[] =>
     return chips;
 };
 
-const isUrl = (value?: string | null): boolean =>
+const getErrorMessage = (error: unknown, fallback: string): string =>
 {
-    if (!value?.trim()) {
-        return false;
+    if (isAxiosError(error)) {
+        const payload = error.response?.data as
+            | { message?: string | string[] }
+            | undefined;
+
+        if (typeof payload?.message === "string" && payload.message.trim()) {
+            return payload.message;
+        }
+
+        if (Array.isArray(payload?.message) && payload.message.length > 0) {
+            return payload.message[0] ?? fallback;
+        }
     }
 
-    return /^https?:\/\//i.test(value.trim());
+    if (error instanceof Error && error.message.trim()) {
+        return error.message;
+    }
+
+    return fallback;
 };
 
 const InfoBlock = ({
@@ -293,12 +273,70 @@ const DetailSkeleton = () =>
     );
 };
 
+const ApplicationsSection = ({
+    booking,
+}: {
+    booking: OpenBookingRequestRecord;
+}) =>
+{
+    const applicationCount = getApplicationCount(booking);
+    const canViewApplications = Boolean(booking.canViewApplications);
+
+    return (
+        <section className="border-t border-border pt-6">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <h2 className="text-lg font-semibold text-foreground">
+                    Photographer applications{" "}
+                    <span className="ml-1 rounded-full bg-accent/15 px-2 py-0.5 text-sm text-accent">
+                        {applicationCount}
+                    </span>
+                </h2>
+            </div>
+
+            {applicationCount === 0 ? (
+                <div className="mt-5 rounded-2xl bg-background px-5 py-8 text-center">
+                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-border bg-surface text-muted">
+                        <CameraIcon className="h-7 w-7" />
+                    </div>
+
+                    <p className="text-sm font-medium text-foreground">
+                        No photographers have applied for this photoshoot yet.
+                    </p>
+
+                    <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-muted">
+                        Once photographers start applying, the customer will be
+                        able to review the applications from this request.
+                    </p>
+                </div>
+            ) : canViewApplications ? (
+                <div className="mt-5 rounded-2xl bg-background px-5 py-5 text-sm leading-6 text-muted">
+                    Application list view will be connected in the next phase.
+                    For now, this request already has photographer interest and
+                    only the customer can see the full applications later.
+                </div>
+            ) : (
+                <div className="mt-5 rounded-2xl bg-background px-5 py-5 text-center text-sm leading-6 text-muted">
+                    Only the customer can view the full list of photographer
+                    applications for this photoshoot.
+                </div>
+            )}
+        </section>
+    );
+};
+
 export const OpenBookingDetailPage = () =>
 {
     const params = useParams();
     const pathname = usePathname();
     const router = useRouter();
-    const { isAuthenticated, user } = useAuthStore();
+    const queryClient = useQueryClient();
+
+    const {
+        isAuthenticated,
+        user,
+        hasHydrated,
+        isHydrating,
+    } = useAuthStore();
 
     const bookingId = useMemo(() =>
     {
@@ -311,15 +349,60 @@ export const OpenBookingDetailPage = () =>
         return rawValue ?? "";
     }, [params.bookingId]);
 
+    const shouldUseViewerContext =
+        hasHydrated && !isHydrating && isAuthenticated;
+
     const bookingQuery = useQuery({
-        queryKey: ["open-booking-detail", bookingId],
-        queryFn: () => bookingService.getOpenBookingDetail(bookingId),
-        enabled: bookingId.length > 0,
+        queryKey: [
+            "open-booking-detail",
+            bookingId,
+            shouldUseViewerContext ? user?.id ?? user?.email ?? "viewer" : "guest",
+        ],
+        queryFn: () =>
+            bookingService.getOpenBookingDetail(
+                bookingId,
+                shouldUseViewerContext,
+            ),
+        enabled: bookingId.length > 0 && hasHydrated && !isHydrating,
         retry: false,
     });
 
     const booking = bookingQuery.data;
     const signInHref = `/sign-in?next=${encodeURIComponent(pathname)}`;
+
+    const cancelBookingMutation = useMutation({
+        mutationFn: () => bookingService.cancelMyClientBooking(bookingId),
+        onSuccess: async () =>
+        {
+            toast.success("Booking cancelled", {
+                description:
+                    "Your open booking request was removed from the public booking list.",
+            });
+
+            await Promise.all([
+                queryClient.invalidateQueries({
+                    queryKey: ["open-booking-detail", bookingId],
+                }),
+                queryClient.invalidateQueries({
+                    queryKey: ["open-booking-feed"],
+                }),
+                queryClient.invalidateQueries({
+                    queryKey: ["client-bookings"],
+                }),
+            ]);
+
+            router.push("/my-bookings");
+        },
+        onError: (error) =>
+        {
+            toast.error("We couldn’t cancel this booking", {
+                description: getErrorMessage(
+                    error,
+                    "Please try again in a moment.",
+                ),
+            });
+        },
+    });
 
     const primaryCta = useMemo(() =>
     {
@@ -327,6 +410,14 @@ export const OpenBookingDetailPage = () =>
             return {
                 label: "Sign in to apply",
                 href: signInHref,
+                disabled: false,
+            };
+        }
+
+        if (booking?.isOwner) {
+            return {
+                label: "Manage in My bookings",
+                href: `/my-bookings?bookingId=${booking.id}`,
                 disabled: false,
             };
         }
@@ -366,7 +457,7 @@ export const OpenBookingDetailPage = () =>
                         ← Back
                     </button>
 
-                    {bookingQuery.isLoading ? (
+                    {!hasHydrated || isHydrating || bookingQuery.isLoading ? (
                         <DetailSkeleton />
                     ) : bookingQuery.isError || !booking ? (
                         <div className="mx-auto max-w-3xl rounded-[2rem] border border-border bg-surface p-8 text-center shadow-[0_18px_50px_rgba(23,23,23,0.06)]">
@@ -379,7 +470,9 @@ export const OpenBookingDetailPage = () =>
                             </h1>
 
                             <p className="mt-4 text-base leading-7 text-muted">
-                                The client may have already chosen a photographer, or the request was removed.
+                                The client may have already chosen a photographer,
+                                cancelled the request, or removed it from the open
+                                booking list.
                             </p>
 
                             <div className="mt-7">
@@ -393,14 +486,27 @@ export const OpenBookingDetailPage = () =>
                             <div className="rounded-[2rem] border border-border bg-surface p-5 shadow-[0_18px_50px_rgba(23,23,23,0.06)] sm:p-8">
                                 <div className="flex flex-col gap-4 border-b border-border pb-6 sm:flex-row sm:items-start sm:justify-between">
                                     <div>
-                                        <h1 className="max-w-3xl font-display text-4xl leading-tight tracking-[-0.03em] text-foreground sm:text-5xl">
+
+                                        <h1 className="mt-3 max-w-xl font-display text-2xl leading-tight tracking-[-0.03em] text-foreground sm:text-3xl">
                                             {getBookingTitle(booking)}
                                         </h1>
                                     </div>
 
-                                    <span className="w-fit rounded-full border border-accent/30 bg-accent/15 px-4 py-2 text-sm font-semibold text-foreground">
-                                        Looking for photographer
-                                    </span>
+                                    <div className="flex items-center gap-3">
+                                        {/* <span className="w-fit rounded-full border border-accent/30 bg-accent/15 px-4 py-2 text-sm font-semibold text-foreground">
+                                            Looking for photographer
+                                        </span> */}
+
+                                        {booking.canManage ? (
+                                            <BookingOwnerActionsMenu
+                                                bookingId={booking.id}
+                                                isCancelling={cancelBookingMutation.isPending}
+                                                onCancel={() => cancelBookingMutation.mutate()}
+                                            />
+                                        ) : (
+                                            <span className="h-9 w-12 shrink-0" aria-hidden="true" />
+                                        )}
+                                    </div>
                                 </div>
 
                                 <div className="grid gap-6 py-7 md:grid-cols-2">
@@ -413,7 +519,9 @@ export const OpenBookingDetailPage = () =>
                                     <InfoBlock
                                         icon={<CalendarIcon />}
                                         label="Shooting date"
-                                        value={formatDetailedDate(booking.sessionDate)}
+                                        value={formatDetailedDate(
+                                            booking.sessionDate,
+                                        )}
                                     />
 
                                     <InfoBlock
@@ -426,8 +534,11 @@ export const OpenBookingDetailPage = () =>
                                         icon={<CameraIcon />}
                                         label="Shooting type"
                                         value={`${formatShootTypeLabel(
-                                            booking.shootType || booking.sessionType,
-                                        )} · ${formatBookingTime(booking.sessionTime)}`}
+                                            booking.shootType ||
+                                            booking.sessionType,
+                                        )} · ${formatBookingTime(
+                                            booking.sessionTime,
+                                        )}`}
                                     />
                                 </div>
 
@@ -438,8 +549,9 @@ export const OpenBookingDetailPage = () =>
                                             <span>Photoshoot description</span>
                                         </div>
 
-                                        <p className="mt-2 rounded-2xl bg-background px-4 py-4 text-base leading-7 text-foreground">
-                                            {booking.concept || "No description was added."}
+                                        <p className="mt-2 whitespace-pre-line rounded-2xl bg-background px-4 py-4 text-base leading-7 text-foreground">
+                                            {booking.concept ||
+                                                "No description was added."}
                                         </p>
                                     </section>
 
@@ -451,14 +563,16 @@ export const OpenBookingDetailPage = () =>
 
                                         <div className="mt-3 flex flex-wrap gap-2">
                                             {getServiceChips(booking).length > 0 ? (
-                                                getServiceChips(booking).map((chip) => (
-                                                    <span
-                                                        key={chip}
-                                                        className="rounded-full border border-accent/30 bg-accent/15 px-3 py-1.5 text-sm font-medium text-foreground"
-                                                    >
-                                                        {chip}
-                                                    </span>
-                                                ))
+                                                getServiceChips(booking).map(
+                                                    (chip) => (
+                                                        <span
+                                                            key={chip}
+                                                            className="rounded-full border border-accent/30 bg-accent/15 px-3 py-1.5 text-sm font-medium text-foreground"
+                                                        >
+                                                            {chip}
+                                                        </span>
+                                                    ),
+                                                )
                                             ) : (
                                                 <span className="rounded-full border border-border bg-background px-3 py-1.5 text-sm text-muted">
                                                     No extra service requested
@@ -466,7 +580,6 @@ export const OpenBookingDetailPage = () =>
                                             )}
                                         </div>
                                     </section>
-
 
                                     <div className="rounded-2xl bg-background px-4 py-4">
                                         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -480,40 +593,26 @@ export const OpenBookingDetailPage = () =>
                                         </div>
                                     </div>
 
-                                    <section className="border-t border-border pt-6">
-                                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                                            <h2 className="text-lg font-semibold text-foreground">
-                                                Photographer applications{" "}
-                                                <span className="ml-1 rounded-full bg-accent/15 px-2 py-0.5 text-sm text-accent">
-                                                    {getApplicationCount(booking)}
-                                                </span>
-                                            </h2>
+                                    <ApplicationsSection booking={booking} />
 
-                                        </div>
-
-                                        <p className="mt-5 rounded-2xl bg-background px-4 py-4 text-center text-sm leading-6 text-muted">
-                                            Only customers can view the full list of applications for their photoshoot.
-                                        </p>
-
-                                        <div className="mt-5 flex justify-center">
-                                            {primaryCta.disabled ? (
-                                                <button
-                                                    type="button"
-                                                    disabled
-                                                    className="inline-flex min-w-[15rem] cursor-not-allowed items-center justify-center rounded-2xl bg-foreground/40 px-8 py-4 text-base font-semibold text-background"
-                                                >
-                                                    {primaryCta.label}
-                                                </button>
-                                            ) : (
-                                                <Link
-                                                    href={primaryCta.href}
-                                                    className="inline-flex min-w-[15rem] items-center justify-center rounded-2xl bg-foreground px-8 py-4 text-base font-semibold text-background transition hover:opacity-90"
-                                                >
-                                                    {primaryCta.label}
-                                                </Link>
-                                            )}
-                                        </div>
-                                    </section>
+                                    <div className="flex justify-center pt-1">
+                                        {primaryCta.disabled ? (
+                                            <button
+                                                type="button"
+                                                disabled
+                                                className="inline-flex min-w-[15rem] cursor-not-allowed items-center justify-center rounded-2xl bg-foreground/40 px-8 py-4 text-base font-semibold text-background"
+                                            >
+                                                {primaryCta.label}
+                                            </button>
+                                        ) : (
+                                            <Link
+                                                href={primaryCta.href}
+                                                className="inline-flex min-w-[15rem] items-center justify-center rounded-2xl bg-foreground px-8 py-4 text-base font-semibold text-background transition hover:opacity-90"
+                                            >
+                                                {primaryCta.label}
+                                            </Link>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </section>

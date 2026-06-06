@@ -53,6 +53,9 @@ export interface BookingRequestRecord extends BaseBookingPayload {
     applicationsCount?: number;
     applicationCount?: number;
     photographerApplicationsCount?: number;
+    isOwner?: boolean;
+    canManage?: boolean;
+    canViewApplications?: boolean;
     status: BookingStatus;
     createdAt: string;
     updatedAt: string;

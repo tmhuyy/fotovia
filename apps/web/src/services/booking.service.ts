@@ -19,6 +19,8 @@ const BOOKING_ENDPOINTS = {
     createOpen: "/booking/open",
     openFeed: "/booking/open",
     openDetail: (bookingId: string) => `/booking/open/${bookingId}`,
+    openDetailForViewer: (bookingId: string) =>
+        `/booking/open/${bookingId}/viewer`,
     clientMine: "/booking/client/me",
     clientCancel: (bookingId: string) =>
         `/booking/client/me/${bookingId}/cancel`,
@@ -49,6 +51,26 @@ const normalizeNullableNumber = (value: unknown): number | undefined => {
 
         if (Number.isFinite(parsedValue)) {
             return parsedValue;
+        }
+    }
+
+    return undefined;
+};
+
+const normalizeBoolean = (value: unknown): boolean | undefined => {
+    if (typeof value === "boolean") {
+        return value;
+    }
+
+    if (typeof value === "string") {
+        const normalized = value.trim().toLowerCase();
+
+        if (normalized === "true") {
+            return true;
+        }
+
+        if (normalized === "false") {
+            return false;
         }
     }
 
@@ -107,6 +129,9 @@ const normalizeBooking = (payload: AnyRecord): BookingRequestRecord => {
         photographerApplicationsCount: normalizeNullableNumber(
             payload.photographerApplicationsCount,
         ),
+        isOwner: normalizeBoolean(payload.isOwner),
+        canManage: normalizeBoolean(payload.canManage),
+        canViewApplications: normalizeBoolean(payload.canViewApplications),
         status: normalizeStatus(payload.status),
         createdAt:
             typeof payload.createdAt === "string"
@@ -205,10 +230,15 @@ export const bookingService = {
 
     async getOpenBookingDetail(
         bookingId: string,
+        withViewerContext = false,
     ): Promise<OpenBookingRequestRecord> {
         const response = await bookingClient.get<
             ApiResponse<AnyRecord> | AnyRecord
-        >(BOOKING_ENDPOINTS.openDetail(bookingId));
+        >(
+            withViewerContext
+                ? BOOKING_ENDPOINTS.openDetailForViewer(bookingId)
+                : BOOKING_ENDPOINTS.openDetail(bookingId),
+        );
 
         const data = unwrapResponse<AnyRecord>(response.data);
         return normalizeBooking(data);
