@@ -356,7 +356,7 @@ const OptionDropdown = ({
                     <button
                         key={option.value}
                         type="button"
-                        className="flex w-full items-center rounded-2xl px-4 py-3 text-left text-sm font-medium text-foreground transition hover:bg-background"
+                        className="flex w-full items-center rounded-2xl px-4 py-3 text-left text-sm font-medium text-foreground transition hover:bg-background cursor-pointer"
                         onClick={() => onSelect(option)}
                     >
                         {formatLabel(option.label)}
@@ -413,7 +413,7 @@ const DateCalendarDropdown = ({
             <div className="flex items-center justify-between gap-3">
                 <button
                     type="button"
-                    className="flex h-9 w-9 items-center justify-center rounded-full text-muted transition hover:bg-background hover:text-foreground"
+                    className="flex h-9 w-9 items-center justify-center rounded-full text-muted transition hover:bg-background hover:text-foreground cursor-pointer"
                     onClick={handlePreviousMonth}
                     aria-label="Previous month"
                 >
@@ -429,7 +429,7 @@ const DateCalendarDropdown = ({
 
                 <button
                     type="button"
-                    className="flex h-9 w-9 items-center justify-center rounded-full text-muted transition hover:bg-background hover:text-foreground"
+                    className="flex h-9 w-9 items-center justify-center rounded-full text-muted transition hover:bg-background hover:text-foreground cursor-pointer"
                     onClick={handleNextMonth}
                     aria-label="Next month"
                 >
@@ -464,7 +464,7 @@ const DateCalendarDropdown = ({
                             type="button"
                             disabled={isDisabled}
                             className={[
-                                "flex h-10 items-center justify-center rounded-xl text-sm font-medium transition",
+                                "flex h-10 items-center justify-center rounded-xl text-sm font-medium transition cursor-pointer",
                                 isSelected
                                     ? "bg-foreground text-background"
                                     : "text-foreground hover:bg-background",
@@ -571,7 +571,7 @@ const HeroBookingBar = () =>
     const fieldClassName = (menuKey: BookingMenuKey) =>
     {
         return [
-            "flex h-14 w-full items-center justify-start gap-3 rounded-2xl px-4 text-left transition hover:bg-background md:h-16 md:rounded-[1.25rem] md:bg-transparent md:px-5",
+            "flex h-14 w-full items-center justify-start gap-3 rounded-2xl px-4 text-left transition hover:bg-background md:h-16 md:rounded-[1.25rem] md:bg-transparent md:px-5 cursor-pointer",
             activeMenu === menuKey
                 ? "ring-1 ring-foreground/10 md:bg-background md:ring-2"
                 : "",
@@ -675,7 +675,7 @@ const HeroBookingBar = () =>
 
                     <button
                         type="button"
-                        className="flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-[#ff5a1f] px-4 text-base font-semibold text-white transition hover:bg-[#e94f17] md:h-16 md:rounded-[1.25rem] md:bg-foreground md:px-6 md:text-background md:hover:bg-foreground/85"
+                        className="flex h-14 w-full items-center justify-center gap-3 rounded-2xl  px-4 text-base font-semibold text-white transition  md:h-16 md:rounded-[1.25rem] bg-foreground md:px-6 text-background hover:bg-foreground/85 cursor-pointer"
                         onClick={handleBookNow}
                     >
                         <ArrowRightIcon className="h-5 w-5" />

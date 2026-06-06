@@ -16,7 +16,7 @@ export const AuthShell = ({ children }: AuthShellProps) => {
               Fotovia
             </Link>
             <p className="hidden text-xs uppercase tracking-[0.3em] text-muted md:block">
-              Premium Photography Booking
+              Photography Booking
             </p>
           </div>
           <ThemeToggle className="px-2 py-1 text-[10px] sm:text-xs" />

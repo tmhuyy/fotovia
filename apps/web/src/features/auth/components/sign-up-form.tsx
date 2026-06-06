@@ -216,7 +216,7 @@ export const SignUpForm = () => {
 
                 <Button
                     type="submit"
-                    className="h-14 w-full rounded-full text-base font-medium"
+                    className="h-14 w-full rounded-full text-base font-medium cursor-pointer"
                     disabled={isSubmitting}
                 >
                     {isSubmitting ? "Creating account..." : "Create Account"}

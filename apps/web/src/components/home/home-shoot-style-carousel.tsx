@@ -215,7 +215,7 @@ export const HomeShootStyleCarousel = () =>
                                 type="button"
                                 onClick={() => scrollStyles("left")}
                                 disabled={!canScrollBackward}
-                                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-surface text-foreground shadow-sm transition hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-35"
+                                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-surface text-foreground shadow-sm transition hover:border-accent hover:text-accent cursor-pointer disabled:cursor-not-allowed disabled:opacity-35"
                                 aria-label="Scroll shooting styles left"
                             >
                                 <ArrowIcon direction="left" />
@@ -225,7 +225,7 @@ export const HomeShootStyleCarousel = () =>
                                 type="button"
                                 onClick={() => scrollStyles("right")}
                                 disabled={!canScrollForward}
-                                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-surface text-foreground shadow-sm transition hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-35"
+                                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-surface text-foreground shadow-sm transition hover:border-accent hover:text-accent cursor-pointer disabled:cursor-not-allowed disabled:opacity-35"
                                 aria-label="Scroll shooting styles right"
                             >
                                 <ArrowIcon direction="right" />
@@ -252,9 +252,6 @@ export const HomeShootStyleCarousel = () =>
                                 />
 
                                 <div className="absolute inset-0 bg-gradient-to-t from-foreground/78 via-foreground/18 to-transparent" />
-
-                                
-
                                 <div className="absolute inset-x-0 bottom-0 p-5">
                                     <div className="flex items-end justify-between">
                                         <div>

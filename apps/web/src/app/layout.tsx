@@ -17,7 +17,7 @@ const playfair = Playfair_Display({
 
 export const metadata: Metadata = {
   title: "Fotovia",
-  description: "Premium photography booking with AI-powered style matching.",
+  description: "Online photography booking with AI-powered style matching.",
 };
 
 export default function RootLayout({

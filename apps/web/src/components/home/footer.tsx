@@ -15,7 +15,7 @@ export const Footer = () => {
         <div className="space-y-2">
           <p className="font-display text-lg text-foreground">Fotovia</p>
           <p className="text-sm text-muted">
-            Premium photography booking with AI-assisted style matching.
+            Online photography booking with AI-assisted style matching.
           </p>
         </div>
         <div className="flex flex-wrap gap-6 text-sm text-muted">
