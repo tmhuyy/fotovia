@@ -1,7 +1,7 @@
 import { FeaturedPhotographers } from "./featured-photographers";
 import { Footer } from "./footer";
 import { HeroSection } from "./hero-section";
-import { HomeValueStrip } from "./home-value-strip";
+import { HomeShootStyleCarousel } from "./home-shoot-style-carousel";
 import { Navbar } from "./navbar";
 import { OpeningBookingRequests } from "./opening-booking-requests";
 
@@ -14,7 +14,7 @@ export const HomePage = () =>
             <main>
                 <HeroSection />
                 <OpeningBookingRequests />
-                <HomeValueStrip />
+                <HomeShootStyleCarousel />
                 <FeaturedPhotographers />
             </main>
 
