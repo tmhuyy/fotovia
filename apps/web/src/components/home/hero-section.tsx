@@ -69,7 +69,8 @@ const quickStyleLinks = [
 const photographerQuickActions = [
     { label: "Portfolio", href: "/photographer/portfolio" },
     { label: "Add work", href: "/photographer/portfolio/new" },
-    { label: "Booking requests", href: "/photographer/bookings" },
+    { label: "Open requests", href: "/bookings/open" },
+    { label: "Direct requests", href: "/photographer/bookings" },
 ];
 
 const photographerPanelItems = [

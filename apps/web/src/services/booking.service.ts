@@ -1,7 +1,10 @@
 import type {
+    BookingApplicationRecord,
+    BookingApplicationStatus,
     BookingRequestRecord,
     BookingStatus,
     ClientBookingActionStatus,
+    CreateBookingApplicationPayload,
     CreateBookingPayload,
     CreateOpenBookingPayload,
     OpenBookingRequestRecord,
@@ -31,6 +34,13 @@ const BOOKING_ENDPOINTS = {
         `/booking/photographer/me/${bookingId}/timeline`,
     photographerStatus: (bookingId: string) =>
         `/booking/photographer/me/${bookingId}/status`,
+    openApply: (bookingId: string) => `/booking/open/${bookingId}/applications`,
+    openMyApplication: (bookingId: string) =>
+        `/booking/open/${bookingId}/applications/me`,
+    openWithdrawMyApplication: (bookingId: string) =>
+        `/booking/open/${bookingId}/applications/me/withdraw`,
+    clientApplications: (bookingId: string) =>
+        `/booking/client/me/${bookingId}/applications`,
 };
 
 const normalizeString = (value: unknown): string => {
@@ -75,6 +85,24 @@ const normalizeBoolean = (value: unknown): boolean | undefined => {
     }
 
     return undefined;
+};
+const normalizeApplicationStatus = (
+    value: unknown,
+): BookingApplicationStatus => {
+    const normalized = normalizeString(value);
+
+    if (
+        normalized === "submitted" ||
+        normalized === "shortlisted" ||
+        normalized === "selected" ||
+        normalized === "rejected" ||
+        normalized === "withdrawn" ||
+        normalized === "expired"
+    ) {
+        return normalized;
+    }
+
+    return "submitted";
 };
 
 const normalizeStatus = (value: unknown): BookingStatus => {
@@ -141,7 +169,65 @@ const normalizeBooking = (payload: AnyRecord): BookingRequestRecord => {
             typeof payload.updatedAt === "string"
                 ? payload.updatedAt
                 : new Date().toISOString(),
+
+        hasApplied: normalizeBoolean(payload.hasApplied),
+        myApplicationId:
+            normalizeNullableString(payload.myApplicationId) ?? undefined,
+        myApplicationStatus:
+            normalizeNullableString(payload.myApplicationStatus) !== null
+                ? normalizeApplicationStatus(payload.myApplicationStatus)
+                : undefined,
+        canApply: normalizeBoolean(payload.canApply),
     };
+};
+
+const normalizeBookingApplication = (
+    payload: AnyRecord,
+): BookingApplicationRecord => {
+    return {
+        id: normalizeString(payload.id),
+        bookingId: normalizeString(payload.bookingId),
+        photographerProfileId: normalizeString(payload.photographerProfileId),
+        photographerUserId: normalizeString(payload.photographerUserId),
+        photographerName: normalizeString(payload.photographerName),
+        photographerSlug:
+            normalizeNullableString(payload.photographerSlug) ?? undefined,
+        photographerAvatarUrl:
+            normalizeNullableString(payload.photographerAvatarUrl) ?? undefined,
+        message: normalizeString(payload.message),
+        proposedPrice: normalizeNullableNumber(payload.proposedPrice) ?? 0,
+        includedDeliverables: normalizeString(payload.includedDeliverables),
+        estimatedDuration:
+            normalizeNullableString(payload.estimatedDuration) ?? undefined,
+        availableOnRequestedDate:
+            normalizeBoolean(payload.availableOnRequestedDate) ?? false,
+        status: normalizeApplicationStatus(payload.status),
+        createdAt:
+            typeof payload.createdAt === "string"
+                ? payload.createdAt
+                : new Date().toISOString(),
+        updatedAt:
+            typeof payload.updatedAt === "string"
+                ? payload.updatedAt
+                : new Date().toISOString(),
+    };
+};
+
+const normalizeBookingApplicationArray = (
+    payload: unknown,
+): BookingApplicationRecord[] => {
+    if (!Array.isArray(payload)) {
+        return [];
+    }
+
+    return payload
+        .filter(
+            (item): item is AnyRecord =>
+                typeof item === "object" &&
+                item !== null &&
+                !Array.isArray(item),
+        )
+        .map((item) => normalizeBookingApplication(item));
 };
 
 const normalizeBookingArray = (payload: unknown): BookingRequestRecord[] => {
@@ -219,10 +305,24 @@ export const bookingService = {
         return normalizeBooking(data);
     },
 
-    async getOpenBookingFeed(): Promise<OpenBookingRequestRecord[]> {
+    async getOpenBookingFeed(options?: {
+        limit?: number;
+    }): Promise<OpenBookingRequestRecord[]> {
+        const params = new URLSearchParams();
+
+        if (typeof options?.limit === "number" && options.limit > 0) {
+            params.set("limit", String(options.limit));
+        }
+
+        const queryString = params.toString();
+
         const response = await bookingClient.get<
             ApiResponse<unknown> | unknown
-        >(BOOKING_ENDPOINTS.openFeed);
+        >(
+            queryString
+                ? `${BOOKING_ENDPOINTS.openFeed}?${queryString}`
+                : BOOKING_ENDPOINTS.openFeed,
+        );
 
         const data = unwrapResponse<unknown>(response.data);
         return normalizeBookingArray(data);
@@ -310,5 +410,55 @@ export const bookingService = {
 
         const data = unwrapResponse<AnyRecord>(response.data);
         return normalizeBooking(data);
+    },
+
+    async applyToOpenBooking(
+        bookingId: string,
+        payload: CreateBookingApplicationPayload,
+    ): Promise<BookingApplicationRecord> {
+        const response = await bookingClient.post<
+            ApiResponse<AnyRecord> | AnyRecord
+        >(BOOKING_ENDPOINTS.openApply(bookingId), payload);
+
+        const data = unwrapResponse<AnyRecord>(response.data);
+        return normalizeBookingApplication(data);
+    },
+
+    async getMyOpenBookingApplication(
+        bookingId: string,
+    ): Promise<BookingApplicationRecord | null> {
+        const response = await bookingClient.get<
+            ApiResponse<AnyRecord | null> | AnyRecord | null
+        >(BOOKING_ENDPOINTS.openMyApplication(bookingId));
+
+        const data = unwrapResponse<AnyRecord | null>(response.data);
+
+        if (!data) {
+            return null;
+        }
+
+        return normalizeBookingApplication(data);
+    },
+
+    async withdrawMyOpenBookingApplication(
+        bookingId: string,
+    ): Promise<BookingApplicationRecord> {
+        const response = await bookingClient.patch<
+            ApiResponse<AnyRecord> | AnyRecord
+        >(BOOKING_ENDPOINTS.openWithdrawMyApplication(bookingId));
+
+        const data = unwrapResponse<AnyRecord>(response.data);
+        return normalizeBookingApplication(data);
+    },
+
+    async getMyClientBookingApplications(
+        bookingId: string,
+    ): Promise<BookingApplicationRecord[]> {
+        const response = await bookingClient.get<
+            ApiResponse<unknown> | unknown
+        >(BOOKING_ENDPOINTS.clientApplications(bookingId));
+
+        const data = unwrapResponse<unknown>(response.data);
+        return normalizeBookingApplicationArray(data);
     },
 };

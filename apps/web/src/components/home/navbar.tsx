@@ -19,7 +19,7 @@ const navLinks: { label: string; href: string }[] = [
     },
     {
         label: "Booking List",
-        href: "/#shooting-list",
+        href: "/bookings/open",
     },
     {
         label: "Book A Photoshoot",

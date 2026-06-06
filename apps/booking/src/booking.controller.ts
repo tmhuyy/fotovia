@@ -6,6 +6,7 @@ import {
     ParseUUIDPipe,
     Patch,
     Post,
+    Query,
     UseGuards,
 } from '@nestjs/common';
 import {
@@ -24,6 +25,8 @@ import { CreateOpenBookingDto } from './dtos/create-open-booking.dto';
 import { UpdateBookingStatusDto } from './dtos/update-booking-status.dto';
 import { Booking } from './entities/booking.entity';
 import { BookingEvent } from './entities/booking-event.entity';
+import { CreateBookingApplicationDto } from './dtos/create-booking-application.dto';
+import { BookingApplication } from './entities/booking-application.entity';
 
 @ApiTags('Booking')
 @Controller('booking')
@@ -64,6 +67,91 @@ export class BookingController {
         return this.bookingService.getOpenBookingDetail(bookingId);
     }
 
+    @UseGuards(JwtAuthGuard)
+    @Post('/open/:bookingId/applications')
+    @ApiOperation({
+        summary: 'Apply to an open booking request as a photographer',
+    })
+    @ApiCreatedResponse({
+        description: 'Photographer application submitted successfully',
+        type: BookingApplication,
+    })
+    @ApiForbiddenResponse({
+        description:
+            'Only photographer accounts can apply, and clients cannot apply to their own booking',
+    })
+    async createOpenBookingApplication(
+        @Param('bookingId', new ParseUUIDPipe()) bookingId: string,
+        @Body() createBookingApplicationDto: CreateBookingApplicationDto,
+        @GetUser() user: IUser,
+    ): Promise<BookingApplication> {
+        return this.bookingService.createOpenBookingApplication(
+            bookingId,
+            createBookingApplicationDto,
+            user.id,
+        );
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Get('/open/:bookingId/applications/me')
+    @ApiOperation({
+        summary: 'Get my photographer application for one open booking request',
+    })
+    @ApiOkResponse({
+        description: 'Current photographer application fetched successfully',
+        type: BookingApplication,
+    })
+    async getMyOpenBookingApplication(
+        @Param('bookingId', new ParseUUIDPipe()) bookingId: string,
+        @GetUser() user: IUser,
+    ): Promise<BookingApplication | null> {
+        return this.bookingService.getMyOpenBookingApplication(
+            bookingId,
+            user.id,
+        );
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Patch('/open/:bookingId/applications/me/withdraw')
+    @ApiOperation({
+        summary:
+            'Withdraw my photographer application from an open booking request',
+    })
+    @ApiOkResponse({
+        description: 'Photographer application withdrawn successfully',
+        type: BookingApplication,
+    })
+    async withdrawMyOpenBookingApplication(
+        @Param('bookingId', new ParseUUIDPipe()) bookingId: string,
+        @GetUser() user: IUser,
+    ): Promise<BookingApplication> {
+        return this.bookingService.withdrawMyOpenBookingApplication(
+            bookingId,
+            user.id,
+        );
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Get('/client/me/:bookingId/applications')
+    @ApiOperation({
+        summary:
+            'Get photographer applications for a booking owned by the current client',
+    })
+    @ApiOkResponse({
+        description: 'Booking applications fetched successfully',
+        type: BookingApplication,
+        isArray: true,
+    })
+    async getMyClientBookingApplications(
+        @Param('bookingId', new ParseUUIDPipe()) bookingId: string,
+        @GetUser() user: IUser,
+    ): Promise<BookingApplication[]> {
+        return this.bookingService.getMyClientBookingApplications(
+            bookingId,
+            user.id,
+        );
+    }
+
     @Get('/open')
     @ApiOperation({
         summary:
@@ -74,8 +162,16 @@ export class BookingController {
         type: Booking,
         isArray: true,
     })
-    async getOpenBookingFeed(): Promise<Booking[]> {
-        return this.bookingService.getOpenBookingFeed();
+    async getOpenBookingFeed(
+        @Query('limit') limit?: string,
+    ): Promise<Booking[]> {
+        const parsedLimit = Number(limit);
+        const safeLimit =
+            Number.isFinite(parsedLimit) && parsedLimit > 0
+                ? Math.min(parsedLimit, 50)
+                : 6;
+
+        return this.bookingService.getOpenBookingFeed(safeLimit);
     }
 
     @UseGuards(JwtAuthGuard)

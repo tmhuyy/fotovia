@@ -35,6 +35,9 @@ import
     formatShootTypeLabel,
 } from "../utils/booking-display";
 
+import { ApplyToPhotoshootModal } from "./apply-to-photoshoot-modal";
+import type { CreateBookingApplicationPayload } from "../types/booking.types";
+
 interface IconProps
 {
     className?: string;
@@ -331,6 +334,8 @@ export const OpenBookingDetailPage = () =>
     const router = useRouter();
     const queryClient = useQueryClient();
 
+    const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
+
     const {
         isAuthenticated,
         user,
@@ -404,6 +409,38 @@ export const OpenBookingDetailPage = () =>
         },
     });
 
+    const applyMutation = useMutation({
+        mutationFn: (payload: CreateBookingApplicationPayload) =>
+            bookingService.applyToOpenBooking(bookingId, payload),
+        onSuccess: async () =>
+        {
+            toast.success("Application submitted", {
+                description:
+                    "The client can now review your proposal for this photoshoot.",
+            });
+
+            setIsApplyModalOpen(false);
+
+            await Promise.all([
+                queryClient.invalidateQueries({
+                    queryKey: ["open-booking-detail", bookingId],
+                }),
+                queryClient.invalidateQueries({
+                    queryKey: ["opening-booking-requests"],
+                }),
+            ]);
+        },
+        onError: (error) =>
+        {
+            toast.error("We couldn’t submit your application", {
+                description: getErrorMessage(
+                    error,
+                    "Please check your proposal and try again.",
+                ),
+            });
+        },
+    });
+
     const primaryCta = useMemo(() =>
     {
         if (!isAuthenticated) {
@@ -423,8 +460,25 @@ export const OpenBookingDetailPage = () =>
         }
 
         if (user?.role === "photographer") {
+            if (booking?.hasApplied) {
+                return {
+                    label: "Application submitted",
+                    href: "#",
+                    disabled: true,
+                };
+            }
+
+            if (booking?.canApply) {
+                return {
+                    label: "Apply to photoshoot",
+                    href: "#",
+                    disabled: false,
+                    action: "apply" as const,
+                };
+            }
+
             return {
-                label: "Application flow coming soon",
+                label: "Cannot apply to this booking",
                 href: "#",
                 disabled: true,
             };
@@ -605,12 +659,25 @@ export const OpenBookingDetailPage = () =>
                                                 {primaryCta.label}
                                             </button>
                                         ) : (
-                                            <Link
-                                                href={primaryCta.href}
-                                                className="inline-flex min-w-[15rem] items-center justify-center rounded-2xl bg-foreground px-8 py-4 text-base font-semibold text-background transition hover:opacity-90"
-                                            >
-                                                {primaryCta.label}
-                                            </Link>
+                                            "action" in primaryCta &&
+                                                primaryCta.action === "apply" ? (
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        setIsApplyModalOpen(true)
+                                                    }
+                                                    className="inline-flex min-w-[15rem] items-center justify-center rounded-2xl bg-foreground px-8 py-4 text-base font-semibold text-background transition hover:opacity-90"
+                                                >
+                                                    {primaryCta.label}
+                                                </button>
+                                            ) : (
+                                                <Link
+                                                    href={primaryCta.href}
+                                                    className="inline-flex min-w-[15rem] items-center justify-center rounded-2xl bg-foreground px-8 py-4 text-base font-semibold text-background transition hover:opacity-90"
+                                                >
+                                                    {primaryCta.label}
+                                                </Link>
+                                            )
                                         )}
                                     </div>
                                 </div>
@@ -619,7 +686,12 @@ export const OpenBookingDetailPage = () =>
                     )}
                 </Container>
             </main>
-
+            <ApplyToPhotoshootModal
+                isOpen={isApplyModalOpen}
+                isSubmitting={applyMutation.isPending}
+                onClose={() => setIsApplyModalOpen(false)}
+                onSubmit={(payload) => applyMutation.mutate(payload)}
+            />
             <Footer />
         </div>
     );

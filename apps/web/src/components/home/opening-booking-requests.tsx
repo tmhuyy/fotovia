@@ -425,21 +425,48 @@ const OpeningBookingRequestCard = ({
     );
 };
 
-export const OpeningBookingRequests = () =>
+interface OpeningBookingRequestsProps
+{
+    variant?: "home" | "page";
+    limit?: number;
+    maxVisibleRequests?: number;
+    showBookNowCta?: boolean;
+    title?: string;
+    subtitle?: string;
+}
+
+export const OpeningBookingRequests = ({
+    variant = "home",
+    limit = 6,
+    maxVisibleRequests = MAX_VISIBLE_REQUESTS,
+    showBookNowCta = true,
+    title,
+    subtitle,
+}: OpeningBookingRequestsProps) =>
 {
     const queryClient = useQueryClient();
     const { user, isAuthenticated, hasHydrated, isHydrating } = useAuthStore();
 
-    const isPhotographerHome =
+    const isPhotographer =
         hasHydrated &&
         !isHydrating &&
         isAuthenticated &&
         user?.role === "photographer";
 
+    const sectionTitle =
+        title ?? "Open Photoshoot Requests"
+        
+
+    const sectionSubtitle =
+        subtitle ??
+        (isPhotographer
+            ? "Review available client briefs and apply to the photoshoots that fit your portfolio."
+            : undefined);
+
     const openBookingsQuery = useQuery({
-        queryKey: ["opening-booking-requests", "homepage"],
+        queryKey: ["opening-booking-requests", variant, limit],
         queryFn: () =>
-            bookingService.getOpenBookingFeed() as Promise<
+            bookingService.getOpenBookingFeed({ limit }) as Promise<
                 PublicBookingRequestRecord[]
             >,
         retry: false,
@@ -477,21 +504,28 @@ export const OpeningBookingRequests = () =>
 
     const bookings = useMemo(() =>
     {
-        return (openBookingsQuery.data ?? []).slice(0, MAX_VISIBLE_REQUESTS);
-    }, [openBookingsQuery.data]);
+        return (openBookingsQuery.data ?? []).slice(0, maxVisibleRequests);
+    }, [maxVisibleRequests, openBookingsQuery.data]);
 
-    if (isPhotographerHome) {
-        return null;
-    }
+    const shouldShowBookNowCta = showBookNowCta && !isPhotographer;
+    const shouldShowViewAllCta = variant === "home";
 
     return (
-        <section className="pb-14 pt-8 sm:pb-16 sm:pt-10">
+        <section
+            className={
+                variant === "page"
+                    ? "pb-8 pt-0"
+                    : "pb-14 pt-8 sm:pb-16 sm:pt-10"
+            }
+        >
             <Container size="wide">
                 <div className="space-y-8">
-                    <div className="flex flex-col gap-4 text-center sm:items-center">
+                    <div className="mx-auto flex max-w-3xl flex-col gap-4 text-center sm:items-center">
+
                         <h2 className="font-display text-4xl leading-tight tracking-[-0.03em] text-foreground sm:text-5xl">
-                            Upcoming Photoshoot List
+                            {sectionTitle}
                         </h2>
+
                     </div>
 
                     {openBookingsQuery.isLoading ? (
@@ -503,11 +537,12 @@ export const OpeningBookingRequests = () =>
                     ) : bookings.length === 0 ? (
                         <div className="rounded-[1.75rem] border border-border bg-surface p-8 text-center shadow-[0_18px_50px_rgba(23,23,23,0.06)]">
                             <h3 className="font-display text-3xl text-foreground">
-                                No upcoming photoshoots yet.
+                                No open photoshoots yet.
                             </h3>
 
                             <p className="mt-2 text-sm text-muted">
-                                Once a client sends a booking brief, it will appear here.
+                                Once a client sends an open booking brief, it
+                                will appear here.
                             </p>
                         </div>
                     ) : (
@@ -529,13 +564,24 @@ export const OpeningBookingRequests = () =>
                         </div>
                     )}
 
-                    <div className="flex justify-center">
-                        <Link
-                            href={createBookingHref(bookings[0])}
-                            className="inline-flex min-w-[13rem] items-center justify-center rounded-2xl bg-foreground px-8 py-4 text-base font-semibold tracking-[0.02em] text-background transition hover:opacity-90"
-                        >
-                            Book now
-                        </Link>
+                    <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
+                        {shouldShowViewAllCta ? (
+                            <Link
+                                href="/bookings/open"
+                                className="inline-flex min-w-[13rem] items-center justify-center rounded-2xl border border-border bg-surface px-8 py-4 text-base font-semibold tracking-[0.02em] text-foreground transition hover:border-accent hover:text-accent"
+                            >
+                                View all requests
+                            </Link>
+                        ) : null}
+
+                        {shouldShowBookNowCta ? (
+                            <Link
+                                href={createBookingHref(bookings[0])}
+                                className="inline-flex min-w-[13rem] items-center justify-center rounded-2xl bg-foreground px-8 py-4 text-base font-semibold tracking-[0.02em] text-background transition hover:opacity-90"
+                            >
+                                Book now
+                            </Link>
+                        ) : null}
                     </div>
                 </div>
             </Container>

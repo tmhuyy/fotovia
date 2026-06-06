@@ -5,6 +5,14 @@ export type BookingStatus =
     | "completed"
     | "cancelled";
 
+export type BookingApplicationStatus =
+    | "submitted"
+    | "shortlisted"
+    | "selected"
+    | "rejected"
+    | "withdrawn"
+    | "expired";
+
 export type PhotographerBookingActionStatus = Extract<
     BookingStatus,
     "confirmed" | "declined" | "completed"
@@ -59,6 +67,10 @@ export interface BookingRequestRecord extends BaseBookingPayload {
     status: BookingStatus;
     createdAt: string;
     updatedAt: string;
+    hasApplied?: boolean;
+    myApplicationId?: string;
+    myApplicationStatus?: BookingApplicationStatus;
+    canApply?: boolean;
 }
 
 export type OpenBookingRequestRecord = BookingRequestRecord;
@@ -71,4 +83,30 @@ export interface BookingEntrySearchParams {
     location?: string;
     date?: string;
     budget?: string;
+}
+
+export interface CreateBookingApplicationPayload {
+    message: string;
+    proposedPrice: number;
+    includedDeliverables: string;
+    availableOnRequestedDate: boolean;
+    estimatedDuration?: string;
+}
+
+export interface BookingApplicationRecord {
+    id: string;
+    bookingId: string;
+    photographerProfileId: string;
+    photographerUserId: string;
+    photographerName: string;
+    photographerSlug?: string;
+    photographerAvatarUrl?: string;
+    message: string;
+    proposedPrice: number;
+    includedDeliverables: string;
+    estimatedDuration?: string;
+    availableOnRequestedDate: boolean;
+    status: BookingApplicationStatus;
+    createdAt: string;
+    updatedAt: string;
 }
