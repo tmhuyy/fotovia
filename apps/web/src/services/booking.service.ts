@@ -38,6 +38,22 @@ const normalizeNullableString = (value: unknown): string | null => {
     return typeof value === "string" && value.trim().length > 0 ? value : null;
 };
 
+const normalizeNullableNumber = (value: unknown): number | undefined => {
+    if (typeof value === "number" && Number.isFinite(value)) {
+        return value;
+    }
+
+    if (typeof value === "string" && value.trim().length > 0) {
+        const parsedValue = Number(value);
+
+        if (Number.isFinite(parsedValue)) {
+            return parsedValue;
+        }
+    }
+
+    return undefined;
+};
+
 const normalizeStatus = (value: unknown): BookingStatus => {
     const normalized = normalizeString(value);
 
@@ -59,6 +75,12 @@ const normalizeBooking = (payload: AnyRecord): BookingRequestRecord => {
         id: normalizeString(payload.id),
         clientUserId: normalizeString(payload.clientUserId),
         clientEmail: normalizeNullableString(payload.clientEmail) ?? undefined,
+        clientName: normalizeNullableString(payload.clientName) ?? undefined,
+        clientFullName:
+            normalizeNullableString(payload.clientFullName) ?? undefined,
+        clientProfileName:
+            normalizeNullableString(payload.clientProfileName) ?? undefined,
+        fullName: normalizeNullableString(payload.fullName) ?? undefined,
         photographerProfileId:
             normalizeNullableString(payload.photographerProfileId) ?? undefined,
         photographerUserId:
@@ -79,6 +101,11 @@ const normalizeBooking = (payload: AnyRecord): BookingRequestRecord => {
         concept: normalizeString(payload.concept),
         inspiration: normalizeNullableString(payload.inspiration) ?? undefined,
         notes: normalizeNullableString(payload.notes) ?? undefined,
+        applicationsCount: normalizeNullableNumber(payload.applicationsCount),
+        applicationCount: normalizeNullableNumber(payload.applicationCount),
+        photographerApplicationsCount: normalizeNullableNumber(
+            payload.photographerApplicationsCount,
+        ),
         status: normalizeStatus(payload.status),
         createdAt:
             typeof payload.createdAt === "string"

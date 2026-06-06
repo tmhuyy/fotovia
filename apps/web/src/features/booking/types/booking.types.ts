@@ -42,10 +42,17 @@ export interface BookingRequestRecord extends BaseBookingPayload {
     id: string;
     clientUserId: string;
     clientEmail?: string;
+    clientName?: string;
+    clientFullName?: string;
+    clientProfileName?: string;
+    fullName?: string;
     photographerProfileId?: string;
     photographerUserId?: string;
     photographerSlug?: string;
     photographerName?: string;
+    applicationsCount?: number;
+    applicationCount?: number;
+    photographerApplicationsCount?: number;
     status: BookingStatus;
     createdAt: string;
     updatedAt: string;

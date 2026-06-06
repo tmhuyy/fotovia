@@ -5,7 +5,7 @@ import {
     NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, IsNull, Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { UserRole } from '@repo/types';
 
 import { CreateBookingDto } from './dtos/create-booking.dto';
@@ -23,6 +23,15 @@ interface ProfileLookupRow {
     id: string;
     userId: string;
     role: UserRole;
+}
+
+interface OpenBookingFeedRow extends Booking {
+    clientName: string;
+    clientFullName: string | null;
+    clientProfileName: string | null;
+    applicationsCount: number;
+    applicationCount: number;
+    photographerApplicationsCount: number;
 }
 
 @Injectable()
@@ -143,18 +152,33 @@ export class BookingService {
     }
 
     async getOpenBookingFeed(): Promise<Booking[]> {
-        return this.bookingRepository.find({
-            where: {
-                photographerProfileId: IsNull(),
-                photographerUserId: IsNull(),
-                status: 'pending',
-            },
-            order: {
-                sessionDate: 'ASC',
-                createdAt: 'DESC',
-            },
-            take: 6,
-        });
+        const rows = await this.dataSource.query<OpenBookingFeedRow[]>(
+            `
+            SELECT
+                b.*,
+                COALESCE(
+                    NULLIF(TRIM(client_profile.full_name), ''),
+                    NULLIF(TRIM(b."clientEmail"), ''),
+                    'Client'
+                ) AS "clientName",
+                NULLIF(TRIM(client_profile.full_name), '') AS "clientFullName",
+                NULLIF(TRIM(client_profile.full_name), '') AS "clientProfileName",
+                0 AS "applicationsCount",
+                0 AS "applicationCount",
+                0 AS "photographerApplicationsCount"
+            FROM public.bookings b
+            LEFT JOIN public.profiles client_profile
+                ON client_profile.user_id = b."clientUserId"
+            WHERE b."photographerProfileId" IS NULL
+              AND b."photographerUserId" IS NULL
+              AND b.status = $1
+            ORDER BY b."sessionDate" ASC, b."createdAt" DESC
+            LIMIT $2
+            `,
+            ['pending', 6],
+        );
+
+        return rows as Booking[];
     }
 
     async getMyClientBookings(userId: string): Promise<Booking[]> {
@@ -392,12 +416,12 @@ export class BookingService {
     ): Promise<ProfileLookupRow | null> {
         const rows = await this.dataSource.query(
             `
-      SELECT id, user_id AS "userId", role
-      FROM public.profiles
-      WHERE id = $1
-        AND role = $2
-      LIMIT 1
-      `,
+            SELECT id, user_id AS "userId", role
+            FROM public.profiles
+            WHERE id = $1
+              AND role = $2
+            LIMIT 1
+            `,
             [profileId, UserRole.PHOTOGRAPHER],
         );
 
@@ -409,12 +433,12 @@ export class BookingService {
     ): Promise<ProfileLookupRow | null> {
         const rows = await this.dataSource.query(
             `
-      SELECT id, user_id AS "userId", role
-      FROM public.profiles
-      WHERE user_id = $1
-        AND role = $2
-      LIMIT 1
-      `,
+            SELECT id, user_id AS "userId", role
+            FROM public.profiles
+            WHERE user_id = $1
+              AND role = $2
+            LIMIT 1
+            `,
             [userId, UserRole.PHOTOGRAPHER],
         );
 
