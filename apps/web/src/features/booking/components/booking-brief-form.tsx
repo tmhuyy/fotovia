@@ -8,12 +8,9 @@ import { Label } from "../../../components/ui/label";
 import { Select } from "../../../components/ui/select";
 import { Textarea } from "../../../components/ui/textarea";
 import { VIETNAM_LOCATION_OPTIONS } from "../../../shared/data/vietnam-locations";
-import
-{
-  contactOptions,
-  shootTypeOptions,
-} from "../data/booking-options";
+import { contactOptions, shootTypeOptions } from "../data/booking-options";
 import type { BookingBriefFormValues } from "../schemas/booking-brief.schema";
+import { BookingAdditionalServicesField } from "./booking-additional-services-field";
 import { BookingBudgetRangeField } from "./booking-budget-range-field";
 import { BookingDateGrid } from "./booking-date-grid";
 
@@ -103,9 +100,7 @@ export const BookingBriefForm = () =>
                       <p
                         className={[
                           "text-sm font-semibold",
-                          isSelected
-                            ? "text-accent"
-                            : "text-foreground",
+                          isSelected ? "text-accent" : "text-foreground",
                         ]
                           .filter(Boolean)
                           .join(" ")}
@@ -113,9 +108,7 @@ export const BookingBriefForm = () =>
                         {option.label}
                       </p>
 
-                      <p className="text-xs text-muted">
-                        {option.subtitle}
-                      </p>
+                      <p className="text-xs text-muted">{option.subtitle}</p>
                     </div>
                   </div>
                 </label>
@@ -153,29 +146,21 @@ export const BookingBriefForm = () =>
                 </option>
 
                 {VIETNAM_LOCATION_OPTIONS.map((location) => (
-                  <option
-                    key={location.value}
-                    value={location.value}
-                  >
+                  <option key={location.value} value={location.value}>
                     {location.label}
                   </option>
                 ))}
               </Select>
 
               <FieldError
-                message={getErrorMessage(
-                  normalizedErrors,
-                  "location",
-                )}
+                message={getErrorMessage(normalizedErrors, "location")}
               />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="preferredTime">
                 Preferred time{" "}
-                <span className="font-normal text-muted">
-                  (optional)
-                </span>
+                <span className="font-normal text-muted">(optional)</span>
               </Label>
 
               <Input
@@ -185,10 +170,7 @@ export const BookingBriefForm = () =>
               />
 
               <FieldError
-                message={getErrorMessage(
-                  normalizedErrors,
-                  "preferredTime",
-                )}
+                message={getErrorMessage(normalizedErrors, "preferredTime")}
               />
             </div>
           </div>
@@ -221,9 +203,7 @@ export const BookingBriefForm = () =>
               {...register("title")}
             />
 
-            <FieldError
-              message={getErrorMessage(normalizedErrors, "title")}
-            />
+            <FieldError message={getErrorMessage(normalizedErrors, "title")} />
           </div>
 
           <div className="space-y-2">
@@ -241,10 +221,7 @@ export const BookingBriefForm = () =>
 
             <div className="flex items-center justify-between gap-4">
               <FieldError
-                message={getErrorMessage(
-                  normalizedErrors,
-                  "concept",
-                )}
+                message={getErrorMessage(normalizedErrors, "concept")}
               />
 
               <p className="ml-auto text-xs text-muted">
@@ -253,23 +230,20 @@ export const BookingBriefForm = () =>
             </div>
           </div>
 
+          <BookingAdditionalServicesField />
+
           <BookingBudgetRangeField />
 
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="contactPreference">
-                Contact preference
-              </Label>
+              <Label htmlFor="contactPreference">Contact preference</Label>
 
               <Select
                 id="contactPreference"
                 {...register("contactPreference")}
               >
                 {contactOptions.map((option) => (
-                  <option
-                    key={option.value}
-                    value={option.value}
-                  >
+                  <option key={option.value} value={option.value}>
                     {option.label}
                   </option>
                 ))}
@@ -284,46 +258,22 @@ export const BookingBriefForm = () =>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="notes">
-                Extra notes{" "}
-                <span className="font-normal text-muted">
-                  (optional)
-                </span>
+              <Label htmlFor="inspiration">
+                Inspiration link{" "}
+                <span className="font-normal text-muted">(optional)</span>
               </Label>
 
               <Input
-                id="notes"
-                placeholder="Make-up, studio, outfit, deadline..."
-                {...register("notes")}
+                id="inspiration"
+                type="url"
+                placeholder="Moodboard, album, or reference URL"
+                {...register("inspiration")}
               />
 
               <FieldError
-                message={getErrorMessage(normalizedErrors, "notes")}
+                message={getErrorMessage(normalizedErrors, "inspiration")}
               />
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="inspiration">
-              Inspiration link{" "}
-              <span className="font-normal text-muted">
-                (optional)
-              </span>
-            </Label>
-
-            <Input
-              id="inspiration"
-              type="url"
-              placeholder="Moodboard, album, or reference URL"
-              {...register("inspiration")}
-            />
-
-            <FieldError
-              message={getErrorMessage(
-                normalizedErrors,
-                "inspiration",
-              )}
-            />
           </div>
         </CardContent>
       </Card>

@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { additionalServiceValues } from "../data/additional-services";
 import {
     BUDGET_MIN_VND,
     BUDGET_STEP_VND,
@@ -44,13 +45,10 @@ export const bookingBriefSchema = z
 
         contactPreference: z.string().min(1, "Select a contact preference."),
 
+        additionalServices: z.array(z.enum(additionalServiceValues)),
+
         inspiration: z
             .union([z.string().url("Enter a valid link."), z.literal("")])
-            .optional(),
-
-        notes: z
-            .string()
-            .max(500, "Keep notes under 500 characters.")
             .optional(),
     })
     .superRefine((values, context) => {

@@ -5,11 +5,8 @@ import { useFormContext, useWatch } from "react-hook-form";
 
 import { Button } from "../../../components/ui/button";
 import { Card, CardContent } from "../../../components/ui/card";
-import
-{
-    contactOptions,
-    shootTypeOptions,
-} from "../data/booking-options";
+import { contactOptions, shootTypeOptions } from "../data/booking-options";
+import { getAdditionalServiceLabelsFromValues } from "../data/additional-services";
 import type { BookingBriefFormValues } from "../schemas/booking-brief.schema";
 import { formatBudgetRange } from "../utils/booking-budget";
 
@@ -88,6 +85,11 @@ export const BookingBriefSummaryCard = ({
         [formValues.contactPreference],
     );
 
+    const serviceLabels = useMemo(
+        () => getAdditionalServiceLabelsFromValues(formValues.additionalServices),
+        [formValues.additionalServices],
+    );
+
     const hasBudget =
         hasNumberValue(formValues.budgetFrom) &&
         hasNumberValue(formValues.budgetTo);
@@ -161,10 +163,16 @@ export const BookingBriefSummaryCard = ({
                         hasValue={hasTextValue(formValues.location)}
                     />
 
+                    <SummaryRow label="Budget" value={budgetLabel} hasValue={hasBudget} />
+
                     <SummaryRow
-                        label="Budget"
-                        value={budgetLabel}
-                        hasValue={hasBudget}
+                        label="Services"
+                        value={
+                            serviceLabels.length > 0
+                                ? serviceLabels.join(", ")
+                                : "No extra services"
+                        }
+                        hasValue={serviceLabels.length > 0}
                     />
 
                     <SummaryRow

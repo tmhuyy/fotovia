@@ -18,6 +18,7 @@ import {
     BookingEventType,
 } from './entities/booking-event.entity';
 import { BookingRepository } from './repositories/booking.repository';
+import { normalizeBookingAdditionalServices } from './constants/booking-additional-services';
 
 interface ProfileLookupRow {
     id: string;
@@ -64,6 +65,10 @@ export class BookingService {
             throw new BadRequestException('Shoot type is required.');
         }
 
+        const normalizedNotes = normalizeBookingAdditionalServices(
+            createBookingDto.notes,
+        );
+
         const booking = this.bookingRepository.create({
             clientUserId: userId,
             clientEmail: userEmail?.trim() || null,
@@ -83,7 +88,7 @@ export class BookingService {
             contactPreference: createBookingDto.contactPreference.trim(),
             concept: createBookingDto.concept.trim(),
             inspiration: createBookingDto.inspiration?.trim() || null,
-            notes: createBookingDto.notes?.trim() || null,
+            notes: normalizedNotes,
             status: 'pending',
         });
 
@@ -113,7 +118,9 @@ export class BookingService {
         if (!resolvedShootType) {
             throw new BadRequestException('Shoot type is required.');
         }
-
+        const normalizedNotes = normalizeBookingAdditionalServices(
+            createOpenBookingDto.notes,
+        );
         const booking = this.bookingRepository.create({
             clientUserId: userId,
             clientEmail: userEmail?.trim() || null,
@@ -133,7 +140,7 @@ export class BookingService {
             contactPreference: createOpenBookingDto.contactPreference.trim(),
             concept: createOpenBookingDto.concept.trim(),
             inspiration: createOpenBookingDto.inspiration?.trim() || null,
-            notes: createOpenBookingDto.notes?.trim() || null,
+            notes: normalizedNotes,
             status: 'pending',
         });
 

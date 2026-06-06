@@ -35,6 +35,11 @@ import
 } from "../utils/booking-budget";
 import { BookingBriefForm } from "./booking-brief-form";
 import { BookingBriefSummaryCard } from "./booking-brief-summary-card";
+import
+{
+  parseAdditionalServiceValues,
+  serializeAdditionalServices,
+} from "../data/additional-services";
 
 const BOOKING_BRIEF_DRAFT_STORAGE_KEY = "fotovia.bookingBriefDraft";
 
@@ -69,6 +74,20 @@ const getStringValue = (
   const value = record[key];
 
   return typeof value === "string" ? value : "";
+};
+
+const getStringArrayValue = (
+  record: Record<string, unknown>,
+  key: string,
+): string[] =>
+{
+  const value = record[key];
+
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.filter((item): item is string => typeof item === "string");
 };
 
 const getNumberValue = (
@@ -122,6 +141,16 @@ const normalizeBookingBriefValues = (
     parsedBudget?.to ??
     budgetFrom;
 
+  const directAdditionalServices = getStringArrayValue(
+    record,
+    "additionalServices",
+  );
+
+  const additionalServices =
+    directAdditionalServices.length > 0
+      ? parseAdditionalServiceValues(directAdditionalServices.join("\n"))
+      : parseAdditionalServiceValues(getStringValue(record, "notes"));
+
   return {
     title: getStringValue(record, "title"),
     shootType,
@@ -133,7 +162,7 @@ const normalizeBookingBriefValues = (
     concept,
     contactPreference: getStringValue(record, "contactPreference") || "email",
     inspiration: getStringValue(record, "inspiration"),
-    notes: getStringValue(record, "notes"),
+    additionalServices,
   };
 };
 
@@ -251,7 +280,7 @@ const buildOpenBookingPayload = (
     contactPreference: values.contactPreference.trim(),
     concept: values.concept.trim(),
     inspiration: values.inspiration?.trim() || undefined,
-    notes: values.notes?.trim() || undefined,
+    notes: serializeAdditionalServices(values.additionalServices),
   };
 };
 
@@ -425,7 +454,7 @@ export const BookingBriefPage = ({ prefill }: BookingBriefPageProps) =>
       concept: "",
       contactPreference: "email",
       inspiration: "",
-      notes: "",
+      additionalServices: [],
     };
   }, [resolvedPrefill]);
 

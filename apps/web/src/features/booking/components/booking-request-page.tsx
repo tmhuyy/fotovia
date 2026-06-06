@@ -23,7 +23,7 @@ import { BookingNotFound } from "./booking-not-found";
 import { BookingRequestForm } from "./booking-request-form";
 import { BookingSuccess } from "./booking-success";
 import { BookingSummaryCard } from "./booking-summary-card";
-
+import { serializeAdditionalServices } from "../data/additional-services";
 interface BookingRequestPageProps
 {
   photographer: PhotographerDetail | null;
@@ -124,7 +124,7 @@ export const BookingRequestPage = ({
       contactPreference: "email",
       concept: "",
       inspiration: "",
-      notes: "",
+      additionalServices: [],
     };
   }, [photographer, prefill]);
 
@@ -160,7 +160,7 @@ export const BookingRequestPage = ({
         contactPreference: values.contactPreference,
         concept: values.concept,
         inspiration: values.inspiration?.trim() || undefined,
-        notes: values.notes?.trim() || undefined,
+        notes: serializeAdditionalServices(values.additionalServices),
       });
 
       setSubmittedBooking(createdBooking);

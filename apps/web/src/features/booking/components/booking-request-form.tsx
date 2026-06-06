@@ -12,6 +12,7 @@ import
     sessionTypeOptions,
   } from "../data/booking-options";
 import type { BookingRequestFormValues } from "../schemas/booking-request.schema";
+import { BookingAdditionalServicesField } from "./booking-additional-services-field";
 import
   {
     BookingSelectField,
@@ -42,20 +43,14 @@ export const BookingRequestForm = ({
           <p className="text-sm font-medium uppercase tracking-[0.2em] text-brand-muted">
             Booking request
           </p>
+
           <h2 className="text-2xl font-semibold text-brand-primary">
             Share your session details
           </h2>
+
           <p className="text-sm leading-6 text-brand-muted">
             This will create a real booking request and send the details to the
             selected photographer.
-          </p>
-        </div>
-
-        <div className="rounded-2xl border border-brand-border bg-brand-background/70 p-4 text-sm text-brand-muted">
-          <p className="font-medium text-brand-primary">What happens next</p>
-          <p className="mt-2 leading-6">
-            The photographer will review your request, confirm availability, and
-            continue the conversation from there.
           </p>
         </div>
       </CardHeader>
@@ -121,17 +116,12 @@ export const BookingRequestForm = ({
             helper="A little context helps the photographer quote more accurately."
           />
 
+          <BookingAdditionalServicesField />
+
           <BookingTextareaField
             name="inspiration"
             label="Inspiration"
             placeholder="Add inspiration notes or a reference link if you have one."
-            helper="Optional"
-          />
-
-          <BookingTextareaField
-            name="notes"
-            label="Extra notes"
-            placeholder="Anything else the photographer should know?"
             helper="Optional"
           />
 

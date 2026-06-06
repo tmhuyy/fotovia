@@ -116,10 +116,12 @@ export class CreateOpenBookingDto {
     inspiration?: string;
 
     @ApiPropertyOptional({
-        description: 'Optional extra notes',
-        example: 'Need final images before the campaign launch.',
+        description:
+            'Optional additional services serialized from supported checkbox selections.',
+        example: 'Make-up + Hair Styling\nStudio Rental',
     })
     @IsOptional()
     @IsString()
+    @MaxLength(500)
     notes?: string;
 }
