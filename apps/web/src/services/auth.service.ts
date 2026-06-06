@@ -38,6 +38,10 @@ interface AuthTokenPayload {
     refreshToken?: string;
 }
 
+const normalizeNullableString = (value: unknown): string | null => {
+    return typeof value === "string" && value.trim().length > 0 ? value : null;
+};
+
 const normalizeUser = (user: AnyRecord | undefined): AuthUser | null => {
     if (!user) return null;
 
@@ -48,15 +52,16 @@ const normalizeUser = (user: AnyRecord | undefined): AuthUser | null => {
         fullName:
             (user.fullName as string | undefined) ??
             (user.name as string | undefined),
+        avatarUrl: normalizeNullableString(user.avatarUrl ?? user.avatar_url),
     };
 };
 
 const normalizeSignInResponse = (
-    data: ApiResponse | AuthTokenPayload,
+    data: ApiResponse<AuthTokenPayload> | AuthTokenPayload,
 ): AuthResponse => {
-    const payload = unwrapResponse(data);
+    const payload = unwrapResponse<AuthTokenPayload>(data);
 
-    if (!payload?.accessToken) {
+    if (!payload.accessToken) {
         throw new Error("Missing access token in sign-in response.");
     }
 
@@ -68,12 +73,12 @@ const normalizeSignInResponse = (
 };
 
 const normalizeSignUpResponse = (
-    data: ApiResponse | AnyRecord,
+    data: ApiResponse<AnyRecord> | AnyRecord,
 ): SignUpResponse => {
-    const payload = unwrapResponse(data);
+    const payload = unwrapResponse<AnyRecord>(data);
 
     const user = normalizeUser(
-        (payload.user as AnyRecord | undefined) ?? (payload as AnyRecord),
+        (payload.user as AnyRecord | undefined) ?? payload,
     );
 
     return {
@@ -83,24 +88,22 @@ const normalizeSignUpResponse = (
 
 export const authService = {
     signIn: async (payload: SignInPayload): Promise<AuthResponse> => {
-        const response = await authClient.post<ApiResponse | AuthTokenPayload>(
-            AUTH_ENDPOINTS.signIn,
-            payload,
-        );
+        const response = await authClient.post<
+            ApiResponse<AuthTokenPayload> | AuthTokenPayload
+        >(AUTH_ENDPOINTS.signIn, payload);
 
         return normalizeSignInResponse(response.data);
     },
 
     signUp: async (payload: SignUpPayload): Promise<SignUpResponse> => {
-        const response = await authClient.post<ApiResponse | AnyRecord>(
-            AUTH_ENDPOINTS.signUp,
-            {
-                email: payload.email,
-                password: payload.password,
-                role: payload.role,
-                fullName: payload.fullName,
-            },
-        );
+        const response = await authClient.post<
+            ApiResponse<AnyRecord> | AnyRecord
+        >(AUTH_ENDPOINTS.signUp, {
+            email: payload.email,
+            password: payload.password,
+            role: payload.role,
+            fullName: payload.fullName,
+        });
 
         return normalizeSignUpResponse(response.data);
     },
@@ -114,12 +117,11 @@ export const authService = {
               }
             : undefined;
 
-        const response = await authClient.get<ApiResponse | AnyRecord>(
-            AUTH_ENDPOINTS.currentUser,
-            config,
-        );
+        const response = await authClient.get<
+            ApiResponse<AnyRecord> | AnyRecord
+        >(AUTH_ENDPOINTS.currentUser, config);
 
-        const payload = unwrapResponse(response.data) as AnyRecord;
+        const payload = unwrapResponse<AnyRecord>(response.data);
         const user = normalizeUser(
             (payload.user as AnyRecord | undefined) ?? payload,
         );

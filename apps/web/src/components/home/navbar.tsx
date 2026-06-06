@@ -18,7 +18,7 @@ const navLinks: { label: string; href: string }[] = [
         href: "/photographers",
     },
     {
-        label: "Shooting List",
+        label: "Booking List",
         href: "/#shooting-list",
     },
     {
@@ -73,12 +73,12 @@ export const Navbar = () =>
     };
 
     return (
-        <header className="sticky top-0 z-40 border-b border-border/70 bg-background/92 backdrop-blur">
+        <header className="sticky top-0 z-40 border-b border-border/70 bg-background/95 backdrop-blur">
             <Container
                 size="wide"
                 className="flex h-[4.75rem] items-center justify-between gap-4"
             >
-                <div className="flex min-w-0 items-center gap-4 lg:gap-8 xl:gap-10">
+                <div className="flex min-w-0 items-center gap-3 lg:gap-8 xl:gap-10">
                     <Link href="/" className="flex min-w-0 items-center gap-4">
                         <span className="font-serif text-2xl tracking-tight text-foreground">
                             Fotovia
@@ -89,18 +89,7 @@ export const Navbar = () =>
                         </span>
                     </Link>
 
-                    <div className="lg:hidden">
-                        <MobileNav
-                            navLinks={navLinks}
-                            isAuthenticated={isAuthenticated}
-                            isHydrating={isHydrating}
-                            hasHydrated={hasHydrated}
-                            userEmail={user?.email}
-                            userRole={user?.role}
-                            isSigningOut={isSigningOut}
-                            onSignOut={handleSignOut}
-                        />
-                    </div>
+                    <MobileNav navLinks={navLinks} />
 
                     <nav className="hidden items-center gap-7 lg:flex xl:gap-8">
                         {navLinks.map((link) =>
@@ -131,6 +120,8 @@ export const Navbar = () =>
                     ) : isAuthenticated ? (
                         <AccountMenu
                             email={user?.email}
+                            fullName={user?.fullName}
+                            avatarUrl={user?.avatarUrl}
                             userRole={user?.role}
                             isSigningOut={isSigningOut}
                             onSignOut={handleSignOut}
@@ -138,7 +129,7 @@ export const Navbar = () =>
                     ) : (
                         <Button
                             size="md"
-                            className="px-7 hover:bg-foreground/85 cursor-pointer"
+                            className="cursor-pointer px-7 hover:bg-foreground/85"
                             onClick={() => router.push("/sign-in")}
                         >
                             Sign In / Sign Up
@@ -147,18 +138,27 @@ export const Navbar = () =>
                 </div>
 
                 <div className="flex shrink-0 items-center gap-3 lg:hidden">
-
                     {!hasHydrated || isHydrating ? (
                         <div className="h-10 w-28 animate-pulse rounded-full border border-border bg-surface/60" />
-                    ) : !isAuthenticated ? (
+                    ) : isAuthenticated ? (
+                        <AccountMenu
+                            email={user?.email}
+                            fullName={user?.fullName}
+                            avatarUrl={user?.avatarUrl}
+                            userRole={user?.role}
+                            isSigningOut={isSigningOut}
+                            onSignOut={handleSignOut}
+                            compact
+                        />
+                    ) : (
                         <Button
                             size="sm"
-                            className="h-10 px-4 text-xs min-[380px]:px-5"
+                            className="h-10 cursor-pointer px-4 text-xs min-[380px]:px-5"
                             onClick={() => router.push("/sign-in")}
                         >
                             Sign In / Sign Up
                         </Button>
-                    ) : null}
+                    )}
                 </div>
             </Container>
         </header>

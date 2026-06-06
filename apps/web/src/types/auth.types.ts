@@ -5,6 +5,7 @@ export interface AuthUser {
     email?: string;
     role?: AuthRole;
     fullName?: string;
+    avatarUrl?: string | null;
 }
 
 export interface AuthResponse {
@@ -12,6 +13,7 @@ export interface AuthResponse {
     refreshToken?: string;
     user: AuthUser | null;
 }
+
 export interface SignUpResponse {
     user: AuthUser | null;
 }
