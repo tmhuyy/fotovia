@@ -41,6 +41,12 @@ const BOOKING_ENDPOINTS = {
         `/booking/open/${bookingId}/applications/me/withdraw`,
     clientApplications: (bookingId: string) =>
         `/booking/client/me/${bookingId}/applications`,
+    openUpdateMyApplication: (bookingId: string) =>
+        `/booking/open/${bookingId}/applications/me`,
+    clientSelectApplication: (bookingId: string, applicationId: string) =>
+        `/booking/client/me/${bookingId}/applications/${applicationId}/select`,
+    clientRejectApplication: (bookingId: string, applicationId: string) =>
+        `/booking/client/me/${bookingId}/applications/${applicationId}/reject`,
 };
 
 const normalizeString = (value: unknown): string => {
@@ -460,5 +466,40 @@ export const bookingService = {
 
         const data = unwrapResponse<unknown>(response.data);
         return normalizeBookingApplicationArray(data);
+    },
+    async updateMyOpenBookingApplication(
+        bookingId: string,
+        payload: CreateBookingApplicationPayload,
+    ): Promise<BookingApplicationRecord> {
+        const response = await bookingClient.patch<
+            ApiResponse<AnyRecord> | AnyRecord
+        >(BOOKING_ENDPOINTS.openUpdateMyApplication(bookingId), payload);
+
+        const data = unwrapResponse<AnyRecord>(response.data);
+        return normalizeBookingApplication(data);
+    },
+
+    async selectClientBookingApplication(
+        bookingId: string,
+        applicationId: string,
+    ): Promise<BookingRequestRecord> {
+        const response = await bookingClient.patch<
+            ApiResponse<AnyRecord> | AnyRecord
+        >(BOOKING_ENDPOINTS.clientSelectApplication(bookingId, applicationId));
+
+        const data = unwrapResponse<AnyRecord>(response.data);
+        return normalizeBooking(data);
+    },
+
+    async rejectClientBookingApplication(
+        bookingId: string,
+        applicationId: string,
+    ): Promise<BookingApplicationRecord> {
+        const response = await bookingClient.patch<
+            ApiResponse<AnyRecord> | AnyRecord
+        >(BOOKING_ENDPOINTS.clientRejectApplication(bookingId, applicationId));
+
+        const data = unwrapResponse<AnyRecord>(response.data);
+        return normalizeBookingApplication(data);
     },
 };

@@ -392,6 +392,7 @@ export const BookingBriefPage = ({ prefill }: BookingBriefPageProps) =>
     isAuthenticated,
     hasHydrated,
     isHydrating,
+    user
   } = useAuthStore();
 
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -554,6 +555,14 @@ export const BookingBriefPage = ({ prefill }: BookingBriefPageProps) =>
       return;
     }
 
+    if (user?.role === "photographer") {
+      setSubmitError(
+        "Photographer accounts cannot create client booking requests. Please browse open requests instead.",
+      );
+      router.push("/bookings/open");
+      return;
+    }
+
     await submitBookingBrief(values);
   };
 
@@ -569,6 +578,61 @@ export const BookingBriefPage = ({ prefill }: BookingBriefPageProps) =>
       form.setFocus(firstErrorKey);
     }
   };
+
+  if (hasHydrated && !isHydrating && isAuthenticated && user?.role === "photographer") {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+
+        <main>
+          <Section className="py-14 sm:py-20">
+            <Container>
+              <div className="mx-auto max-w-2xl rounded-[2rem] border border-border bg-surface p-8 text-center shadow-[0_18px_50px_rgba(23,23,23,0.06)]">
+                <p className="text-xs font-semibold uppercase tracking-[0.32em] text-muted">
+                  Photographer workspace
+                </p>
+
+                <h1 className="mt-4 font-display text-4xl tracking-[-0.03em] text-foreground">
+                  Browse open requests instead.
+                </h1>
+
+                <p className="mt-4 text-sm leading-7 text-muted">
+                  Photographer accounts cannot create client booking requests.
+                  You can apply to open photoshoot requests or manage your
+                  portfolio from your workspace.
+                </p>
+
+                <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:justify-center">
+                  <Link
+                    href="/bookings/open"
+                    className={buttonVariants({
+                      size: "lg",
+                      className: "rounded-full",
+                    })}
+                  >
+                    View open requests
+                  </Link>
+
+                  <Link
+                    href="/photographer/portfolio"
+                    className={buttonVariants({
+                      variant: "secondary",
+                      size: "lg",
+                      className: "rounded-full",
+                    })}
+                  >
+                    Open my portfolio
+                  </Link>
+                </div>
+              </div>
+            </Container>
+          </Section>
+        </main>
+
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">

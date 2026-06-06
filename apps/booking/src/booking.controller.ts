@@ -132,6 +132,71 @@ export class BookingController {
     }
 
     @UseGuards(JwtAuthGuard)
+    @Patch('/open/:bookingId/applications/me')
+    @ApiOperation({
+        summary:
+            'Update my photographer application for one open booking request',
+    })
+    @ApiOkResponse({
+        description: 'Photographer application updated successfully',
+        type: BookingApplication,
+    })
+    async updateMyOpenBookingApplication(
+        @Param('bookingId', new ParseUUIDPipe()) bookingId: string,
+        @Body() updateBookingApplicationDto: CreateBookingApplicationDto,
+        @GetUser() user: IUser,
+    ): Promise<BookingApplication> {
+        return this.bookingService.updateMyOpenBookingApplication(
+            bookingId,
+            updateBookingApplicationDto,
+            user.id,
+        );
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Patch('/client/me/:bookingId/applications/:applicationId/select')
+    @ApiOperation({
+        summary:
+            'Select one photographer application as the main photographer for my open booking',
+    })
+    @ApiOkResponse({
+        description: 'Photographer selected successfully',
+        type: Booking,
+    })
+    async selectMyClientBookingApplication(
+        @Param('bookingId', new ParseUUIDPipe()) bookingId: string,
+        @Param('applicationId', new ParseUUIDPipe()) applicationId: string,
+        @GetUser() user: IUser,
+    ): Promise<Booking> {
+        return this.bookingService.selectMyClientBookingApplication(
+            bookingId,
+            applicationId,
+            user.id,
+        );
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Patch('/client/me/:bookingId/applications/:applicationId/reject')
+    @ApiOperation({
+        summary: 'Reject one photographer application for my open booking',
+    })
+    @ApiOkResponse({
+        description: 'Photographer application rejected successfully',
+        type: BookingApplication,
+    })
+    async rejectMyClientBookingApplication(
+        @Param('bookingId', new ParseUUIDPipe()) bookingId: string,
+        @Param('applicationId', new ParseUUIDPipe()) applicationId: string,
+        @GetUser() user: IUser,
+    ): Promise<BookingApplication> {
+        return this.bookingService.rejectMyClientBookingApplication(
+            bookingId,
+            applicationId,
+            user.id,
+        );
+    }
+
+    @UseGuards(JwtAuthGuard)
     @Get('/client/me/:bookingId/applications')
     @ApiOperation({
         summary:

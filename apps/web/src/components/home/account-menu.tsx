@@ -196,38 +196,53 @@ export const AccountMenu = ({
 
                     <div className="mt-3 space-y-1">
                         {isPhotographer ? (
-                            <Link
-                                href="/photographer/bookings"
-                                className="flex w-full items-center justify-between rounded-2xl px-4 py-3 text-sm text-foreground transition hover:bg-background hover:text-accent"
-                            >
-                                <span>Booking requests</span>
-                                <span className="text-muted">→</span>
-                            </Link>
+                            <>
+
+                                <Link
+                                    href="/photographer/portfolio"
+                                    className="flex w-full items-center justify-between rounded-2xl px-4 py-3 text-sm text-foreground transition hover:bg-background hover:text-accent"
+                                >
+                                    <span>My portfolio</span>
+                                    <span className="text-muted">→</span>
+                                </Link>
+
+                                <Link
+                                    href="/photographer/bookings"
+                                    className="flex w-full items-center justify-between rounded-2xl px-4 py-3 text-sm text-foreground transition hover:bg-background hover:text-accent"
+                                >
+                                    <span>Direct requests</span>
+                                    <span className="text-muted">→</span>
+                                </Link>
+
+                            </>
                         ) : (
-                            <Link
-                                href="/my-bookings"
-                                className="flex w-full items-center justify-between rounded-2xl px-4 py-3 text-sm text-foreground transition hover:bg-background hover:text-accent"
-                            >
-                                <span>My bookings</span>
-                                <span className="text-muted">→</span>
-                            </Link>
+                            <>
+
+                                <Link
+                                    href="/profile"
+                                    className="flex w-full items-center justify-between rounded-2xl px-4 py-3 text-sm text-foreground transition hover:bg-background hover:text-accent"
+                                >
+                                    <span>My Page</span>
+                                    <span className="text-muted">→</span>
+                                </Link>
+
+                                <Link
+                                    href="/my-bookings"
+                                    className="flex w-full items-center justify-between rounded-2xl px-4 py-3 text-sm text-foreground transition hover:bg-background hover:text-accent"
+                                >
+                                    <span>My bookings</span>
+                                    <span className="text-muted">→</span>
+                                </Link>
+                                <Link
+                                    href="/bookings/new"
+                                    className="flex w-full items-center justify-between rounded-2xl px-4 py-3 text-sm text-foreground transition hover:bg-background hover:text-accent"
+                                >
+                                    <span>Book a photoshoot</span>
+                                    <span className="text-muted">→</span>
+                                </Link>
+                            </>
                         )}
 
-                        <Link
-                            href="/profile"
-                            className="flex w-full items-center justify-between rounded-2xl px-4 py-3 text-sm text-foreground transition hover:bg-background hover:text-accent"
-                        >
-                            <span>{isPhotographer ? "Public info" : "Profile"}</span>
-                            <span className="text-muted">→</span>
-                        </Link>
-
-                        <Link
-                            href="/bookings/new"
-                            className="flex w-full items-center justify-between rounded-2xl px-4 py-3 text-sm text-foreground transition hover:bg-background hover:text-accent"
-                        >
-                            <span>Book a photoshoot</span>
-                            <span className="text-muted">→</span>
-                        </Link>
 
                         <div className="my-2 h-px bg-border" />
 

@@ -37,6 +37,7 @@ import
 
 import { ApplyToPhotoshootModal } from "./apply-to-photoshoot-modal";
 import type { CreateBookingApplicationPayload } from "../types/booking.types";
+import { OpenBookingApplicationsSection } from "./open-booking-applications-section";
 
 interface IconProps
 {
@@ -276,56 +277,6 @@ const DetailSkeleton = () =>
     );
 };
 
-const ApplicationsSection = ({
-    booking,
-}: {
-    booking: OpenBookingRequestRecord;
-}) =>
-{
-    const applicationCount = getApplicationCount(booking);
-    const canViewApplications = Boolean(booking.canViewApplications);
-
-    return (
-        <section className="border-t border-border pt-6">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <h2 className="text-lg font-semibold text-foreground">
-                    Photographer applications{" "}
-                    <span className="ml-1 rounded-full bg-accent/15 px-2 py-0.5 text-sm text-accent">
-                        {applicationCount}
-                    </span>
-                </h2>
-            </div>
-
-            {applicationCount === 0 ? (
-                <div className="mt-5 rounded-2xl bg-background px-5 py-8 text-center">
-                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-border bg-surface text-muted">
-                        <CameraIcon className="h-7 w-7" />
-                    </div>
-
-                    <p className="text-sm font-medium text-foreground">
-                        No photographers have applied for this photoshoot yet.
-                    </p>
-
-                    <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-muted">
-                        Once photographers start applying, the customer will be
-                        able to review the applications from this request.
-                    </p>
-                </div>
-            ) : canViewApplications ? (
-                <div className="mt-5 rounded-2xl bg-background px-5 py-5 text-sm leading-6 text-muted">
-                    Application list view will be connected in the next phase.
-                    For now, this request already has photographer interest and
-                    only the customer can see the full applications later.
-                </div>
-            ) : (
-                <div className="mt-5 rounded-2xl bg-background px-5 py-5 text-center text-sm leading-6 text-muted">
-                    Only the customer can view the full list of photographer
-                    applications for this photoshoot.
-                </div>
-            )}
-        </section>
-    );
-};
 
 export const OpenBookingDetailPage = () =>
 {
@@ -424,6 +375,12 @@ export const OpenBookingDetailPage = () =>
             await Promise.all([
                 queryClient.invalidateQueries({
                     queryKey: ["open-booking-detail", bookingId],
+                }),
+                queryClient.invalidateQueries({
+                    queryKey: ["my-open-booking-application", bookingId],
+                }),
+                queryClient.invalidateQueries({
+                    queryKey: ["client-booking-applications", bookingId],
                 }),
                 queryClient.invalidateQueries({
                     queryKey: ["opening-booking-requests"],
@@ -647,7 +604,10 @@ export const OpenBookingDetailPage = () =>
                                         </div>
                                     </div>
 
-                                    <ApplicationsSection booking={booking} />
+                                    <OpenBookingApplicationsSection
+                                        booking={booking}
+                                        bookingId={booking.id}
+                                    />
 
                                     <div className="flex justify-center pt-1">
                                         {primaryCta.disabled ? (

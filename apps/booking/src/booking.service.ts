@@ -208,7 +208,7 @@ export class BookingService {
                 SELECT COUNT(*) AS "applicationsCount"
                 FROM public.booking_applications applications
                 WHERE applications."bookingId" = b.id
-                  AND applications.status NOT IN ('withdrawn', 'expired')
+                  AND applications.status NOT IN ('withdrawn', 'expired', 'rejected')
             ) application_counts ON true
             WHERE b."photographerProfileId" IS NULL
               AND b."photographerUserId" IS NULL
@@ -355,6 +355,192 @@ export class BookingService {
 
         application.status = 'withdrawn';
         application.withdrawnAt = new Date();
+
+        return this.bookingApplicationRepository.save(application);
+    }
+
+    async updateMyOpenBookingApplication(
+        bookingId: string,
+        updateBookingApplicationDto: CreateBookingApplicationDto,
+        userId: string,
+    ): Promise<BookingApplication> {
+        const photographerProfile =
+            await this.getPhotographerWorkspaceProfile(userId);
+
+        const application = await this.bookingApplicationRepository.findOne({
+            where: {
+                bookingId,
+                photographerProfileId: photographerProfile.id,
+            },
+        });
+
+        if (!application) {
+            throw new NotFoundException('Application was not found.');
+        }
+
+        if (
+            application.status !== 'submitted' &&
+            application.status !== 'shortlisted'
+        ) {
+            throw new BadRequestException(
+                'Only submitted or shortlisted applications can be edited.',
+            );
+        }
+
+        application.message = updateBookingApplicationDto.message.trim();
+        application.proposedPrice = updateBookingApplicationDto.proposedPrice;
+        application.includedDeliverables =
+            updateBookingApplicationDto.includedDeliverables.trim();
+        application.estimatedDuration =
+            updateBookingApplicationDto.estimatedDuration?.trim() || null;
+        application.availableOnRequestedDate =
+            updateBookingApplicationDto.availableOnRequestedDate;
+
+        return this.bookingApplicationRepository.save(application);
+    }
+
+    async selectMyClientBookingApplication(
+        bookingId: string,
+        applicationId: string,
+        userId: string,
+    ): Promise<Booking> {
+        return this.dataSource.transaction(async (manager) => {
+            const bookingRepository = manager.getRepository(Booking);
+            const applicationRepository =
+                manager.getRepository(BookingApplication);
+            const eventRepository = manager.getRepository(BookingEvent);
+
+            const booking = await bookingRepository.findOne({
+                where: {
+                    id: bookingId,
+                    clientUserId: userId,
+                },
+            });
+
+            if (!booking) {
+                throw new NotFoundException('Booking request not found.');
+            }
+
+            if (
+                booking.photographerProfileId !== null ||
+                booking.photographerUserId !== null ||
+                booking.status !== 'pending'
+            ) {
+                throw new BadRequestException(
+                    'Only pending open booking requests can select a photographer.',
+                );
+            }
+
+            const application = await applicationRepository.findOne({
+                where: {
+                    id: applicationId,
+                    bookingId,
+                },
+            });
+
+            if (!application) {
+                throw new NotFoundException(
+                    'Photographer application was not found.',
+                );
+            }
+
+            if (
+                application.status === 'withdrawn' ||
+                application.status === 'rejected' ||
+                application.status === 'expired'
+            ) {
+                throw new BadRequestException(
+                    'This photographer application is no longer available.',
+                );
+            }
+
+            const now = new Date();
+
+            application.status = 'selected';
+            application.selectedAt = now;
+            application.rejectedAt = null;
+            application.withdrawnAt = null;
+
+            await applicationRepository.save(application);
+
+            await manager
+                .createQueryBuilder()
+                .update(BookingApplication)
+                .set({
+                    status: 'rejected',
+                    rejectedAt: now,
+                })
+                .where('"bookingId" = :bookingId', { bookingId })
+                .andWhere('id <> :applicationId', { applicationId })
+                .andWhere('status IN (:...statuses)', {
+                    statuses: ['submitted', 'shortlisted'],
+                })
+                .execute();
+
+            booking.photographerProfileId = application.photographerProfileId;
+            booking.photographerUserId = application.photographerUserId;
+            booking.photographerSlug = application.photographerSlug;
+            booking.photographerName = application.photographerName;
+            booking.status = 'confirmed';
+
+            const savedBooking = await bookingRepository.save(booking);
+
+            const event = eventRepository.create({
+                bookingId: savedBooking.id,
+                eventType: 'confirmed',
+                actorRole: 'client',
+                actorUserId: userId,
+                actorLabel: booking.clientEmail?.trim() || 'Client',
+                note: `Client selected ${application.photographerName} for this open booking request.`,
+            });
+
+            await eventRepository.save(event);
+
+            return savedBooking;
+        });
+    }
+
+    async rejectMyClientBookingApplication(
+        bookingId: string,
+        applicationId: string,
+        userId: string,
+    ): Promise<BookingApplication> {
+        const booking = await this.bookingRepository.findOne({
+            where: {
+                id: bookingId,
+                clientUserId: userId,
+            },
+        });
+
+        if (!booking) {
+            throw new NotFoundException('Booking request not found.');
+        }
+
+        const application = await this.bookingApplicationRepository.findOne({
+            where: {
+                id: applicationId,
+                bookingId,
+            },
+        });
+
+        if (!application) {
+            throw new NotFoundException(
+                'Photographer application was not found.',
+            );
+        }
+
+        if (application.status === 'selected') {
+            throw new BadRequestException(
+                'A selected application cannot be rejected.',
+            );
+        }
+
+        if (application.status === 'rejected') {
+            return application;
+        }
+
+        application.status = 'rejected';
+        application.rejectedAt = new Date();
 
         return this.bookingApplicationRepository.save(application);
     }
@@ -644,7 +830,7 @@ export class BookingService {
                 SELECT COUNT(*) AS "applicationsCount"
                 FROM public.booking_applications applications
                 WHERE applications."bookingId" = b.id
-                  AND applications.status NOT IN ('withdrawn', 'expired')
+                  AND applications.status NOT IN ('withdrawn', 'expired', 'rejected')
             ) application_counts ON true
             LEFT JOIN LATERAL (
                 SELECT application.*

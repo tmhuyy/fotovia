@@ -379,21 +379,23 @@ const OpeningBookingRequestCard = ({
                     </span>
                 </div>
 
-                {applicationCount > 0 ? (
-                    <p className="text-sm leading-6 text-muted sm:text-right">
-                        Photographer applications:{" "}
-                        <span className="font-semibold text-foreground">
-                            {applicationCount}
-                        </span>
-                    </p>
-                ) : null}
+                <InfoRow icon={<CameraIcon />}>
+                    <span className="font-medium">{shootType}</span>
+                    <span className="mx-1.5 text-muted">·</span>
+                    <span>Flexible time</span>
+
+                    {applicationCount > 0 ? (
+                        <>
+                            <span className="mx-1.5 text-muted">·</span>
+                            <span className="font-medium text-accent">
+                                {applicationCount}{" "}
+                                {applicationCount === 1 ? "application" : "applications"}
+                            </span>
+                        </>
+                    ) : null}
+                </InfoRow>
 
                 <div className="space-y-2.5">
-                    <InfoRow icon={<CameraIcon />}>
-                        <span className="font-medium">{shootType}</span>
-                        <span className="mx-1.5 text-muted">·</span>
-                        <span>Flexible time</span>
-                    </InfoRow>
 
                     <InfoRow icon={<CalendarIcon />}>
                         <span>{formatPhotoshootDate(booking.sessionDate)}</span>
@@ -455,7 +457,7 @@ export const OpeningBookingRequests = ({
 
     const sectionTitle =
         title ?? "Open Photoshoot Requests"
-        
+
 
     const sectionSubtitle =
         subtitle ??
