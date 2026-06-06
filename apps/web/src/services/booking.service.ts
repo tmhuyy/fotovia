@@ -18,6 +18,7 @@ const BOOKING_ENDPOINTS = {
     create: "/booking",
     createOpen: "/booking/open",
     openFeed: "/booking/open",
+    openDetail: (bookingId: string) => `/booking/open/${bookingId}`,
     clientMine: "/booking/client/me",
     clientCancel: (bookingId: string) =>
         `/booking/client/me/${bookingId}/cancel`,
@@ -200,6 +201,17 @@ export const bookingService = {
 
         const data = unwrapResponse<unknown>(response.data);
         return normalizeBookingArray(data);
+    },
+
+    async getOpenBookingDetail(
+        bookingId: string,
+    ): Promise<OpenBookingRequestRecord> {
+        const response = await bookingClient.get<
+            ApiResponse<AnyRecord> | AnyRecord
+        >(BOOKING_ENDPOINTS.openDetail(bookingId));
+
+        const data = unwrapResponse<AnyRecord>(response.data);
+        return normalizeBooking(data);
     },
 
     async getMyClientBookings(): Promise<BookingRequestRecord[]> {

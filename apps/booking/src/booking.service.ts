@@ -181,6 +181,42 @@ export class BookingService {
         return rows as Booking[];
     }
 
+    async getOpenBookingDetail(bookingId: string): Promise<Booking> {
+        const rows = await this.dataSource.query<OpenBookingFeedRow[]>(
+            `
+            SELECT
+                b.*,
+                COALESCE(
+                    NULLIF(TRIM(client_profile.full_name), ''),
+                    NULLIF(TRIM(b."clientEmail"), ''),
+                    'Client'
+                ) AS "clientName",
+                NULLIF(TRIM(client_profile.full_name), '') AS "clientFullName",
+                NULLIF(TRIM(client_profile.full_name), '') AS "clientProfileName",
+                0 AS "applicationsCount",
+                0 AS "applicationCount",
+                0 AS "photographerApplicationsCount"
+            FROM public.bookings b
+            LEFT JOIN public.profiles client_profile
+                ON client_profile.user_id = b."clientUserId"
+            WHERE b.id = $1
+              AND b."photographerProfileId" IS NULL
+              AND b."photographerUserId" IS NULL
+              AND b.status = $2
+            LIMIT 1
+            `,
+            [bookingId, 'pending'],
+        );
+
+        const booking = rows[0];
+
+        if (!booking) {
+            throw new NotFoundException('Open booking request was not found.');
+        }
+
+        return booking as Booking;
+    }
+
     async getMyClientBookings(userId: string): Promise<Booking[]> {
         return this.bookingRepository.find({
             where: {

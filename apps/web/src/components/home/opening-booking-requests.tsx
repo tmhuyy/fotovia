@@ -112,11 +112,9 @@ const createBookingHref = (booking?: PublicBookingRequestRecord): string =>
     return queryString ? `/bookings/new?${queryString}` : "/bookings/new";
 };
 
-const getPublicRequestCode = (bookingId: string): string =>
+const createOpeningDetailHref = (bookingId: string): string =>
 {
-    const shortId = bookingId.replace(/-/g, "").slice(0, 6);
-
-    return shortId ? `#FTV-${shortId}` : "#FTV";
+    return `/bookings/${bookingId}`;
 };
 
 const getDisplayTitle = (booking: PublicBookingRequestRecord): string =>
@@ -320,8 +318,10 @@ const OpeningBookingRequestCard = ({
     const applicationCount = getApplicationCount(booking);
 
     return (
-        <article className="rounded-[1.75rem] border border-border bg-surface px-5 py-5 shadow-[0_18px_50px_rgba(23,23,23,0.06)] transition hover:-translate-y-0.5 hover:shadow-[0_22px_60px_rgba(23,23,23,0.08)] sm:px-6 sm:py-6">
-            <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_auto]">
+        <Link
+            href={createOpeningDetailHref(booking.id)}
+            className="block rounded-[1.75rem] border border-border bg-surface px-5 py-5 shadow-[0_18px_50px_rgba(23,23,23,0.06)] transition hover:-translate-y-0.5 hover:border-accent/50 hover:shadow-[0_22px_60px_rgba(23,23,23,0.08)] sm:px-6 sm:py-6"
+        >            <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_auto]">
                 <div className="min-w-0">
                     <div className="flex min-w-0 flex-wrap items-baseline gap-2">
                         <h3 className="max-w-full truncate text-[1.35rem] font-semibold leading-tight tracking-[-0.02em] text-foreground">
@@ -396,7 +396,7 @@ const OpeningBookingRequestCard = ({
                     </div>
                 </div>
             </div>
-        </article>
+        </Link>
     );
 };
 

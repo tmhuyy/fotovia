@@ -30,6 +30,20 @@ import { BookingEvent } from './entities/booking-event.entity';
 export class BookingController {
     constructor(private readonly bookingService: BookingService) {}
 
+    @Get('/open/:bookingId')
+    @ApiOperation({
+        summary: 'Get one public open booking request detail',
+    })
+    @ApiOkResponse({
+        description: 'Open booking request detail fetched successfully',
+        type: Booking,
+    })
+    async getOpenBookingDetail(
+        @Param('bookingId', new ParseUUIDPipe()) bookingId: string,
+    ): Promise<Booking> {
+        return this.bookingService.getOpenBookingDetail(bookingId);
+    }
+
     @Get('/open')
     @ApiOperation({
         summary:
