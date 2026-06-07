@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import type { BookingBriefFormValues } from "../schemas/booking-brief.schema";
 import { formatBudgetRange } from "../utils/booking-budget";
 import { getAdditionalServiceLabelsFromValues } from "../data/additional-services";
+import { contactOptions, shootTypeOptions } from "../data/booking-options";
 
 interface ConfirmBookingRequestDialogProps
 {
@@ -14,6 +15,41 @@ interface ConfirmBookingRequestDialogProps
     onClose: () => void;
     onConfirm: () => void;
 }
+
+const getShootTypeDisplayLabel = (value?: string | null): string =>
+{
+    if (!value?.trim()) {
+        return "Select shoot type";
+    }
+
+    const matchedOption = shootTypeOptions.find(
+        (option) => option.value === value.trim(),
+    );
+
+    if (matchedOption) {
+        return matchedOption.label;
+    }
+
+    return value
+        .trim()
+        .split(/[\s-_]+/)
+        .filter(Boolean)
+        .map((word) => `${word.charAt(0).toUpperCase()}${word.slice(1)}`)
+        .join(" ");
+};
+
+const getContactDisplayLabel = (value?: string | null): string =>
+{
+    if (!value?.trim()) {
+        return "Email";
+    }
+
+    const matchedOption = contactOptions.find(
+        (option) => option.value === value.trim(),
+    );
+
+    return matchedOption?.label ?? value.trim();
+};
 
 const DetailRow = ({
     label,
@@ -104,13 +140,28 @@ export const ConfirmBookingRequestDialog = ({
                         </h3>
 
                         <dl className="mt-5 space-y-4">
-                            <DetailRow label="Shoot type" value={values.shootType} />
-                            <DetailRow label="Date" value={values.preferredDate} />
+                            <DetailRow
+                                label="Shoot type"
+                                value={getShootTypeDisplayLabel(
+                                    values.shootType,
+                                )}
+                            />
+
+                            <DetailRow
+                                label="Date"
+                                value={values.preferredDate}
+                            />
+
                             <DetailRow
                                 label="Time"
                                 value={values.preferredTime || "Flexible"}
                             />
-                            <DetailRow label="Location" value={values.location} />
+
+                            <DetailRow
+                                label="Location"
+                                value={values.location}
+                            />
+
                             <DetailRow
                                 label="Budget"
                                 value={formatBudgetRange(
@@ -118,10 +169,14 @@ export const ConfirmBookingRequestDialog = ({
                                     values.budgetTo,
                                 )}
                             />
+
                             <DetailRow
                                 label="Contact"
-                                value={values.contactPreference}
+                                value={getContactDisplayLabel(
+                                    values.contactPreference,
+                                )}
                             />
+
                             <DetailRow
                                 label="Services"
                                 value={
@@ -130,7 +185,9 @@ export const ConfirmBookingRequestDialog = ({
                                         : "No extra services"
                                 }
                             />
+
                             <DetailRow label="Brief" value={values.concept} />
+
                             {values.inspiration ? (
                                 <DetailRow
                                     label="Inspiration"

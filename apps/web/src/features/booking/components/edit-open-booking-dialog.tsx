@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
+import { VIETNAM_LOCATION_OPTIONS } from "../../../shared/data/vietnam-locations";
 import type {
     OpenBookingRequestRecord,
     UpdateOpenBookingPayload,
@@ -9,8 +10,11 @@ import type {
 import
     {
         BUDGET_MIN_VND,
-        serializeBudgetRange,
+        BUDGET_STEP_VND,
+        formatVndAmount,
+        normalizeBudgetToStep,
         parseBudgetRangeValue,
+        serializeBudgetRange,
     } from "../utils/booking-budget";
 import
     {
@@ -19,6 +23,7 @@ import
         serializeAdditionalServices,
         type AdditionalServiceValue,
     } from "../data/additional-services";
+import { shootTypeOptions } from "../data/booking-options";
 
 interface EditOpenBookingDialogProps
 {
@@ -29,27 +34,27 @@ interface EditOpenBookingDialogProps
     onSubmit: (payload: UpdateOpenBookingPayload) => void;
 }
 
-const shootTypeOptions = [
-    "aerial",
-    "architecture",
-    "event",
-    "fashion",
-    "food",
-    "nature",
-    "sports",
-    "street",
-    "wedding",
-    "wildlife",
-];
+const RequiredMark = () => <span className="text-red-500">*</span>;
 
-const locationOptions = [
-    "TP. Hồ Chí Minh",
-    "Hà Nội",
-    "Đà Nẵng",
-    "Hải Phòng",
-    "Phú Thọ",
-    "Lâm Đồng",
-];
+const parseVndInput = (value: string): number =>
+{
+    const parsedValue = Number(value.replace(/[^\d]/g, ""));
+
+    if (!Number.isFinite(parsedValue)) {
+        return 0;
+    }
+
+    return parsedValue;
+};
+
+const formatBudgetInput = (value: number): string =>
+{
+    if (!Number.isFinite(value) || value <= 0) {
+        return "";
+    }
+
+    return formatVndAmount(value);
+};
 
 export const EditOpenBookingDialog = ({
     isOpen,
@@ -83,8 +88,10 @@ export const EditOpenBookingDialog = ({
             return;
         }
 
+        const resolvedShootType = booking.shootType || booking.sessionType || "";
+
         setTitle(booking.title ?? "");
-        setShootType(booking.shootType || booking.sessionType || "");
+        setShootType(resolvedShootType.toLowerCase());
         setSessionDate(booking.sessionDate ?? "");
         setSessionTime(
             booking.sessionTime && booking.sessionTime !== "flexible"
@@ -128,14 +135,17 @@ export const EditOpenBookingDialog = ({
         return null;
     }
 
+    const normalizedBudgetFrom = normalizeBudgetToStep(budgetFrom);
+    const normalizedBudgetTo = normalizeBudgetToStep(budgetTo);
+
     const isValid =
         title.trim().length >= 3 &&
         shootType.trim().length > 0 &&
         sessionDate.trim().length > 0 &&
         location.trim().length >= 2 &&
         concept.trim().length >= 10 &&
-        budgetFrom >= BUDGET_MIN_VND &&
-        budgetTo >= budgetFrom;
+        normalizedBudgetFrom >= BUDGET_MIN_VND &&
+        normalizedBudgetTo >= normalizedBudgetFrom;
 
     const toggleService = (value: AdditionalServiceValue) =>
     {
@@ -146,6 +156,14 @@ export const EditOpenBookingDialog = ({
         );
     };
 
+    const handleBudgetBlur = (
+        value: number,
+        setter: (nextValue: number) => void,
+    ) =>
+    {
+        setter(normalizeBudgetToStep(value));
+    };
+
     const handleSubmit = (event: FormEvent<HTMLFormElement>) =>
     {
         event.preventDefault();
@@ -154,15 +172,20 @@ export const EditOpenBookingDialog = ({
             return;
         }
 
+        const normalizedShootType = shootType.trim().toLowerCase();
+
         onSubmit({
             title: title.trim(),
-            shootType: shootType.trim(),
-            sessionType: shootType.trim(),
+            shootType: normalizedShootType,
+            sessionType: normalizedShootType,
             sessionDate: sessionDate.trim(),
             sessionTime: sessionTime.trim() || "flexible",
             duration: booking.duration || "flexible",
             location: location.trim(),
-            budget: serializeBudgetRange(budgetFrom, budgetTo),
+            budget: serializeBudgetRange(
+                normalizedBudgetFrom,
+                normalizedBudgetTo,
+            ),
             contactPreference: booking.contactPreference || "email",
             concept: concept.trim(),
             inspiration: inspiration.trim() || undefined,
@@ -192,11 +215,14 @@ export const EditOpenBookingDialog = ({
                     <div className="shrink-0 border-b border-border px-5 py-5 sm:px-7">
                         <div className="flex items-start justify-between gap-4">
                             <div>
-
-                                <h2 className="mt-2 font-display text-3xl tracking-[-0.03em] text-foreground">
+                                <h2 className="font-display text-3xl tracking-[-0.03em] text-foreground">
                                     Edit photoshoot
                                 </h2>
 
+                                <p className="mt-2 text-sm leading-6 text-muted">
+                                    Update your open booking request before
+                                    choosing a photographer.
+                                </p>
                             </div>
 
                             <button
@@ -213,8 +239,9 @@ export const EditOpenBookingDialog = ({
                     <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-5 sm:px-7">
                         <label className="block">
                             <span className="text-sm font-medium text-foreground">
-                                Photoshoot title
+                                Photoshoot title <RequiredMark />
                             </span>
+
                             <input
                                 value={title}
                                 onChange={(event) =>
@@ -227,8 +254,9 @@ export const EditOpenBookingDialog = ({
                         <div className="grid gap-4 sm:grid-cols-2">
                             <label className="block">
                                 <span className="text-sm font-medium text-foreground">
-                                    Expected shoot date
+                                    Expected shoot date <RequiredMark />
                                 </span>
+
                                 <input
                                     type="date"
                                     value={sessionDate}
@@ -241,8 +269,12 @@ export const EditOpenBookingDialog = ({
 
                             <label className="block">
                                 <span className="text-sm font-medium text-foreground">
-                                    Preferred time
+                                    Preferred time{" "}
+                                    <span className="font-normal text-muted">
+                                        (optional)
+                                    </span>
                                 </span>
+
                                 <input
                                     type="time"
                                     value={sessionTime}
@@ -257,9 +289,9 @@ export const EditOpenBookingDialog = ({
                         <div className="grid gap-4 sm:grid-cols-2">
                             <label className="block">
                                 <span className="text-sm font-medium text-foreground">
-                                    Select Shoot Type
-
+                                    Select shoot type <RequiredMark />
                                 </span>
+
                                 <select
                                     value={shootType}
                                     onChange={(event) =>
@@ -268,9 +300,13 @@ export const EditOpenBookingDialog = ({
                                     className="mt-2 w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm outline-none transition focus:border-accent"
                                 >
                                     <option value="">Select shoot type</option>
+
                                     {shootTypeOptions.map((option) => (
-                                        <option key={option} value={option}>
-                                            {option}
+                                        <option
+                                            key={option.value}
+                                            value={option.value}
+                                        >
+                                            {option.label}
                                         </option>
                                     ))}
                                 </select>
@@ -278,8 +314,9 @@ export const EditOpenBookingDialog = ({
 
                             <label className="block">
                                 <span className="text-sm font-medium text-foreground">
-                                    Choose Location
+                                    Choose location <RequiredMark />
                                 </span>
+
                                 <select
                                     value={location}
                                     onChange={(event) =>
@@ -288,9 +325,13 @@ export const EditOpenBookingDialog = ({
                                     className="mt-2 w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm outline-none transition focus:border-accent"
                                 >
                                     <option value="">Select location</option>
-                                    {locationOptions.map((option) => (
-                                        <option key={option} value={option}>
-                                            {option}
+
+                                    {VIETNAM_LOCATION_OPTIONS.map((option) => (
+                                        <option
+                                            key={option.value}
+                                            value={option.value}
+                                        >
+                                            {option.label}
                                         </option>
                                     ))}
                                 </select>
@@ -299,8 +340,9 @@ export const EditOpenBookingDialog = ({
 
                         <label className="block">
                             <span className="text-sm font-medium text-foreground">
-                                Photoshoot description
+                                Photoshoot description <RequiredMark />
                             </span>
+
                             <textarea
                                 value={concept}
                                 onChange={(event) =>
@@ -309,6 +351,12 @@ export const EditOpenBookingDialog = ({
                                 rows={4}
                                 className="mt-2 w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm leading-6 outline-none transition focus:border-accent"
                             />
+
+                            <div className="mt-1 flex justify-end">
+                                <span className="text-xs text-muted">
+                                    {concept.length}/500
+                                </span>
+                            </div>
                         </label>
 
                         <div>
@@ -337,6 +385,7 @@ export const EditOpenBookingDialog = ({
                                             <span className="block text-sm font-semibold text-foreground">
                                                 {option.label}
                                             </span>
+
                                             <span className="mt-1 block text-xs leading-5 text-muted">
                                                 {option.description}
                                             </span>
@@ -349,13 +398,23 @@ export const EditOpenBookingDialog = ({
                         <div className="grid gap-4 sm:grid-cols-2">
                             <label className="block">
                                 <span className="text-sm font-medium text-foreground">
-                                    From (VND)
+                                    From (VND) <RequiredMark />
                                 </span>
+
                                 <input
-                                    type="number"
-                                    value={budgetFrom}
+                                    type="text"
+                                    inputMode="numeric"
+                                    value={formatBudgetInput(budgetFrom)}
                                     onChange={(event) =>
-                                        setBudgetFrom(Number(event.target.value))
+                                        setBudgetFrom(
+                                            parseVndInput(event.target.value),
+                                        )
+                                    }
+                                    onBlur={() =>
+                                        handleBudgetBlur(
+                                            budgetFrom,
+                                            setBudgetFrom,
+                                        )
                                     }
                                     className="mt-2 w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm outline-none transition focus:border-accent"
                                 />
@@ -363,23 +422,42 @@ export const EditOpenBookingDialog = ({
 
                             <label className="block">
                                 <span className="text-sm font-medium text-foreground">
-                                    To (VND)
+                                    To (VND) <RequiredMark />
                                 </span>
+
                                 <input
-                                    type="number"
-                                    value={budgetTo}
+                                    type="text"
+                                    inputMode="numeric"
+                                    value={formatBudgetInput(budgetTo)}
                                     onChange={(event) =>
-                                        setBudgetTo(Number(event.target.value))
+                                        setBudgetTo(
+                                            parseVndInput(event.target.value),
+                                        )
+                                    }
+                                    onBlur={() =>
+                                        handleBudgetBlur(budgetTo, setBudgetTo)
                                     }
                                     className="mt-2 w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm outline-none transition focus:border-accent"
                                 />
                             </label>
                         </div>
 
+                        <div className="rounded-2xl border border-border bg-background px-4 py-3 text-sm text-muted">
+                            Budget preview:{" "}
+                            <span className="font-semibold text-foreground">
+                                {formatVndAmount(normalizedBudgetFrom)} VND -{" "}
+                                {formatVndAmount(normalizedBudgetTo)} VND
+                            </span>
+                        </div>
+
                         <label className="block">
                             <span className="text-sm font-medium text-foreground">
-                                Inspiration link
+                                Inspiration link{" "}
+                                <span className="font-normal text-muted">
+                                    (optional)
+                                </span>
                             </span>
+
                             <input
                                 value={inspiration}
                                 onChange={(event) =>
