@@ -7,6 +7,8 @@ import type {
     CreateBookingApplicationPayload,
     CreateBookingPayload,
     CreateOpenBookingPayload,
+    OpenBookingMarketplaceQuery,
+    OpenBookingMarketplaceResponse,
     OpenBookingRequestRecord,
     PhotographerBookingActionStatus,
     UpdateOpenBookingPayload,
@@ -22,6 +24,7 @@ const BOOKING_ENDPOINTS = {
     create: "/booking",
     createOpen: "/booking/open",
     openFeed: "/booking/open",
+    openMarketplace: "/booking/open/marketplace",
     openDetail: (bookingId: string) => `/booking/open/${bookingId}`,
     openDetailForViewer: (bookingId: string) =>
         `/booking/open/${bookingId}/viewer`,
@@ -95,6 +98,7 @@ const normalizeBoolean = (value: unknown): boolean | undefined => {
 
     return undefined;
 };
+
 const normalizeApplicationStatus = (
     value: unknown,
 ): BookingApplicationStatus => {
@@ -254,6 +258,32 @@ const normalizeBookingArray = (payload: unknown): BookingRequestRecord[] => {
         .map((item) => normalizeBooking(item));
 };
 
+const normalizePaginatedOpenBookingResponse = (
+    payload: unknown,
+): OpenBookingMarketplaceResponse => {
+    const raw =
+        typeof payload === "object" &&
+        payload !== null &&
+        !Array.isArray(payload)
+            ? (payload as AnyRecord)
+            : {};
+
+    const page = normalizeNullableNumber(raw.page) ?? 1;
+    const pageSize = normalizeNullableNumber(raw.pageSize) ?? 8;
+    const total = normalizeNullableNumber(raw.total) ?? 0;
+    const totalPages = normalizeNullableNumber(raw.totalPages) ?? 1;
+
+    return {
+        items: normalizeBookingArray(raw.items),
+        page,
+        pageSize,
+        total,
+        totalPages,
+        hasNextPage: normalizeBoolean(raw.hasNextPage) ?? page < totalPages,
+        hasPreviousPage: normalizeBoolean(raw.hasPreviousPage) ?? page > 1,
+    };
+};
+
 const normalizeBookingEvent = (payload: AnyRecord): BookingEventRecord => {
     return {
         id: normalizeString(payload.id),
@@ -335,6 +365,66 @@ export const bookingService = {
 
         const data = unwrapResponse<unknown>(response.data);
         return normalizeBookingArray(data);
+    },
+
+    async getOpenBookingMarketplace(
+        options: OpenBookingMarketplaceQuery = {},
+    ): Promise<OpenBookingMarketplaceResponse> {
+        const params = new URLSearchParams();
+
+        if (typeof options.page === "number" && options.page > 0) {
+            params.set("page", String(options.page));
+        }
+
+        if (typeof options.pageSize === "number" && options.pageSize > 0) {
+            params.set("pageSize", String(options.pageSize));
+        }
+
+        if (options.shootTypes && options.shootTypes.length > 0) {
+            params.set("shootTypes", options.shootTypes.join(","));
+        }
+
+        if (options.location?.trim()) {
+            params.set("location", options.location.trim());
+        }
+
+        if (options.dateFrom?.trim()) {
+            params.set("dateFrom", options.dateFrom.trim());
+        }
+
+        if (options.dateTo?.trim()) {
+            params.set("dateTo", options.dateTo.trim());
+        }
+
+        if (typeof options.budgetFrom === "number" && options.budgetFrom > 0) {
+            params.set("budgetFrom", String(options.budgetFrom));
+        }
+
+        if (typeof options.budgetTo === "number" && options.budgetTo > 0) {
+            params.set("budgetTo", String(options.budgetTo));
+        }
+
+        if (options.services && options.services !== "all") {
+            params.set("services", options.services);
+        }
+
+        if (options.sort) {
+            params.set("sort", options.sort);
+        }
+
+        const queryString = params.toString();
+
+        const response = await bookingClient.get<
+            ApiResponse<unknown> | unknown
+        >(
+            queryString
+                ? `${BOOKING_ENDPOINTS.openMarketplace}?${queryString}`
+                : BOOKING_ENDPOINTS.openMarketplace,
+        );
+
+        const data = unwrapResponse<unknown>(response.data);
+
+        return normalizePaginatedOpenBookingResponse(data);
     },
 
     async getOpenBookingDetail(
@@ -470,6 +560,7 @@ export const bookingService = {
         const data = unwrapResponse<unknown>(response.data);
         return normalizeBookingApplicationArray(data);
     },
+
     async updateMyOpenBookingApplication(
         bookingId: string,
         payload: CreateBookingApplicationPayload,
@@ -505,6 +596,7 @@ export const bookingService = {
         const data = unwrapResponse<AnyRecord>(response.data);
         return normalizeBookingApplication(data);
     },
+
     async updateMyClientOpenBooking(
         bookingId: string,
         payload: UpdateOpenBookingPayload,

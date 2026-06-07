@@ -76,6 +76,38 @@ export interface BookingRequestRecord extends BaseBookingPayload {
 
 export type OpenBookingRequestRecord = BookingRequestRecord;
 
+export type OpenBookingSort =
+    | "earliest"
+    | "newest"
+    | "most_applications"
+    | "budget_low"
+    | "budget_high";
+
+export type OpenBookingAdditionalServicesFilter = "all" | "with" | "without";
+
+export interface OpenBookingMarketplaceQuery {
+    page?: number;
+    pageSize?: number;
+    shootTypes?: string[];
+    location?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    budgetFrom?: number;
+    budgetTo?: number;
+    services?: OpenBookingAdditionalServicesFilter;
+    sort?: OpenBookingSort;
+}
+
+export interface OpenBookingMarketplaceResponse {
+    items: OpenBookingRequestRecord[];
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+}
+
 export interface BookingEntrySearchParams {
     photographerSlug?: string;
     sessionType?: string;

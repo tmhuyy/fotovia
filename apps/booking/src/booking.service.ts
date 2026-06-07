@@ -10,6 +10,13 @@ import { UserRole } from '@repo/types';
 
 import { CreateBookingDto } from './dtos/create-booking.dto';
 import { CreateOpenBookingDto } from './dtos/create-open-booking.dto';
+import {
+    GetOpenBookingsQueryDto,
+    OPEN_BOOKING_ADDITIONAL_SERVICE_VALUES,
+    OPEN_BOOKING_SORT_VALUES,
+    type OpenBookingAdditionalServicesFilter,
+    type OpenBookingSort,
+} from './dtos/get-open-bookings-query.dto';
 import { UpdateBookingStatusDto } from './dtos/update-booking-status.dto';
 import { Booking } from './entities/booking.entity';
 import {
@@ -24,7 +31,6 @@ import {
     BookingApplication,
     BookingApplicationStatus,
 } from './entities/booking-application.entity';
-
 import { UpdateOpenBookingDto } from './dtos/update-open-booking.dto';
 
 interface ProfileLookupRow {
@@ -51,6 +57,65 @@ interface OpenBookingFeedRow extends Booking {
     myApplicationStatus?: BookingApplicationStatus | null;
     canApply?: boolean;
 }
+
+export interface PaginatedOpenBookingFeed {
+    items: Booking[];
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+}
+
+const parsePositiveInteger = (
+    value: string | undefined,
+    fallback: number,
+    max?: number,
+): number => {
+    const parsed = Number(value);
+
+    if (!Number.isFinite(parsed) || parsed < 1) {
+        return fallback;
+    }
+
+    const normalized = Math.floor(parsed);
+
+    return typeof max === 'number' ? Math.min(normalized, max) : normalized;
+};
+
+const parseMoneyFilter = (value?: string): number | null => {
+    if (!value?.trim()) {
+        return null;
+    }
+
+    const parsed = Number(value.replace(/[^\d]/g, ''));
+
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+};
+
+const parseCommaValues = (value?: string): string[] => {
+    if (!value?.trim()) {
+        return [];
+    }
+
+    return value
+        .split(',')
+        .map((item) => item.trim().toLowerCase())
+        .filter(Boolean);
+};
+
+const isOpenBookingServiceFilter = (
+    value?: string,
+): value is OpenBookingAdditionalServicesFilter => {
+    return OPEN_BOOKING_ADDITIONAL_SERVICE_VALUES.includes(
+        value as OpenBookingAdditionalServicesFilter,
+    );
+};
+
+const isOpenBookingSort = (value?: string): value is OpenBookingSort => {
+    return OPEN_BOOKING_SORT_VALUES.includes(value as OpenBookingSort);
+};
 
 @Injectable()
 export class BookingService {
@@ -289,6 +354,209 @@ export class BookingService {
         );
 
         return rows as Booking[];
+    }
+
+    async getOpenBookingMarketplace(
+        query: GetOpenBookingsQueryDto,
+    ): Promise<PaginatedOpenBookingFeed> {
+        const page = parsePositiveInteger(query.page, 1);
+        const pageSize = parsePositiveInteger(query.pageSize, 8, 20);
+
+        const allowedShootTypes = new Set([
+            'aerial',
+            'architecture',
+            'event',
+            'fashion',
+            'food',
+            'nature',
+            'sports',
+            'street',
+            'wedding',
+            'wildlife',
+        ]);
+
+        const shootTypes = parseCommaValues(query.shootTypes).filter((type) =>
+            allowedShootTypes.has(type),
+        );
+
+        const services = isOpenBookingServiceFilter(query.services)
+            ? query.services
+            : 'all';
+
+        const sort = isOpenBookingSort(query.sort) ? query.sort : 'earliest';
+
+        const budgetFrom = parseMoneyFilter(query.budgetFrom);
+        const budgetTo = parseMoneyFilter(query.budgetTo);
+
+        const params: unknown[] = ['pending'];
+        const conditions: string[] = [
+            'b."photographerProfileId" IS NULL',
+            'b."photographerUserId" IS NULL',
+            'b.status = $1',
+        ];
+
+        const pushParam = (value: unknown): string => {
+            params.push(value);
+            return `$${params.length}`;
+        };
+
+        if (shootTypes.length > 0) {
+            const placeholder = pushParam(shootTypes);
+
+            conditions.push(
+                `(LOWER(b."shootType") = ANY(${placeholder}::text[]) OR LOWER(b."sessionType") = ANY(${placeholder}::text[]))`,
+            );
+        }
+
+        if (query.location?.trim()) {
+            const placeholder = pushParam(query.location.trim());
+            conditions.push(`LOWER(b.location) = LOWER(${placeholder})`);
+        }
+
+        if (query.dateFrom?.trim()) {
+            const placeholder = pushParam(query.dateFrom.trim());
+            conditions.push(`b."sessionDate" >= ${placeholder}`);
+        }
+
+        if (query.dateTo?.trim()) {
+            const placeholder = pushParam(query.dateTo.trim());
+            conditions.push(`b."sessionDate" <= ${placeholder}`);
+        }
+
+        const budgetMinExpression = `
+            NULLIF(
+                regexp_replace(
+                    split_part(COALESCE(b.budget, ''), '-', 1),
+                    '[^0-9]',
+                    '',
+                    'g'
+                ),
+                ''
+            )::numeric
+        `;
+
+        const budgetMaxExpression = `
+            COALESCE(
+                NULLIF(
+                    regexp_replace(
+                        split_part(COALESCE(b.budget, ''), '-', 2),
+                        '[^0-9]',
+                        '',
+                        'g'
+                    ),
+                    ''
+                )::numeric,
+                ${budgetMinExpression}
+            )
+        `;
+
+        if (budgetFrom !== null) {
+            const placeholder = pushParam(budgetFrom);
+            conditions.push(`${budgetMaxExpression} >= ${placeholder}`);
+        }
+
+        if (budgetTo !== null) {
+            const placeholder = pushParam(budgetTo);
+            conditions.push(`${budgetMinExpression} <= ${placeholder}`);
+        }
+
+        if (services === 'with') {
+            conditions.push(
+                `NULLIF(TRIM(COALESCE(b.notes, '')), '') IS NOT NULL`,
+            );
+        }
+
+        if (services === 'without') {
+            conditions.push(`NULLIF(TRIM(COALESCE(b.notes, '')), '') IS NULL`);
+        }
+
+        const whereClause = conditions.join('\n              AND ');
+
+        const orderBy = (() => {
+            switch (sort) {
+                case 'newest':
+                    return `b."createdAt" DESC, b."sessionDate" ASC`;
+
+                case 'most_applications':
+                    return `"applicationsCount" DESC, b."sessionDate" ASC, b."createdAt" DESC`;
+
+                case 'budget_low':
+                    return `"budgetMinValue" ASC NULLS LAST, b."sessionDate" ASC`;
+
+                case 'budget_high':
+                    return `"budgetMaxValue" DESC NULLS LAST, b."sessionDate" ASC`;
+
+                case 'earliest':
+                default:
+                    return `b."sessionDate" ASC, b."createdAt" DESC`;
+            }
+        })();
+
+        const totalRows = await this.dataSource.query<{ count: number }[]>(
+            `
+            SELECT COUNT(*)::int AS count
+            FROM public.bookings b
+            WHERE ${whereClause}
+            `,
+            params,
+        );
+
+        const total = Number(totalRows[0]?.count ?? 0);
+        const totalPages = Math.max(Math.ceil(total / pageSize), 1);
+        const safePage = Math.min(page, totalPages);
+        const safeOffset = (safePage - 1) * pageSize;
+
+        const itemParams = [...params, pageSize, safeOffset];
+
+        const rows = await this.dataSource.query<OpenBookingFeedRow[]>(
+            `
+            SELECT
+                b.*,
+                COALESCE(
+                    NULLIF(TRIM(client_profile.full_name), ''),
+                    NULLIF(TRIM(b."clientEmail"), ''),
+                    'Client'
+                ) AS "clientName",
+                NULLIF(TRIM(client_profile.full_name), '') AS "clientFullName",
+                NULLIF(TRIM(client_profile.full_name), '') AS "clientProfileName",
+                COALESCE(application_counts."applicationsCount", 0)::int AS "applicationsCount",
+                COALESCE(application_counts."applicationsCount", 0)::int AS "applicationCount",
+                COALESCE(application_counts."applicationsCount", 0)::int AS "photographerApplicationsCount",
+                false AS "isOwner",
+                false AS "canManage",
+                false AS "canViewApplications",
+                false AS "hasApplied",
+                null AS "myApplicationId",
+                null AS "myApplicationStatus",
+                false AS "canApply",
+                ${budgetMinExpression} AS "budgetMinValue",
+                ${budgetMaxExpression} AS "budgetMaxValue"
+            FROM public.bookings b
+            LEFT JOIN public.profiles client_profile
+                ON client_profile.user_id = b."clientUserId"
+            LEFT JOIN LATERAL (
+                SELECT COUNT(*) AS "applicationsCount"
+                FROM public.booking_applications applications
+                WHERE applications."bookingId" = b.id
+                  AND applications.status NOT IN ('withdrawn', 'expired', 'rejected')
+            ) application_counts ON true
+            WHERE ${whereClause}
+            ORDER BY ${orderBy}
+            LIMIT $${itemParams.length - 1}
+            OFFSET $${itemParams.length}
+            `,
+            itemParams,
+        );
+
+        return {
+            items: rows as Booking[],
+            page: safePage,
+            pageSize,
+            total,
+            totalPages,
+            hasNextPage: safePage < totalPages,
+            hasPreviousPage: safePage > 1,
+        };
     }
 
     async getOpenBookingDetail(bookingId: string): Promise<Booking> {

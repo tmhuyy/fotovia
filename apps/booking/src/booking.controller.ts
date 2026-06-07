@@ -19,19 +19,38 @@ import {
 
 import { GetUser, IUser, JwtAuthGuard } from '@repo/common';
 
-import { BookingService } from './booking.service';
+import {
+    BookingService,
+    type PaginatedOpenBookingFeed,
+} from './booking.service';
 import { CreateBookingDto } from './dtos/create-booking.dto';
 import { CreateOpenBookingDto } from './dtos/create-open-booking.dto';
+import { GetOpenBookingsQueryDto } from './dtos/get-open-bookings-query.dto';
 import { UpdateBookingStatusDto } from './dtos/update-booking-status.dto';
 import { Booking } from './entities/booking.entity';
 import { BookingEvent } from './entities/booking-event.entity';
 import { CreateBookingApplicationDto } from './dtos/create-booking-application.dto';
 import { BookingApplication } from './entities/booking-application.entity';
 import { UpdateOpenBookingDto } from './dtos/update-open-booking.dto';
+
 @ApiTags('Booking')
 @Controller('booking')
 export class BookingController {
     constructor(private readonly bookingService: BookingService) {}
+
+    @Get('/open/marketplace')
+    @ApiOperation({
+        summary:
+            'Get paginated open booking requests with filters and sorting for the marketplace page',
+    })
+    @ApiOkResponse({
+        description: 'Paginated open booking request feed fetched successfully',
+    })
+    async getOpenBookingMarketplace(
+        @Query() query: GetOpenBookingsQueryDto,
+    ): Promise<PaginatedOpenBookingFeed> {
+        return this.bookingService.getOpenBookingMarketplace(query);
+    }
 
     @UseGuards(JwtAuthGuard)
     @Get('/open/:bookingId/viewer')
