@@ -38,6 +38,8 @@ import
 import { ApplyToPhotoshootModal } from "./apply-to-photoshoot-modal";
 import type { CreateBookingApplicationPayload } from "../types/booking.types";
 import { OpenBookingApplicationsSection } from "./open-booking-applications-section";
+import { EditOpenBookingDialog } from "./edit-open-booking-dialog";
+import type { UpdateOpenBookingPayload } from "../types/booking.types";
 
 interface IconProps
 {
@@ -286,6 +288,7 @@ export const OpenBookingDetailPage = () =>
     const queryClient = useQueryClient();
 
     const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
+    const [isEditBookingOpen, setIsEditBookingOpen] = useState(false);
 
     const {
         isAuthenticated,
@@ -356,6 +359,37 @@ export const OpenBookingDetailPage = () =>
                     error,
                     "Please try again in a moment.",
                 ),
+            });
+        },
+    });
+
+    const updateBookingMutation = useMutation({
+        mutationFn: (payload: UpdateOpenBookingPayload) =>
+            bookingService.updateMyClientOpenBooking(bookingId, payload),
+        onSuccess: async () =>
+        {
+            toast.success("Booking updated", {
+                description: "Your open photoshoot request has been updated.",
+            });
+
+            setIsEditBookingOpen(false);
+
+            await Promise.all([
+                queryClient.invalidateQueries({
+                    queryKey: ["open-booking-detail", bookingId],
+                }),
+                queryClient.invalidateQueries({
+                    queryKey: ["opening-booking-requests"],
+                }),
+                queryClient.invalidateQueries({
+                    queryKey: ["client-bookings"],
+                }),
+            ]);
+        },
+        onError: () =>
+        {
+            toast.error("We couldn’t update this booking", {
+                description: "Please check the booking details and try again.",
             });
         },
     });
@@ -513,6 +547,7 @@ export const OpenBookingDetailPage = () =>
                                                 bookingId={booking.id}
                                                 isCancelling={cancelBookingMutation.isPending}
                                                 onCancel={() => cancelBookingMutation.mutate()}
+                                                onEdit={() => setIsEditBookingOpen(true)}
                                             />
                                         ) : (
                                             <span className="h-9 w-12 shrink-0" aria-hidden="true" />
@@ -651,6 +686,14 @@ export const OpenBookingDetailPage = () =>
                 isSubmitting={applyMutation.isPending}
                 onClose={() => setIsApplyModalOpen(false)}
                 onSubmit={(payload) => applyMutation.mutate(payload)}
+            />
+
+            <EditOpenBookingDialog
+                isOpen={isEditBookingOpen}
+                booking={booking || null}
+                isSubmitting={updateBookingMutation.isPending}
+                onClose={() => setIsEditBookingOpen(false)}
+                onSubmit={(payload) => updateBookingMutation.mutate(payload)}
             />
             <Footer />
         </div>

@@ -9,6 +9,7 @@ import type {
     CreateOpenBookingPayload,
     OpenBookingRequestRecord,
     PhotographerBookingActionStatus,
+    UpdateOpenBookingPayload,
 } from "../features/booking/types/booking.types";
 import type { BookingEventRecord } from "../features/booking/types/booking-event.types";
 import { bookingClient } from "./api/axios";
@@ -47,6 +48,8 @@ const BOOKING_ENDPOINTS = {
         `/booking/client/me/${bookingId}/applications/${applicationId}/select`,
     clientRejectApplication: (bookingId: string, applicationId: string) =>
         `/booking/client/me/${bookingId}/applications/${applicationId}/reject`,
+    clientUpdateOpenBooking: (bookingId: string) =>
+        `/booking/client/me/${bookingId}`,
 };
 
 const normalizeString = (value: unknown): string => {
@@ -501,5 +504,16 @@ export const bookingService = {
 
         const data = unwrapResponse<AnyRecord>(response.data);
         return normalizeBookingApplication(data);
+    },
+    async updateMyClientOpenBooking(
+        bookingId: string,
+        payload: UpdateOpenBookingPayload,
+    ): Promise<BookingRequestRecord> {
+        const response = await bookingClient.patch<
+            ApiResponse<AnyRecord> | AnyRecord
+        >(BOOKING_ENDPOINTS.clientUpdateOpenBooking(bookingId), payload);
+
+        const data = unwrapResponse<AnyRecord>(response.data);
+        return normalizeBooking(data);
     },
 };

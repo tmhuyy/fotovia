@@ -27,7 +27,7 @@ import { Booking } from './entities/booking.entity';
 import { BookingEvent } from './entities/booking-event.entity';
 import { CreateBookingApplicationDto } from './dtos/create-booking-application.dto';
 import { BookingApplication } from './entities/booking-application.entity';
-
+import { UpdateOpenBookingDto } from './dtos/update-open-booking.dto';
 @ApiTags('Booking')
 @Controller('booking')
 export class BookingController {
@@ -309,6 +309,28 @@ export class BookingController {
         return this.bookingService.getMyClientBookingTimeline(
             bookingId,
             user.id,
+        );
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Patch('/client/me/:bookingId')
+    @ApiOperation({
+        summary: 'Update a pending open booking owned by the current client',
+    })
+    @ApiOkResponse({
+        description: 'Open booking request updated successfully',
+        type: Booking,
+    })
+    async updateMyOpenBooking(
+        @Param('bookingId', new ParseUUIDPipe()) bookingId: string,
+        @Body() updateOpenBookingDto: UpdateOpenBookingDto,
+        @GetUser() user: IUser,
+    ): Promise<Booking> {
+        return this.bookingService.updateMyOpenBooking(
+            bookingId,
+            updateOpenBookingDto,
+            user.id,
+            user.email,
         );
     }
 

@@ -25,6 +25,8 @@ import {
     BookingApplicationStatus,
 } from './entities/booking-application.entity';
 
+import { UpdateOpenBookingDto } from './dtos/update-open-booking.dto';
+
 interface ProfileLookupRow {
     id: string;
     userId: string;
@@ -172,6 +174,73 @@ export class BookingService {
             actorUserId: userId,
             actorLabel: userEmail?.trim() || 'Client',
             note: 'Open booking request created.',
+        });
+
+        return savedBooking;
+    }
+
+    async updateMyOpenBooking(
+        bookingId: string,
+        updateOpenBookingDto: UpdateOpenBookingDto,
+        userId: string,
+        userEmail?: string,
+    ): Promise<Booking> {
+        const booking = await this.bookingRepository.findOne({
+            where: {
+                id: bookingId,
+                clientUserId: userId,
+            },
+        });
+
+        if (!booking) {
+            throw new NotFoundException('Booking request not found.');
+        }
+
+        if (
+            booking.status !== 'pending' ||
+            booking.photographerProfileId !== null ||
+            booking.photographerUserId !== null
+        ) {
+            throw new BadRequestException(
+                'Only pending open booking requests can be edited.',
+            );
+        }
+
+        const resolvedShootType =
+            updateOpenBookingDto.shootType?.trim() ||
+            updateOpenBookingDto.sessionType?.trim();
+
+        if (!resolvedShootType) {
+            throw new BadRequestException('Shoot type is required.');
+        }
+
+        booking.title = updateOpenBookingDto.title?.trim() || null;
+        booking.shootType = resolvedShootType;
+        booking.sessionType =
+            updateOpenBookingDto.sessionType?.trim() || resolvedShootType;
+        booking.sessionDate = updateOpenBookingDto.sessionDate.trim();
+        booking.sessionTime =
+            updateOpenBookingDto.sessionTime?.trim() || 'flexible';
+        booking.duration = updateOpenBookingDto.duration?.trim() || 'flexible';
+        booking.location = updateOpenBookingDto.location.trim();
+        booking.budget = updateOpenBookingDto.budget.trim();
+        booking.contactPreference =
+            updateOpenBookingDto.contactPreference.trim();
+        booking.concept = updateOpenBookingDto.concept.trim();
+        booking.inspiration = updateOpenBookingDto.inspiration?.trim() || null;
+        booking.notes = normalizeBookingAdditionalServices(
+            updateOpenBookingDto.notes,
+        );
+
+        const savedBooking = await this.bookingRepository.save(booking);
+
+        await this.recordBookingEvent({
+            bookingId: savedBooking.id,
+            eventType: 'updated',
+            actorRole: 'client',
+            actorUserId: userId,
+            actorLabel: userEmail?.trim() || 'Client',
+            note: 'Open booking request updated.',
         });
 
         return savedBooking;

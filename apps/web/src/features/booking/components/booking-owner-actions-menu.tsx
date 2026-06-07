@@ -8,6 +8,7 @@ interface BookingOwnerActionsMenuProps
     bookingId: string;
     isCancelling: boolean;
     onCancel: () => void;
+    onEdit?: () => void;
     editHref?: string;
 }
 
@@ -33,6 +34,7 @@ export const BookingOwnerActionsMenu = ({
     bookingId,
     isCancelling,
     onCancel,
+    onEdit,
     editHref,
 }: BookingOwnerActionsMenuProps) =>
 {
@@ -112,14 +114,31 @@ export const BookingOwnerActionsMenu = ({
                         event.stopPropagation();
                     }}
                 >
-                    <Link
-                        href={editHref ?? `/my-bookings?bookingId=${bookingId}`}
-                        className="block rounded-2xl px-4 py-3 text-sm font-medium text-foreground transition hover:bg-background hover:text-accent"
-                        role="menuitem"
-                        onClick={() => setIsOpen(false)}
-                    >
-                        Edit booking
-                    </Link>
+                    {onEdit ? (
+                        <button
+                            type="button"
+                            className="block w-full rounded-2xl px-4 py-3 text-left text-sm font-medium text-foreground transition hover:bg-background hover:text-accent"
+                            role="menuitem"
+                            onClick={(event) =>
+                            {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                setIsOpen(false);
+                                onEdit();
+                            }}
+                        >
+                            Edit booking
+                        </button>
+                    ) : (
+                        <Link
+                            href={editHref ?? `/my-bookings?bookingId=${bookingId}`}
+                            className="block rounded-2xl px-4 py-3 text-sm font-medium text-foreground transition hover:bg-background hover:text-accent"
+                            role="menuitem"
+                            onClick={() => setIsOpen(false)}
+                        >
+                            Edit booking
+                        </Link>
+                    )}
 
                     <button
                         type="button"

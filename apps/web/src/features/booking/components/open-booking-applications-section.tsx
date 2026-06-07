@@ -4,11 +4,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import
-    {
-        useMutation,
-        useQuery,
-        useQueryClient,
-    } from "@tanstack/react-query";
+{
+    useMutation,
+    useQuery,
+    useQueryClient,
+} from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { bookingService } from "../../../services/booking.service";
@@ -18,6 +18,7 @@ import type {
     OpenBookingRequestRecord,
 } from "../types/booking.types";
 import { ApplyToPhotoshootModal } from "./apply-to-photoshoot-modal";
+import { ConfirmActionDialog } from "../../../components/common/confirm-action-dialog";
 
 interface OpenBookingApplicationsSectionProps
 {
@@ -157,6 +158,9 @@ export const OpenBookingApplicationsSection = ({
     const router = useRouter();
     const queryClient = useQueryClient();
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isWithdrawConfirmOpen, setIsWithdrawConfirmOpen] = useState(false);
+    const [selectingApplication, setSelectingApplication] =
+        useState<BookingApplicationRecord | null>(null);
 
     const applicationCount = getApplicationCount(booking);
     const canViewApplications = Boolean(booking.canViewApplications);
@@ -377,16 +381,7 @@ export const OpenBookingApplicationsSection = ({
 
                                     <button
                                         type="button"
-                                        onClick={() =>
-                                        {
-                                            const confirmed = window.confirm(
-                                                "Withdraw this application?",
-                                            );
-
-                                            if (confirmed) {
-                                                withdrawMutation.mutate();
-                                            }
-                                        }}
+                                        onClick={() => setIsWithdrawConfirmOpen(true)}
                                         disabled={withdrawMutation.isPending}
                                         className="inline-flex items-center justify-center rounded-2xl border border-rose-200 bg-surface px-5 py-3 text-sm font-semibold text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
                                     >
@@ -452,18 +447,7 @@ export const OpenBookingApplicationsSection = ({
 
                                     <button
                                         type="button"
-                                        onClick={() =>
-                                        {
-                                            const confirmed = window.confirm(
-                                                `Choose ${application.photographerName} as the main photographer for this photoshoot?`,
-                                            );
-
-                                            if (confirmed) {
-                                                selectMutation.mutate(
-                                                    application.id,
-                                                );
-                                            }
-                                        }}
+                                        onClick={() => setSelectingApplication(application)}
                                         disabled={
                                             rejectMutation.isPending ||
                                             selectMutation.isPending
@@ -491,6 +475,40 @@ export const OpenBookingApplicationsSection = ({
                     applications for this photoshoot.
                 </div>
             ) : null}
+            <ConfirmActionDialog
+                isOpen={isWithdrawConfirmOpen}
+                title="Withdraw application?"
+                description="Your proposal will be removed from this open photoshoot request. You can apply again later if the request is still open."
+                confirmLabel="Withdraw application"
+                tone="danger"
+                isPending={withdrawMutation.isPending}
+                onCancel={() => setIsWithdrawConfirmOpen(false)}
+                onConfirm={() =>
+                {
+                    withdrawMutation.mutate();
+                    setIsWithdrawConfirmOpen(false);
+                }}
+            />
+
+            <ConfirmActionDialog
+                isOpen={Boolean(selectingApplication)}
+                title="Choose photographer?"
+                description={
+                    selectingApplication
+                        ? `You are about to assign ${selectingApplication.photographerName} as the main photographer for this photoshoot. After this action, the request will be confirmed and removed from the open booking list.`
+                        : ""
+                }
+                confirmLabel="Choose photographer"
+                isPending={selectMutation.isPending}
+                onCancel={() => setSelectingApplication(null)}
+                onConfirm={() =>
+                {
+                    if (selectingApplication) {
+                        selectMutation.mutate(selectingApplication.id);
+                        setSelectingApplication(null);
+                    }
+                }}
+            />
         </section>
     );
 };

@@ -23,6 +23,8 @@ import { bookingService } from "../../services/booking.service";
 import { useAuthStore } from "../../store/auth.store";
 import { Container } from "../layout/container";
 import { BookingOwnerActionsMenu } from "../../features/booking/components/booking-owner-actions-menu";
+import { EditOpenBookingDialog } from "../../features/booking/components/edit-open-booking-dialog";
+import type { UpdateOpenBookingPayload } from "../../features/booking/types/booking.types";
 
 type PublicBookingRequestRecord = BookingRequestRecord & {
     clientName?: string | null;
@@ -326,11 +328,13 @@ const OpeningBookingRequestCard = ({
     currentUser,
     isCancelling,
     onCancel,
+    onEdit,
 }: {
     booking: PublicBookingRequestRecord;
     currentUser?: { id?: string; email?: string; fullName?: string } | null;
     isCancelling: boolean;
     onCancel: (bookingId: string) => void;
+    onEdit: (booking: PublicBookingRequestRecord) => void;
 }) =>
 {
     const shootType = formatShootTypeLabel(booking.shootType || booking.sessionType);
@@ -357,6 +361,7 @@ const OpeningBookingRequestCard = ({
                             bookingId={booking.id}
                             isCancelling={isCancelling}
                             onCancel={() => onCancel(booking.id)}
+                            onEdit={() => onEdit(booking)}
                         />
                     ) : (
                         <span className="h-9 w-12 shrink-0" aria-hidden="true" />
@@ -449,6 +454,9 @@ export const OpeningBookingRequests = ({
     const queryClient = useQueryClient();
     const { user, isAuthenticated, hasHydrated, isHydrating } = useAuthStore();
 
+    const [editingBooking, setEditingBooking] =
+        useState<PublicBookingRequestRecord | null>(null);
+
     const isPhotographer =
         hasHydrated &&
         !isHydrating &&
@@ -472,6 +480,37 @@ export const OpeningBookingRequests = ({
                 PublicBookingRequestRecord[]
             >,
         retry: false,
+    });
+
+    const updateBookingMutation = useMutation({
+        mutationFn: ({
+            bookingId,
+            payload,
+        }: {
+            bookingId: string;
+            payload: UpdateOpenBookingPayload;
+        }) => bookingService.updateMyClientOpenBooking(bookingId, payload),
+        onSuccess: async () =>
+        {
+            toast.success("Booking updated");
+            setEditingBooking(null);
+
+            await Promise.all([
+                queryClient.invalidateQueries({
+                    queryKey: ["opening-booking-requests"],
+                }),
+                queryClient.invalidateQueries({
+                    queryKey: ["open-booking-detail"],
+                }),
+                queryClient.invalidateQueries({
+                    queryKey: ["client-bookings"],
+                }),
+            ]);
+        },
+        onError: () =>
+        {
+            toast.error("We couldn’t update this booking");
+        },
     });
 
     const cancelBookingMutation = useMutation({
@@ -561,6 +600,7 @@ export const OpeningBookingRequests = ({
                                     onCancel={(bookingId) =>
                                         cancelBookingMutation.mutate(bookingId)
                                     }
+                                    onEdit={(targetBooking) => setEditingBooking(targetBooking)}
                                 />
                             ))}
                         </div>
@@ -587,6 +627,23 @@ export const OpeningBookingRequests = ({
                     </div>
                 </div>
             </Container>
+            <EditOpenBookingDialog
+                isOpen={Boolean(editingBooking)}
+                booking={editingBooking}
+                isSubmitting={updateBookingMutation.isPending}
+                onClose={() => setEditingBooking(null)}
+                onSubmit={(payload) =>
+                {
+                    if (!editingBooking) {
+                        return;
+                    }
+
+                    updateBookingMutation.mutate({
+                        bookingId: editingBooking.id,
+                        payload,
+                    });
+                }}
+            />
         </section>
     );
 };

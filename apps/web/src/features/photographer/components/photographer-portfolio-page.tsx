@@ -22,12 +22,13 @@ import { DeletePortfolioItemDialog } from "./delete-portfolio-item-dialog";
 import { PortfolioEmptyState } from "./portfolio-empty-state";
 import { PortfolioGrid } from "./portfolio-grid";
 import
-  {
-    PortfolioItemDetailDialog,
-    type PortfolioActionMenuItem,
-  } from "./portfolio-item-detail-dialog";
+{
+  PortfolioItemDetailDialog,
+  type PortfolioActionMenuItem,
+} from "./portfolio-item-detail-dialog";
 import { PortfolioPostProgressBanner } from "./portfolio-post-progress-banner";
 import { usePortfolioPostStore } from "../store/portfolio-post.store";
+import { bookingService } from "../../../services/booking.service";
 
 const CLASSIFICATION_POLL_INTERVAL_MS = 4000;
 
@@ -279,6 +280,17 @@ export const PhotographerPortfolioPage = () =>
     return sortedItems.findIndex((item) => item.id === selectedPortfolioItem.id);
   }, [selectedPortfolioItem, sortedItems]);
 
+  const photographerBookingsQuery = useQuery({
+    queryKey: ["photographer-booking-stats", user?.id ?? "anonymous"],
+    queryFn: () => bookingService.getMyPhotographerBookings(),
+    enabled:
+      hasHydrated &&
+      !isHydrating &&
+      isAuthenticated &&
+      isPhotographer,
+    retry: false,
+  });
+
   const selectedPostId = searchParams.get("post");
 
   const getPostDetailUrl = (itemId: string) =>
@@ -353,10 +365,12 @@ export const PhotographerPortfolioPage = () =>
     router.replace(getPostDetailUrl(nextItem.id), { scroll: false });
   };
 
-  const featuredCount = useMemo(() =>
+  const completedShootsCount = useMemo(() =>
   {
-    return sortedItems.filter((item) => item.isFeatured).length;
-  }, [sortedItems]);
+    return (photographerBookingsQuery.data ?? []).filter(
+      (booking) => booking.status === "completed",
+    ).length;
+  }, [photographerBookingsQuery.data]);
 
   const queuedOrProcessingCount = useMemo(() =>
   {
@@ -763,9 +777,9 @@ export const PhotographerPortfolioPage = () =>
 
                     <div>
                       <span className="block font-semibold text-foreground sm:inline">
-                        {featuredCount}
+                        {completedShootsCount}
                       </span>{" "}
-                      <span className="text-foreground">featured</span>
+                      <span className="text-foreground">shoots</span>
                     </div>
 
                     <div>

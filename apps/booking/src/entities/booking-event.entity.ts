@@ -11,6 +11,7 @@ export type BookingEventType =
     | 'confirmed'
     | 'declined'
     | 'cancelled'
+    | 'updated'
     | 'completed';
 
 export type BookingEventActorRole = 'client' | 'photographer' | 'system';
@@ -26,7 +27,7 @@ export class BookingEvent {
     bookingId: string;
 
     @ApiProperty({
-        enum: ['created', 'confirmed', 'declined', 'cancelled', 'completed'],
+        enum: ['created', 'confirmed', 'declined', 'cancelled', 'completed', 'updated'],
     })
     @Column({ type: 'varchar', length: 40 })
     eventType: BookingEventType;

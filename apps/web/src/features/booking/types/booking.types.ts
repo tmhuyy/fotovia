@@ -45,6 +45,7 @@ export interface CreateBookingPayload extends BaseBookingPayload {
 }
 
 export type CreateOpenBookingPayload = BaseBookingPayload;
+export type UpdateOpenBookingPayload = CreateOpenBookingPayload;
 
 export interface BookingRequestRecord extends BaseBookingPayload {
     id: string;

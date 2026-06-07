@@ -40,6 +40,7 @@ import
   parseAdditionalServiceValues,
   serializeAdditionalServices,
 } from "../data/additional-services";
+import { ConfirmBookingRequestDialog } from "./confirm-booking-request-dialog";
 
 const BOOKING_BRIEF_DRAFT_STORAGE_KEY = "fotovia.bookingBriefDraft";
 
@@ -397,6 +398,10 @@ export const BookingBriefPage = ({ prefill }: BookingBriefPageProps) =>
 
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isAuthPromptOpen, setIsAuthPromptOpen] = useState(false);
+
+  const [pendingBriefValues, setPendingBriefValues] =
+    useState<BookingBriefFormValues | null>(null);
+  const [isCreatingBooking, setIsCreatingBooking] = useState(false);
   const processedDraftKeyRef = useRef<string | null>(null);
 
   const currentRoute = useMemo(() =>
@@ -468,6 +473,7 @@ export const BookingBriefPage = ({ prefill }: BookingBriefPageProps) =>
     async (values: BookingBriefFormValues) =>
     {
       setSubmitError(null);
+      setIsCreatingBooking(true);
 
       try {
         const createdBooking = await bookingService.createOpenBooking(
@@ -490,6 +496,7 @@ export const BookingBriefPage = ({ prefill }: BookingBriefPageProps) =>
         router.push("/my-bookings?created=1");
       } catch (error) {
         setSubmitError(getSubmitErrorMessage(error));
+        setIsCreatingBooking(false);
       }
     },
     [router],
@@ -531,7 +538,7 @@ export const BookingBriefPage = ({ prefill }: BookingBriefPageProps) =>
       return;
     }
 
-    void submitBookingBrief(restoredValues);
+    setPendingBriefValues(restoredValues);
   }, [
     defaultValues,
     form,
@@ -563,7 +570,7 @@ export const BookingBriefPage = ({ prefill }: BookingBriefPageProps) =>
       return;
     }
 
-    await submitBookingBrief(values);
+    setPendingBriefValues(values);
   };
 
   const handleInvalid = (errors: FieldErrors<BookingBriefFormValues>) =>
@@ -662,8 +669,8 @@ export const BookingBriefPage = ({ prefill }: BookingBriefPageProps) =>
                 <div className="space-y-6 lg:sticky lg:top-24 lg:self-start">
                   <BookingBriefSummaryCard
                     errorMessage={submitError}
-                    submitLabel="Send booking request"
-                    submittingLabel="Sending..."
+                    submitLabel="Confirm request"
+                    submittingLabel="Preparing..."
                   />
                 </div>
               </form>
@@ -679,6 +686,18 @@ export const BookingBriefPage = ({ prefill }: BookingBriefPageProps) =>
         onClose={() => setIsAuthPromptOpen(false)}
         signInHref={signInHref}
         signUpHref={signUpHref}
+      />
+      <ConfirmBookingRequestDialog
+        isOpen={Boolean(pendingBriefValues)}
+        values={pendingBriefValues}
+        isSubmitting={isCreatingBooking}
+        onClose={() => setPendingBriefValues(null)}
+        onConfirm={() =>
+        {
+          if (pendingBriefValues) {
+            void submitBookingBrief(pendingBriefValues);
+          }
+        }}
       />
     </div>
   );
