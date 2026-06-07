@@ -70,7 +70,7 @@ const photographerQuickActions = [
     { label: "Portfolio", href: "/photographer/portfolio" },
     { label: "Add work", href: "/photographer/portfolio/new" },
     { label: "Open requests", href: "/bookings/open" },
-    { label: "Direct requests", href: "/photographer/bookings" },
+    { label: "My booking requests", href: "/photographer/bookings" },
 ];
 
 const photographerPanelItems = [

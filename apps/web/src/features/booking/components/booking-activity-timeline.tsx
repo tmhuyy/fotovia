@@ -88,7 +88,7 @@ export const BookingActivityTimeline = ({
                                     <div className="flex flex-wrap items-start justify-between gap-3">
                                         <div>
                                             <p className="font-medium text-brand-primary">
-                                                {eventCopy[event.eventType].title}
+                                                {eventCopy[event.eventType]?.title || "N/A"}
                                             </p>
                                             <p className="mt-1 text-sm text-brand-muted">
                                                 {event.actorLabel || "Unknown actor"} ·{" "}

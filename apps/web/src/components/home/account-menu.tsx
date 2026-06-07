@@ -210,7 +210,7 @@ export const AccountMenu = ({
                                     href="/photographer/bookings"
                                     className="flex w-full items-center justify-between rounded-2xl px-4 py-3 text-sm text-foreground transition hover:bg-background hover:text-accent"
                                 >
-                                    <span>Direct requests</span>
+                                    <span>My booking requests</span>
                                     <span className="text-muted">→</span>
                                 </Link>
 
