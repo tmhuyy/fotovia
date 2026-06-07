@@ -41,6 +41,7 @@ import
   serializeAdditionalServices,
 } from "../data/additional-services";
 import { ConfirmBookingRequestDialog } from "./confirm-booking-request-dialog";
+import { useQueryClient } from "@tanstack/react-query";
 
 const BOOKING_BRIEF_DRAFT_STORAGE_KEY = "fotovia.bookingBriefDraft";
 
@@ -388,6 +389,7 @@ export const BookingBriefPage = ({ prefill }: BookingBriefPageProps) =>
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const queryClient = useQueryClient();
 
   const {
     isAuthenticated,
@@ -481,6 +483,17 @@ export const BookingBriefPage = ({ prefill }: BookingBriefPageProps) =>
         );
 
         clearBookingDraft();
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: ["open-booking-marketplace"],
+          }),
+          queryClient.invalidateQueries({
+            queryKey: ["opening-booking-requests"],
+          }),
+          queryClient.invalidateQueries({
+            queryKey: ["client-bookings"],
+          }),
+        ]);
 
         const createdBookingId = createdBooking.id?.trim();
 
@@ -499,7 +512,7 @@ export const BookingBriefPage = ({ prefill }: BookingBriefPageProps) =>
         setIsCreatingBooking(false);
       }
     },
-    [router],
+    [queryClient, router],
   );
 
   useEffect(() =>

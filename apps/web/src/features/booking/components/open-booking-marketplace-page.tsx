@@ -636,6 +636,7 @@ export const OpenBookingMarketplacePage = () =>
                 buildQueryOptions(appliedFilters, page),
             ),
         retry: false,
+        refetchOnMount: "always",
     });
 
     const updateBookingMutation = useMutation({

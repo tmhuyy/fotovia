@@ -56,6 +56,78 @@ const formatBudgetInput = (value: number): string =>
     return formatVndAmount(value);
 };
 
+interface BudgetStepperInputProps
+{
+    label: string;
+    value: number;
+    onChange: (value: number) => void;
+    onBlur: () => void;
+}
+
+const BudgetStepperInput = ({
+    label,
+    value,
+    onChange,
+    onBlur,
+}: BudgetStepperInputProps) =>
+{
+    const increase = () =>
+    {
+        onChange(normalizeBudgetToStep(value + BUDGET_STEP_VND));
+    };
+
+    const decrease = () =>
+    {
+        onChange(
+            Math.max(
+                BUDGET_MIN_VND,
+                normalizeBudgetToStep(value - BUDGET_STEP_VND),
+            ),
+        );
+    };
+
+    return (
+        <label className="block">
+            <span className="text-sm font-medium text-foreground">
+                {label} <RequiredMark />
+            </span>
+
+            <div className="relative mt-2">
+                <input
+                    type="text"
+                    inputMode="numeric"
+                    value={formatBudgetInput(value)}
+                    onChange={(event) =>
+                        onChange(parseVndInput(event.target.value))
+                    }
+                    onBlur={onBlur}
+                    className="w-full rounded-2xl border border-border bg-background px-4 py-3 pr-12 text-sm outline-none transition focus:border-accent"
+                />
+
+                <div className="absolute right-2 top-1/2 flex -translate-y-1/2 flex-col overflow-hidden rounded-xl border border-border bg-surface">
+                    <button
+                        type="button"
+                        onClick={increase}
+                        className="flex h-5 w-7 items-center justify-center text-[0.65rem] leading-none text-muted transition hover:bg-background hover:text-foreground"
+                        aria-label={`Increase ${label}`}
+                    >
+                        ▲
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={decrease}
+                        className="flex h-5 w-7 items-center justify-center border-t border-border text-[0.65rem] leading-none text-muted transition hover:bg-background hover:text-foreground"
+                        aria-label={`Decrease ${label}`}
+                    >
+                        ▼
+                    </button>
+                </div>
+            </div>
+        </label>
+    );
+};
+
 export const EditOpenBookingDialog = ({
     isOpen,
     booking,
@@ -218,11 +290,6 @@ export const EditOpenBookingDialog = ({
                                 <h2 className="font-display text-3xl tracking-[-0.03em] text-foreground">
                                     Edit photoshoot
                                 </h2>
-
-                                <p className="mt-2 text-sm leading-6 text-muted">
-                                    Update your open booking request before
-                                    choosing a photographer.
-                                </p>
                             </div>
 
                             <button
@@ -396,50 +463,19 @@ export const EditOpenBookingDialog = ({
                         </div>
 
                         <div className="grid gap-4 sm:grid-cols-2">
-                            <label className="block">
-                                <span className="text-sm font-medium text-foreground">
-                                    From (VND) <RequiredMark />
-                                </span>
+                            <BudgetStepperInput
+                                label="From (VND)"
+                                value={budgetFrom}
+                                onChange={setBudgetFrom}
+                                onBlur={() => handleBudgetBlur(budgetFrom, setBudgetFrom)}
+                            />
 
-                                <input
-                                    type="text"
-                                    inputMode="numeric"
-                                    value={formatBudgetInput(budgetFrom)}
-                                    onChange={(event) =>
-                                        setBudgetFrom(
-                                            parseVndInput(event.target.value),
-                                        )
-                                    }
-                                    onBlur={() =>
-                                        handleBudgetBlur(
-                                            budgetFrom,
-                                            setBudgetFrom,
-                                        )
-                                    }
-                                    className="mt-2 w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm outline-none transition focus:border-accent"
-                                />
-                            </label>
-
-                            <label className="block">
-                                <span className="text-sm font-medium text-foreground">
-                                    To (VND) <RequiredMark />
-                                </span>
-
-                                <input
-                                    type="text"
-                                    inputMode="numeric"
-                                    value={formatBudgetInput(budgetTo)}
-                                    onChange={(event) =>
-                                        setBudgetTo(
-                                            parseVndInput(event.target.value),
-                                        )
-                                    }
-                                    onBlur={() =>
-                                        handleBudgetBlur(budgetTo, setBudgetTo)
-                                    }
-                                    className="mt-2 w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm outline-none transition focus:border-accent"
-                                />
-                            </label>
+                            <BudgetStepperInput
+                                label="To (VND)"
+                                value={budgetTo}
+                                onChange={setBudgetTo}
+                                onBlur={() => handleBudgetBlur(budgetTo, setBudgetTo)}
+                            />
                         </div>
 
                         <div className="rounded-2xl border border-border bg-background px-4 py-3 text-sm text-muted">

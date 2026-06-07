@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 
 interface ConfirmActionDialogProps
 {
@@ -27,6 +28,13 @@ export const ConfirmActionDialog = ({
     onConfirm,
 }: ConfirmActionDialogProps) =>
 {
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() =>
+    {
+        setIsMounted(true);
+    }, []);
+
     useEffect(() =>
     {
         if (!isOpen) {
@@ -52,7 +60,7 @@ export const ConfirmActionDialog = ({
         };
     }, [isOpen, isPending, onCancel]);
 
-    if (!isOpen) {
+    if (!isMounted || !isOpen) {
         return null;
     }
 
@@ -61,8 +69,8 @@ export const ConfirmActionDialog = ({
             ? "bg-rose-600 text-white hover:bg-rose-700"
             : "bg-foreground text-background hover:opacity-90";
 
-    return (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-foreground/40 px-4 backdrop-blur-sm">
+    return createPortal(
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-foreground/40 px-4 backdrop-blur-sm">
             <button
                 type="button"
                 aria-label="Close dialog"
@@ -113,6 +121,7 @@ export const ConfirmActionDialog = ({
                     </button>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body,
     );
 };
