@@ -3,6 +3,7 @@ export type BookingEventType =
     | "confirmed"
     | "declined"
     | "cancelled"
+    | "updated"
     | "completed";
 
 export type BookingEventActorRole = "client" | "photographer" | "system";

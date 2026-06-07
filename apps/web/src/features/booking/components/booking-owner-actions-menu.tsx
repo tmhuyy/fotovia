@@ -3,15 +3,17 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
-import { ConfirmActionDialog } from "../../../components/common/confirm-action-dialog";
+import type { CancelBookingPayload } from "../types/booking.types";
+import { CancelBookingDialog } from "./cancel-booking-dialog";
 
 interface BookingOwnerActionsMenuProps
 {
     bookingId: string;
     isCancelling: boolean;
-    onCancel: () => void;
+    onCancel: (payload: CancelBookingPayload) => void;
     onEdit?: () => void;
     editHref?: string;
+    canEdit?: boolean;
 }
 
 interface IconProps
@@ -38,6 +40,7 @@ export const BookingOwnerActionsMenu = ({
     onCancel,
     onEdit,
     editHref,
+    canEdit = true,
 }: BookingOwnerActionsMenuProps) =>
 {
     const rootRef = useRef<HTMLDivElement | null>(null);
@@ -76,9 +79,9 @@ export const BookingOwnerActionsMenu = ({
         setIsCancelDialogOpen(true);
     };
 
-    const handleConfirmCancel = () =>
+    const handleConfirmCancel = (payload: CancelBookingPayload) =>
     {
-        onCancel();
+        onCancel(payload);
         setIsCancelDialogOpen(false);
     };
 
@@ -116,31 +119,36 @@ export const BookingOwnerActionsMenu = ({
                             event.stopPropagation();
                         }}
                     >
-                        {onEdit ? (
-                            <button
-                                type="button"
-                                className="block w-full rounded-2xl px-4 py-3 text-left text-sm font-medium text-foreground transition hover:bg-background hover:text-accent"
-                                role="menuitem"
-                                onClick={(event) =>
-                                {
-                                    event.preventDefault();
-                                    event.stopPropagation();
-                                    setIsOpen(false);
-                                    onEdit();
-                                }}
-                            >
-                                Edit booking
-                            </button>
-                        ) : (
-                            <Link
-                                href={editHref ?? `/my-bookings?bookingId=${bookingId}`}
-                                className="block rounded-2xl px-4 py-3 text-sm font-medium text-foreground transition hover:bg-background hover:text-accent"
-                                role="menuitem"
-                                onClick={() => setIsOpen(false)}
-                            >
-                                Edit booking
-                            </Link>
-                        )}
+                        {canEdit ? (
+                            onEdit ? (
+                                <button
+                                    type="button"
+                                    className="block w-full rounded-2xl px-4 py-3 text-left text-sm font-medium text-foreground transition hover:bg-background hover:text-accent"
+                                    role="menuitem"
+                                    onClick={(event) =>
+                                    {
+                                        event.preventDefault();
+                                        event.stopPropagation();
+                                        setIsOpen(false);
+                                        onEdit();
+                                    }}
+                                >
+                                    Edit booking
+                                </button>
+                            ) : (
+                                <Link
+                                    href={
+                                        editHref ??
+                                        `/my-bookings?bookingId=${bookingId}`
+                                    }
+                                    className="block rounded-2xl px-4 py-3 text-sm font-medium text-foreground transition hover:bg-background hover:text-accent"
+                                    role="menuitem"
+                                    onClick={() => setIsOpen(false)}
+                                >
+                                    Edit booking
+                                </Link>
+                            )
+                        ) : null}
 
                         <button
                             type="button"
@@ -155,15 +163,10 @@ export const BookingOwnerActionsMenu = ({
                 ) : null}
             </div>
 
-            <ConfirmActionDialog
+            <CancelBookingDialog
                 isOpen={isCancelDialogOpen}
-                title="Cancel this booking?"
-                description="This open photoshoot request will be removed from the public booking list. Photographers will no longer be able to apply."
-                confirmLabel="Cancel booking"
-                cancelLabel="Keep request"
-                tone="danger"
                 isPending={isCancelling}
-                onCancel={() => setIsCancelDialogOpen(false)}
+                onClose={() => setIsCancelDialogOpen(false)}
                 onConfirm={handleConfirmCancel}
             />
         </>

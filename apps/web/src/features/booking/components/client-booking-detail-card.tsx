@@ -8,18 +8,20 @@ import type {
 } from "../types/booking.types";
 import type { BookingEventRecord } from "../types/booking-event.types";
 import
-{
-    formatBookingDate,
-    formatBookingTime,
-    formatBudgetLabel,
-    formatContactLabel,
-    formatShootTypeLabel,
-    formatSubmittedAt,
-    getBookingDisplayTitle,
-    hasAssignedPhotographer,
-} from "../utils/booking-display";
-import { BookingStatusPill } from "./booking-status-pill";
+    {
+        formatBookingDate,
+        formatBookingTime,
+        formatBudgetLabel,
+        formatContactLabel,
+        formatShootTypeLabel,
+        formatSubmittedAt,
+        getBookingDisplayTitle,
+        hasAssignedPhotographer,
+    } from "../utils/booking-display";
 import { BookingActivityTimeline } from "./booking-activity-timeline";
+import { BookingStatusPill } from "./booking-status-pill";
+import { BookingDetailGrid } from "./workspace/booking-detail-grid";
+import { BookingEmptyState } from "./workspace/booking-empty-state";
 
 interface ClientBookingDetailCardProps
 {
@@ -46,8 +48,7 @@ const statusCopy: Record<
     },
     confirmed: {
         title: "Request confirmed",
-        description:
-            "The photographer has confirmed this booking request.",
+        description: "The photographer has confirmed this booking request.",
     },
     declined: {
         title: "Request declined",
@@ -56,32 +57,13 @@ const statusCopy: Record<
     },
     completed: {
         title: "Booking completed",
-        description:
-            "This booking has been marked as completed.",
+        description: "This booking has been marked as completed.",
     },
     cancelled: {
         title: "Request cancelled",
         description:
             "You cancelled this booking request. It remains here for tracking.",
     },
-};
-
-const DetailItem = ({
-    label,
-    value,
-}: {
-    label: string;
-    value: string;
-}) =>
-{
-    return (
-        <div className="rounded-2xl border border-brand-border bg-brand-background/60 p-4">
-            <p className="text-xs uppercase tracking-[0.14em] text-brand-muted">
-                {label}
-            </p>
-            <p className="mt-2 text-sm leading-6 text-brand-primary">{value}</p>
-        </div>
-    );
 };
 
 export const ClientBookingDetailCard = ({
@@ -96,17 +78,11 @@ export const ClientBookingDetailCard = ({
 {
     if (!booking) {
         return (
-            <Card className="border-brand-border bg-brand-surface">
-                <CardContent className="space-y-4 p-6">
-                    <p className="text-sm font-medium uppercase tracking-[0.18em] text-brand-muted">
-                        Request details
-                    </p>
-                    <div className="rounded-2xl border border-dashed border-brand-border bg-brand-background/70 p-6 text-sm text-brand-muted">
-                        Select one booking request from the list to review the
-                        saved brief and current status.
-                    </div>
-                </CardContent>
-            </Card>
+            <BookingEmptyState
+                eyebrow="Request details"
+                title="Select a booking request."
+                description="Choose one request from the list to review the saved brief, current status, and activity timeline."
+            />
         );
     }
 
@@ -123,9 +99,11 @@ export const ClientBookingDetailCard = ({
                             <p className="text-sm font-medium uppercase tracking-[0.18em] text-brand-muted">
                                 Request details
                             </p>
+
                             <h2 className="text-2xl font-semibold text-brand-primary">
                                 {getBookingDisplayTitle(booking)}
                             </h2>
+
                             <p className="text-sm text-brand-muted">
                                 Submitted {formatSubmittedAt(booking.createdAt)}
                             </p>
@@ -134,43 +112,43 @@ export const ClientBookingDetailCard = ({
                         <BookingStatusPill status={booking.status} />
                     </div>
 
-                    <div className="grid gap-3 sm:grid-cols-2">
-                        <DetailItem
-                            label="Shoot type"
-                            value={formatShootTypeLabel(
-                                booking.shootType || booking.sessionType,
-                            )}
-                        />
-                        <DetailItem
-                            label="Date & time"
-                            value={`${formatBookingDate(
-                                booking.sessionDate,
-                            )} · ${formatBookingTime(booking.sessionTime)}`}
-                        />
-                        <DetailItem
-                            label="Photographer"
-                            value={
-                                hasPhotographer
+                    <BookingDetailGrid
+                        items={[
+                            {
+                                label: "Shoot type",
+                                value: formatShootTypeLabel(
+                                    booking.shootType || booking.sessionType,
+                                ),
+                            },
+                            {
+                                label: "Date & time",
+                                value: `${formatBookingDate(
+                                    booking.sessionDate,
+                                )} · ${formatBookingTime(booking.sessionTime)}`,
+                            },
+                            {
+                                label: "Photographer",
+                                value: hasPhotographer
                                     ? booking.photographerName ||
                                     "Assigned photographer"
-                                    : "Not selected yet"
-                            }
-                        />
-                        <DetailItem
-                            label="Budget"
-                            value={formatBudgetLabel(booking.budget)}
-                        />
-                        <DetailItem
-                            label="Location"
-                            value={booking.location || "Location not set"}
-                        />
-                        <DetailItem
-                            label="Contact"
-                            value={formatContactLabel(
-                                booking.contactPreference,
-                            )}
-                        />
-                    </div>
+                                    : "Not selected yet",
+                            },
+                            {
+                                label: "Budget",
+                                value: formatBudgetLabel(booking.budget),
+                            },
+                            {
+                                label: "Location",
+                                value: booking.location || "Location not set",
+                            },
+                            {
+                                label: "Contact",
+                                value: formatContactLabel(
+                                    booking.contactPreference,
+                                ),
+                            },
+                        ]}
+                    />
 
                     <div className="space-y-4 border-t border-brand-border pt-6">
                         <div>

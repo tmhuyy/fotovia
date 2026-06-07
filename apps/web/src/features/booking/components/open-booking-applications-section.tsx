@@ -4,11 +4,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import
-    {
-        useMutation,
-        useQuery,
-        useQueryClient,
-    } from "@tanstack/react-query";
+{
+    useMutation,
+    useQuery,
+    useQueryClient,
+} from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { ConfirmActionDialog } from "../../../components/common/confirm-action-dialog";
@@ -319,13 +319,13 @@ const ApplicationReviewDialog = ({
                     <div className="shrink-0 border-b border-border px-5 py-5 sm:px-7">
                         <div className="flex items-start justify-between gap-4">
                             <div>
-                                
+
 
                                 <h2 className="mt-2 font-display text-3xl tracking-[-0.03em] text-foreground">
                                     Review proposal
                                 </h2>
 
-                               
+
                             </div>
 
                             <button
@@ -499,7 +499,7 @@ export const OpenBookingApplicationsSection = ({
                 }),
             ]);
 
-            router.push(`/my-bookings?bookingId=${bookingId}&selected=1`);
+            router.push(`/bookings/${bookingId}`);
         },
         onError: () =>
         {

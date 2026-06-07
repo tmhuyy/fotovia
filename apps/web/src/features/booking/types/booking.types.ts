@@ -20,6 +20,17 @@ export type PhotographerBookingActionStatus = Extract<
 
 export type ClientBookingActionStatus = Extract<BookingStatus, "cancelled">;
 
+export type BookingCancelReason =
+    | "duplicated_booking"
+    | "found_another_photographer"
+    | "no_longer_needed"
+    | "other";
+
+export interface CancelBookingPayload {
+    cancelReason: BookingCancelReason | undefined;
+    cancelReasonNote?: string;
+}
+
 export type BookingInboxFilter = "all" | BookingStatus;
 export type ClientBookingFilter = "all" | BookingStatus;
 

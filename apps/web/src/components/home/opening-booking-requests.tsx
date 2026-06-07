@@ -24,7 +24,10 @@ import { useAuthStore } from "../../store/auth.store";
 import { Container } from "../layout/container";
 import { BookingOwnerActionsMenu } from "../../features/booking/components/booking-owner-actions-menu";
 import { EditOpenBookingDialog } from "../../features/booking/components/edit-open-booking-dialog";
-import type { UpdateOpenBookingPayload } from "../../features/booking/types/booking.types";
+import type {
+    CancelBookingPayload,
+    UpdateOpenBookingPayload,
+} from "../../features/booking/types/booking.types";
 
 type PublicBookingRequestRecord = BookingRequestRecord & {
     clientName?: string | null;
@@ -333,7 +336,7 @@ const OpeningBookingRequestCard = ({
     booking: PublicBookingRequestRecord;
     currentUser?: { id?: string; email?: string; fullName?: string } | null;
     isCancelling: boolean;
-    onCancel: (bookingId: string) => void;
+    onCancel: (bookingId: string, payload: CancelBookingPayload) => void;
     onEdit: (booking: PublicBookingRequestRecord) => void;
 }) =>
 {
@@ -360,7 +363,8 @@ const OpeningBookingRequestCard = ({
                         <BookingOwnerActionsMenu
                             bookingId={booking.id}
                             isCancelling={isCancelling}
-                            onCancel={() => onCancel(booking.id)}
+                            canEdit={applicationCount === 0}
+                            onCancel={(payload) => onCancel(booking.id, payload)}
                             onEdit={() => onEdit(booking)}
                         />
                     ) : (
@@ -514,8 +518,13 @@ export const OpeningBookingRequests = ({
     });
 
     const cancelBookingMutation = useMutation({
-        mutationFn: (bookingId: string) =>
-            bookingService.cancelMyClientBooking(bookingId),
+        mutationFn: ({
+            bookingId,
+            payload,
+        }: {
+            bookingId: string;
+            payload: CancelBookingPayload;
+        }) => bookingService.cancelMyClientBooking(bookingId, payload),
         onSuccess: async () =>
         {
             toast.success("Booking cancelled", {
@@ -595,16 +604,19 @@ export const OpeningBookingRequests = ({
                                     currentUser={user}
                                     isCancelling={
                                         cancelBookingMutation.isPending &&
-                                        cancelBookingMutation.variables === booking.id
+                                        cancelBookingMutation.variables?.bookingId === booking.id
                                     }
-                                    onCancel={(bookingId) =>
-                                        cancelBookingMutation.mutate(bookingId)
+                                    onCancel={(bookingId, payload) =>
+                                        cancelBookingMutation.mutate({
+                                            bookingId,
+                                            payload,
+                                        })
                                     }
                                     onEdit={(targetBooking) => setEditingBooking(targetBooking)}
                                 />
                             ))}
                         </div>
-                    )}
+                    )}``
 
                     <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
                         {shouldShowViewAllCta ? (

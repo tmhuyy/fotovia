@@ -32,6 +32,10 @@ import {
     BookingApplicationStatus,
 } from './entities/booking-application.entity';
 import { UpdateOpenBookingDto } from './dtos/update-open-booking.dto';
+import {
+    CancelBookingDto,
+    type BookingCancelReason,
+} from './dtos/cancel-booking.dto';
 
 interface ProfileLookupRow {
     id: string;
@@ -67,6 +71,13 @@ export interface PaginatedOpenBookingFeed {
     hasNextPage: boolean;
     hasPreviousPage: boolean;
 }
+
+const CANCEL_REASON_LABELS: Record<BookingCancelReason, string> = {
+    duplicated_booking: 'Duplicated booking',
+    found_another_photographer: 'Found another photographer',
+    no_longer_needed: 'No longer need this photoshoot',
+    other: 'Other',
+};
 
 const parsePositiveInteger = (
     value: string | undefined,
@@ -268,6 +279,20 @@ export class BookingService {
         ) {
             throw new BadRequestException(
                 'Only pending open booking requests can be edited.',
+            );
+        }
+
+        const activeApplicationsCount =
+            await this.bookingApplicationRepository.count({
+                where: {
+                    bookingId,
+                    status: 'submitted',
+                },
+            });
+
+        if (activeApplicationsCount > 0) {
+            throw new BadRequestException(
+                'This booking already has photographer applications, so it can no longer be edited.',
             );
         }
 
@@ -908,14 +933,49 @@ export class BookingService {
     }
 
     async getMyClientBookings(userId: string): Promise<Booking[]> {
-        return this.bookingRepository.find({
-            where: {
-                clientUserId: userId,
-            },
-            order: {
-                createdAt: 'DESC',
-            },
-        });
+        const rows = await this.dataSource.query<OpenBookingFeedRow[]>(
+            `
+            SELECT
+                b.*,
+                COALESCE(
+                    NULLIF(TRIM(client_profile.full_name), ''),
+                    NULLIF(TRIM(b."clientEmail"), ''),
+                    'Client'
+                ) AS "clientName",
+                NULLIF(TRIM(client_profile.full_name), '') AS "clientFullName",
+                NULLIF(TRIM(client_profile.full_name), '') AS "clientProfileName",
+                COALESCE(application_counts."applicationsCount", 0)::int AS "applicationsCount",
+                COALESCE(application_counts."applicationsCount", 0)::int AS "applicationCount",
+                COALESCE(application_counts."applicationsCount", 0)::int AS "photographerApplicationsCount",
+                true AS "isOwner",
+                CASE
+                    WHEN b.status = 'pending'
+                     AND b."photographerProfileId" IS NULL
+                     AND b."photographerUserId" IS NULL
+                    THEN true
+                    ELSE false
+                END AS "canManage",
+                true AS "canViewApplications",
+                false AS "hasApplied",
+                null AS "myApplicationId",
+                null AS "myApplicationStatus",
+                false AS "canApply"
+            FROM public.bookings b
+            LEFT JOIN public.profiles client_profile
+                ON client_profile.user_id = b."clientUserId"
+            LEFT JOIN LATERAL (
+                SELECT COUNT(*) AS "applicationsCount"
+                FROM public.booking_applications applications
+                WHERE applications."bookingId" = b.id
+                  AND applications.status NOT IN ('withdrawn', 'expired', 'rejected')
+            ) application_counts ON true
+            WHERE b."clientUserId" = $1
+            ORDER BY b."createdAt" DESC
+            `,
+            [userId],
+        );
+
+        return rows as Booking[];
     }
 
     async getMyClientBookingTimeline(
@@ -946,6 +1006,7 @@ export class BookingService {
     async cancelMyClientBooking(
         bookingId: string,
         userId: string,
+        cancelBookingDto: CancelBookingDto,
     ): Promise<Booking> {
         const booking = await this.bookingRepository.findOne({
             where: {
@@ -967,13 +1028,23 @@ export class BookingService {
         booking.status = 'cancelled';
         const savedBooking = await this.bookingRepository.save(booking);
 
+        const reasonLabel =
+            CANCEL_REASON_LABELS[cancelBookingDto.cancelReason] ??
+            CANCEL_REASON_LABELS.other;
+
+        const noteParts = [`Cancel reason: ${reasonLabel}.`];
+
+        if (cancelBookingDto.cancelReasonNote?.trim()) {
+            noteParts.push(cancelBookingDto.cancelReasonNote.trim());
+        }
+
         await this.recordBookingEvent({
             bookingId: savedBooking.id,
             eventType: 'cancelled',
             actorRole: 'client',
             actorUserId: userId,
             actorLabel: booking.clientEmail?.trim() || 'Client',
-            note: 'Client cancelled the pending request.',
+            note: noteParts.join(' '),
         });
 
         return savedBooking;
@@ -1129,6 +1200,8 @@ export class BookingService {
                     WHEN $2::uuid IS NOT NULL
                      AND b."clientUserId" = $2::uuid
                      AND b.status = 'pending'
+                     AND b."photographerProfileId" IS NULL
+                     AND b."photographerUserId" IS NULL
                     THEN true
                     ELSE false
                 END AS "canManage",
@@ -1149,6 +1222,8 @@ export class BookingService {
                     WHEN $2::uuid IS NOT NULL
                      AND viewer_profile.role = $4
                      AND b."clientUserId" <> $2::uuid
+                     AND b."photographerProfileId" IS NULL
+                     AND b."photographerUserId" IS NULL
                      AND b.status = 'pending'
                      AND (
                         my_application.id IS NULL
@@ -1179,9 +1254,25 @@ export class BookingService {
                 LIMIT 1
             ) my_application ON true
             WHERE b.id = $1
-              AND b."photographerProfileId" IS NULL
-              AND b."photographerUserId" IS NULL
-              AND b.status = $3
+              AND (
+                (
+                    b."photographerProfileId" IS NULL
+                    AND b."photographerUserId" IS NULL
+                    AND b.status = $3
+                )
+                OR (
+                    $2::uuid IS NOT NULL
+                    AND b."clientUserId" = $2::uuid
+                )
+                OR (
+                    $2::uuid IS NOT NULL
+                    AND viewer_profile.role = $4
+                    AND (
+                        b."photographerUserId" = $2::uuid
+                        OR b."photographerProfileId" = viewer_profile.id
+                    )
+                )
+              )
             LIMIT 1
             `,
             [bookingId, viewerUserId, 'pending', UserRole.PHOTOGRAPHER],

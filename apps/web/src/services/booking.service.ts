@@ -3,6 +3,7 @@ import type {
     BookingApplicationStatus,
     BookingRequestRecord,
     BookingStatus,
+    CancelBookingPayload,
     ClientBookingActionStatus,
     CreateBookingApplicationPayload,
     CreateBookingPayload,
@@ -465,13 +466,11 @@ export const bookingService = {
 
     async cancelMyClientBooking(
         bookingId: string,
-        status: ClientBookingActionStatus = "cancelled",
+        payload: CancelBookingPayload,
     ): Promise<BookingRequestRecord> {
         const response = await bookingClient.patch<
             ApiResponse<AnyRecord> | AnyRecord
-        >(BOOKING_ENDPOINTS.clientCancel(bookingId), {
-            status,
-        });
+        >(BOOKING_ENDPOINTS.clientCancel(bookingId), payload);
 
         const data = unwrapResponse<AnyRecord>(response.data);
         return normalizeBooking(data);

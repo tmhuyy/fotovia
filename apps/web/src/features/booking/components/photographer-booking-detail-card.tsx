@@ -1,18 +1,25 @@
 import { Button } from "../../../components/ui/button";
 import { Card, CardContent } from "../../../components/ui/card";
-import
-    {
-        budgetOptions,
-        durationOptions,
-        sessionTypeOptions,
-    } from "../data/booking-options";
 import type {
     BookingRequestRecord,
     PhotographerBookingActionStatus,
 } from "../types/booking.types";
 import type { BookingEventRecord } from "../types/booking-event.types";
-import { BookingStatusPill } from "./booking-status-pill";
+import
+    {
+        formatBookingDate,
+        formatBookingTime,
+        formatBudgetLabel,
+        formatContactLabel,
+        formatShootTypeLabel,
+        formatSubmittedAt,
+        formatTitleCase,
+        getBookingDisplayTitle,
+    } from "../utils/booking-display";
 import { BookingActivityTimeline } from "./booking-activity-timeline";
+import { BookingStatusPill } from "./booking-status-pill";
+import { BookingDetailGrid } from "./workspace/booking-detail-grid";
+import { BookingEmptyState } from "./workspace/booking-empty-state";
 
 interface PhotographerBookingDetailCardProps
 {
@@ -24,28 +31,6 @@ interface PhotographerBookingDetailCardProps
     isTimelineLoading?: boolean;
     timelineError?: string | null;
 }
-
-const resolveLabel = (
-    value: string,
-    options: { value: string; label: string }[],
-): string =>
-{
-    return options.find((option) => option.value === value)?.label ?? value;
-};
-
-const formatDateTime = (value: string): string =>
-{
-    const parsed = new Date(value);
-
-    if (Number.isNaN(parsed.getTime())) {
-        return "just now";
-    }
-
-    return new Intl.DateTimeFormat("en-US", {
-        dateStyle: "medium",
-        timeStyle: "short",
-    }).format(parsed);
-};
 
 const lifecycleCopy: Record<
     BookingRequestRecord["status"],
@@ -62,7 +47,7 @@ const lifecycleCopy: Record<
     confirmed: {
         title: "Ready for completion",
         description:
-            "This booking has already been confirmed. When the work is done, you can now mark it as completed in this phase.",
+            "This booking has already been confirmed. When the work is done, you can mark it as completed.",
     },
     declined: {
         title: "Request declined",
@@ -72,7 +57,7 @@ const lifecycleCopy: Record<
     completed: {
         title: "Booking completed",
         description:
-            "This booking already reached the final lifecycle state supported in the current phase.",
+            "This booking already reached the final lifecycle state supported in the current flow.",
     },
     cancelled: {
         title: "Request cancelled by client",
@@ -81,22 +66,21 @@ const lifecycleCopy: Record<
     },
 };
 
-const DetailItem = ({
-    label,
-    value,
-}: {
-    label: string;
-    value: string;
-}) =>
+const getClientDisplayName = (booking: BookingRequestRecord): string =>
 {
     return (
-        <div className="rounded-2xl border border-brand-border bg-brand-background/60 p-4">
-            <p className="text-xs uppercase tracking-[0.14em] text-brand-muted">
-                {label}
-            </p>
-            <p className="mt-2 text-sm leading-6 text-brand-primary">{value}</p>
-        </div>
+        booking.clientName ||
+        booking.clientFullName ||
+        booking.clientProfileName ||
+        booking.fullName ||
+        booking.clientEmail ||
+        "Client"
     );
+};
+
+const formatDurationLabel = (value?: string | null): string =>
+{
+    return formatTitleCase(value) || "Flexible";
 };
 
 export const PhotographerBookingDetailCard = ({
@@ -111,16 +95,11 @@ export const PhotographerBookingDetailCard = ({
 {
     if (!booking) {
         return (
-            <Card className="border-brand-border bg-brand-surface">
-                <CardContent className="space-y-4 p-6">
-                    <p className="text-sm font-medium uppercase tracking-[0.18em] text-brand-muted">
-                        Request details
-                    </p>
-                    <div className="rounded-2xl border border-dashed border-brand-border bg-brand-background/70 p-6 text-sm text-brand-muted">
-                        Select a booking request from the inbox to review its full brief.
-                    </div>
-                </CardContent>
-            </Card>
+            <BookingEmptyState
+                eyebrow="Request details"
+                title="Select a booking request."
+                description="Choose one request from the inbox to review its full brief and available lifecycle actions."
+            />
         );
     }
 
@@ -137,44 +116,61 @@ export const PhotographerBookingDetailCard = ({
                             <p className="text-sm font-medium uppercase tracking-[0.18em] text-brand-muted">
                                 Request details
                             </p>
+
                             <h2 className="text-2xl font-semibold text-brand-primary">
-                                {resolveLabel(booking.sessionType, sessionTypeOptions)}
+                                {getBookingDisplayTitle(booking)}
                             </h2>
+
                             <p className="text-sm text-brand-muted">
-                                Submitted {formatDateTime(booking.createdAt)}
+                                Submitted {formatSubmittedAt(booking.createdAt)}
                             </p>
                         </div>
 
                         <BookingStatusPill status={booking.status} />
                     </div>
 
-                    <div className="grid gap-3 sm:grid-cols-2">
-                        <DetailItem
-                            label="Client account email"
-                            value={booking.clientEmail || "Not available yet"}
-                        />
-                        <DetailItem
-                            label="Preferred contact"
-                            value={booking.contactPreference || "Not specified"}
-                        />
-                        <DetailItem
-                            label="Date & time"
-                            value={`${booking.sessionDate || "Date not set"} · ${booking.sessionTime || "Time not set"
-                                }`}
-                        />
-                        <DetailItem
-                            label="Duration"
-                            value={resolveLabel(booking.duration, durationOptions)}
-                        />
-                        <DetailItem
-                            label="Budget"
-                            value={resolveLabel(booking.budget, budgetOptions)}
-                        />
-                        <DetailItem
-                            label="Location"
-                            value={booking.location || "Location not set"}
-                        />
-                    </div>
+                    <BookingDetailGrid
+                        items={[
+                            {
+                                label: "Client",
+                                value: getClientDisplayName(booking),
+                            },
+                            {
+                                label: "Preferred contact",
+                                value: formatContactLabel(
+                                    booking.contactPreference,
+                                ),
+                            },
+                            {
+                                label: "Shoot type",
+                                value: formatShootTypeLabel(
+                                    booking.shootType || booking.sessionType,
+                                ),
+                            },
+                            {
+                                label: "Date & time",
+                                value: `${formatBookingDate(
+                                    booking.sessionDate,
+                                )} · ${formatBookingTime(booking.sessionTime)}`,
+                            },
+                            {
+                                label: "Duration",
+                                value: formatDurationLabel(booking.duration),
+                            },
+                            {
+                                label: "Budget",
+                                value: formatBudgetLabel(booking.budget),
+                            },
+                            {
+                                label: "Location",
+                                value: booking.location || "Location not set",
+                            },
+                            {
+                                label: "Client email",
+                                value: booking.clientEmail || "Not available yet",
+                            },
+                        ]}
+                    />
 
                     <div className="space-y-4 border-t border-brand-border pt-6">
                         <div>
@@ -191,7 +187,8 @@ export const PhotographerBookingDetailCard = ({
                                 Inspiration
                             </p>
                             <p className="mt-2 whitespace-pre-line text-sm leading-7 text-brand-primary">
-                                {booking.inspiration || "No inspiration notes were added."}
+                                {booking.inspiration ||
+                                    "No inspiration notes were added."}
                             </p>
                         </div>
 

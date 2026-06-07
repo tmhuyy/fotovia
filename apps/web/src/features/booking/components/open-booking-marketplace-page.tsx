@@ -25,6 +25,7 @@ import
     formatShootTypeLabel,
 } from "../utils/booking-display";
 import type {
+    CancelBookingPayload,
     OpenBookingMarketplaceQuery,
     OpenBookingRequestRecord,
     OpenBookingSort,
@@ -442,7 +443,7 @@ const OpenBookingCard = ({
     booking: PublicOpenBookingRecord;
     currentUser: CurrentUserLike;
     isCancelling: boolean;
-    onCancel: (bookingId: string) => void;
+    onCancel: (bookingId: string, payload: CancelBookingPayload) => void;
     onEdit: (booking: PublicOpenBookingRecord) => void;
 }) =>
 {
@@ -477,7 +478,8 @@ const OpenBookingCard = ({
                         <BookingOwnerActionsMenu
                             bookingId={booking.id}
                             isCancelling={isCancelling}
-                            onCancel={() => onCancel(booking.id)}
+                            canEdit={applicationCount === 0}
+                            onCancel={(payload) => onCancel(booking.id, payload)}
                             onEdit={() => onEdit(booking)}
                         />
                     ) : (
@@ -674,8 +676,13 @@ export const OpenBookingMarketplacePage = () =>
     });
 
     const cancelBookingMutation = useMutation({
-        mutationFn: (bookingId: string) =>
-            bookingService.cancelMyClientBooking(bookingId),
+        mutationFn: ({
+            bookingId,
+            payload,
+        }: {
+            bookingId: string;
+            payload: CancelBookingPayload;
+        }) => bookingService.cancelMyClientBooking(bookingId, payload),
         onSuccess: async () =>
         {
             toast.success("Booking cancelled", {
@@ -707,6 +714,14 @@ export const OpenBookingMarketplacePage = () =>
     });
 
     const data = marketplaceQuery.data;
+
+    const handleCancelBooking = (
+        bookingId: string,
+        payload: CancelBookingPayload,
+    ) =>
+    {
+        cancelBookingMutation.mutate({ bookingId, payload });
+    };
 
     const handleApplyFilters = () =>
     {
@@ -883,13 +898,14 @@ export const OpenBookingMarketplacePage = () =>
                                                 currentUser={user}
                                                 isCancelling={
                                                     cancelBookingMutation.isPending &&
-                                                    cancelBookingMutation.variables ===
+                                                    cancelBookingMutation.variables?.bookingId ===
                                                     booking.id
                                                 }
-                                                onCancel={(bookingId) =>
-                                                    cancelBookingMutation.mutate(
+                                                onCancel={(bookingId, payload) =>
+                                                    cancelBookingMutation.mutate({
                                                         bookingId,
-                                                    )
+                                                        payload,
+                                                    })
                                                 }
                                                 onEdit={(targetBooking) =>
                                                     setEditingBooking(

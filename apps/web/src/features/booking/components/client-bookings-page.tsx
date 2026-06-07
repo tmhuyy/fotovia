@@ -3,13 +3,8 @@
 import { isAxiosError } from "axios";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
-import
-{
-    useMutation,
-    useQuery,
-    useQueryClient,
-} from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 import { Section } from "../../../components/common/section";
 import { Footer } from "../../../components/home/footer";
@@ -21,10 +16,8 @@ import { bookingService } from "../../../services/booking.service";
 import { useAuthStore } from "../../../store/auth.store";
 import type {
     BookingRequestRecord,
-    ClientBookingActionStatus,
     ClientBookingFilter,
 } from "../types/booking.types";
-import { ClientBookingDetailCard } from "./client-booking-detail-card";
 import { ClientBookingsList } from "./client-bookings-list";
 
 const getErrorMessage = (error: unknown, fallback: string): string =>
@@ -57,34 +50,16 @@ const getErrorMessage = (error: unknown, fallback: string): string =>
 const BookingHistorySkeleton = () =>
 {
     return (
-        <div className="grid gap-6 xl:grid-cols-[380px_minmax(0,1fr)]">
-            <Card className="border-brand-border bg-brand-surface">
-                <CardContent className="space-y-4 p-6">
-                    <div className="h-6 w-36 animate-pulse rounded-xl bg-brand-border" />
-                    <div className="h-10 w-full animate-pulse rounded-2xl bg-brand-background" />
-                    <div className="space-y-3">
-                        {Array.from({ length: 4 }).map((_, index) => (
-                            <div
-                                key={index}
-                                className="h-28 animate-pulse rounded-2xl bg-brand-background"
-                            />
-                        ))}
-                    </div>
-                </CardContent>
-            </Card>
-
-            <Card className="border-brand-border bg-brand-surface">
-                <CardContent className="space-y-4 p-6 sm:p-8">
-                    <div className="h-6 w-40 animate-pulse rounded-xl bg-brand-border" />
-                    <div className="grid gap-3 sm:grid-cols-2">
-                        <div className="h-24 animate-pulse rounded-2xl bg-brand-background" />
-                        <div className="h-24 animate-pulse rounded-2xl bg-brand-background" />
-                        <div className="h-24 animate-pulse rounded-2xl bg-brand-background" />
-                        <div className="h-24 animate-pulse rounded-2xl bg-brand-background" />
-                    </div>
-                    <div className="h-28 animate-pulse rounded-2xl bg-brand-background" />
-                </CardContent>
-            </Card>
+        <div className="space-y-5">
+            <div className="h-44 animate-pulse rounded-[2rem] bg-brand-surface" />
+            <div className="grid gap-5 lg:grid-cols-2">
+                {Array.from({ length: 4 }).map((_, index) => (
+                    <div
+                        key={index}
+                        className="h-64 animate-pulse rounded-[1.75rem] bg-brand-surface"
+                    />
+                ))}
+            </div>
         </div>
     );
 };
@@ -106,7 +81,7 @@ const EmptyBookingHistory = () =>
                 </p>
                 <div className="flex flex-wrap gap-3">
                     <Link
-                        href="/"
+                        href="/bookings/new"
                         className={buttonVariants({
                             variant: "primary",
                             size: "md",
@@ -133,9 +108,7 @@ export const ClientBookingsPage = () =>
 {
     const searchParams = useSearchParams();
     const { user, isAuthenticated, isHydrating, hasHydrated } = useAuthStore();
-    const queryClient = useQueryClient();
 
-    const queryBookingId = searchParams.get("bookingId");
     const isCreatedRedirect = searchParams.get("created") === "1";
 
     const bookingHistoryQueryKey = [
@@ -145,9 +118,6 @@ export const ClientBookingsPage = () =>
 
     const [activeFilter, setActiveFilter] =
         useState<ClientBookingFilter>("all");
-    const [selectedBookingId, setSelectedBookingId] = useState<string | null>(
-        null,
-    );
 
     const bookingsQuery = useQuery({
         queryKey: bookingHistoryQueryKey,
@@ -187,140 +157,12 @@ export const ClientBookingsPage = () =>
         return bookings.filter((booking) => booking.status === activeFilter);
     }, [activeFilter, bookings]);
 
-    useEffect(() =>
-    {
-        if (!queryBookingId || bookings.length === 0) {
-            return;
-        }
-
-        const matchedBooking = bookings.find(
-            (booking) => booking.id === queryBookingId,
-        );
-
-        if (!matchedBooking) {
-            return;
-        }
-
-        setActiveFilter("all");
-        setSelectedBookingId(matchedBooking.id);
-    }, [bookings, queryBookingId]);
-
-    useEffect(() =>
-    {
-        if (filteredBookings.length === 0) {
-            setSelectedBookingId(null);
-            return;
-        }
-
-        setSelectedBookingId((current) =>
-        {
-            if (
-                current &&
-                filteredBookings.some((booking) => booking.id === current)
-            ) {
-                return current;
-            }
-
-            return filteredBookings[0]?.id ?? null;
-        });
-    }, [filteredBookings]);
-
-    const selectedBooking = useMemo<BookingRequestRecord | null>(() =>
-    {
-        if (!selectedBookingId) {
-            return filteredBookings[0] ?? null;
-        }
-
-        return (
-            filteredBookings.find((booking) => booking.id === selectedBookingId) ??
-            filteredBookings[0] ??
-            null
-        );
-    }, [filteredBookings, selectedBookingId]);
-
-    const timelineQuery = useQuery({
-        queryKey: [
-            "client-booking-timeline",
-            user?.id ?? user?.email ?? "anonymous",
-            selectedBooking?.id ?? "none",
-        ],
-        queryFn: () =>
-            bookingService.getMyClientBookingTimeline(selectedBooking!.id),
-        enabled:
-            hasHydrated &&
-            !isHydrating &&
-            isAuthenticated &&
-            Boolean(selectedBooking?.id),
-        retry: false,
-    });
-
-    const cancelBookingMutation = useMutation({
-        mutationFn: ({
-            bookingId,
-            status,
-        }: {
-            bookingId: string;
-            status: ClientBookingActionStatus;
-        }) => bookingService.cancelMyClientBooking(bookingId, status),
-        onSuccess: (updatedBooking) =>
-        {
-            queryClient.setQueryData<BookingRequestRecord[]>(
-                bookingHistoryQueryKey,
-                (current) =>
-                    current?.map((booking) =>
-                        booking.id === updatedBooking.id ? updatedBooking : booking,
-                    ) ?? [updatedBooking],
-            );
-        },
-        onSettled: async () =>
-        {
-            await Promise.all([
-                queryClient.invalidateQueries({
-                    queryKey: bookingHistoryQueryKey,
-                }),
-                queryClient.invalidateQueries({
-                    queryKey: [
-                        "client-booking-timeline",
-                        user?.id ?? user?.email ?? "anonymous",
-                        selectedBooking?.id ?? "none",
-                    ],
-                }),
-            ]);
-        },
-    });
-
     const listErrorMessage = bookingsQuery.error
         ? getErrorMessage(
             bookingsQuery.error,
             "We couldn’t load your booking requests right now.",
         )
         : null;
-
-    const actionErrorMessage = cancelBookingMutation.error
-        ? getErrorMessage(
-            cancelBookingMutation.error,
-            "We couldn’t cancel that booking request right now.",
-        )
-        : null;
-
-    const timelineErrorMessage = timelineQuery.error
-        ? getErrorMessage(
-            timelineQuery.error,
-            "We couldn’t load the booking timeline right now.",
-        )
-        : null;
-
-    const handleCancel = (status: ClientBookingActionStatus) =>
-    {
-        if (!selectedBooking) {
-            return;
-        }
-
-        cancelBookingMutation.mutate({
-            bookingId: selectedBooking.id,
-            status,
-        });
-    };
 
     if (!hasHydrated || isHydrating) {
         return (
@@ -346,16 +188,9 @@ export const ClientBookingsPage = () =>
                 <Section className="pt-8 pb-16 sm:pt-10">
                     <Container className="space-y-8">
                         <div className="space-y-3">
-                            <p className="text-sm font-medium uppercase tracking-[0.22em] text-brand-muted">
-                                My bookings
-                            </p>
                             <h1 className="font-display text-4xl text-brand-primary md:text-5xl">
-                                Booking requests.
+                                My bookings
                             </h1>
-                            <p className="max-w-2xl text-base leading-7 text-brand-muted">
-                                Review the requests you sent and track photographer
-                                responses in one place.
-                            </p>
                         </div>
 
                         {isCreatedRedirect ? (
@@ -370,12 +205,9 @@ export const ClientBookingsPage = () =>
                             <Card className="border-brand-border bg-brand-surface">
                                 <CardContent className="space-y-4 p-6 sm:p-8">
                                     <p className="text-sm font-medium uppercase tracking-[0.18em] text-brand-muted">
-                                        Booking requests
+                                        My bookings
                                     </p>
-                                    <h2 className="text-2xl font-semibold text-brand-primary">
-                                        We couldn’t load your booking requests
-                                        right now.
-                                    </h2>
+                                    
                                     <p className="text-sm leading-7 text-brand-muted">
                                         {listErrorMessage}
                                     </p>
@@ -392,26 +224,12 @@ export const ClientBookingsPage = () =>
                         ) : bookings.length === 0 ? (
                             <EmptyBookingHistory />
                         ) : (
-                            <div className="grid gap-6 xl:grid-cols-[380px_minmax(0,1fr)]">
-                                <ClientBookingsList
-                                    bookings={filteredBookings}
-                                    selectedBookingId={selectedBookingId}
-                                    activeFilter={activeFilter}
-                                    counts={counts}
-                                    onSelect={setSelectedBookingId}
-                                    onFilterChange={setActiveFilter}
-                                />
-
-                                <ClientBookingDetailCard
-                                    booking={selectedBooking}
-                                    isUpdating={cancelBookingMutation.isPending}
-                                    actionError={actionErrorMessage}
-                                    onCancel={handleCancel}
-                                    timelineEvents={timelineQuery.data ?? []}
-                                    isTimelineLoading={timelineQuery.isLoading}
-                                    timelineError={timelineErrorMessage}
-                                />
-                            </div>
+                            <ClientBookingsList
+                                bookings={filteredBookings}
+                                activeFilter={activeFilter}
+                                counts={counts}
+                                onFilterChange={setActiveFilter}
+                            />
                         )}
                     </Container>
                 </Section>

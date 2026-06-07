@@ -32,6 +32,7 @@ import { BookingEvent } from './entities/booking-event.entity';
 import { CreateBookingApplicationDto } from './dtos/create-booking-application.dto';
 import { BookingApplication } from './entities/booking-application.entity';
 import { UpdateOpenBookingDto } from './dtos/update-open-booking.dto';
+import { CancelBookingDto } from './dtos/cancel-booking.dto';
 
 @ApiTags('Booking')
 @Controller('booking')
@@ -364,9 +365,14 @@ export class BookingController {
     })
     async cancelMyClientBooking(
         @Param('bookingId', new ParseUUIDPipe()) bookingId: string,
+        @Body() cancelBookingDto: CancelBookingDto,
         @GetUser() user: IUser,
     ): Promise<Booking> {
-        return this.bookingService.cancelMyClientBooking(bookingId, user.id);
+        return this.bookingService.cancelMyClientBooking(
+            bookingId,
+            user.id,
+            cancelBookingDto,
+        );
     }
 
     @UseGuards(JwtAuthGuard)

@@ -10,10 +10,6 @@ import
         useQueryClient,
     } from "@tanstack/react-query";
 
-import { Section } from "../../../components/common/section";
-import { Footer } from "../../../components/home/footer";
-import { Navbar } from "../../../components/home/navbar";
-import { Container } from "../../../components/layout/container";
 import { buttonVariants } from "../../../components/ui/button";
 import { Card, CardContent } from "../../../components/ui/card";
 import { bookingService } from "../../../services/booking.service";
@@ -25,6 +21,7 @@ import type {
 } from "../types/booking.types";
 import { PhotographerBookingDetailCard } from "./photographer-booking-detail-card";
 import { PhotographerBookingsList } from "./photographer-bookings-list";
+import { BookingWorkspaceShell } from "./workspace/booking-workspace-shell";
 
 const getErrorMessage = (error: unknown, fallback: string): string =>
 {
@@ -56,7 +53,7 @@ const getErrorMessage = (error: unknown, fallback: string): string =>
 const BookingInboxSkeleton = () =>
 {
     return (
-        <div className="grid gap-6 xl:grid-cols-[380px_minmax(0,1fr)]">
+        <div className="grid gap-6 xl:grid-cols-[420px_minmax(0,1fr)]">
             <Card className="border-brand-border bg-brand-surface">
                 <CardContent className="space-y-4 p-6">
                     <div className="h-6 w-36 animate-pulse rounded-xl bg-brand-border" />
@@ -65,7 +62,7 @@ const BookingInboxSkeleton = () =>
                         {Array.from({ length: 4 }).map((_, index) => (
                             <div
                                 key={index}
-                                className="h-28 animate-pulse rounded-2xl bg-brand-background"
+                                className="h-36 animate-pulse rounded-[1.75rem] bg-brand-background"
                             />
                         ))}
                     </div>
@@ -82,43 +79,8 @@ const BookingInboxSkeleton = () =>
                         <div className="h-24 animate-pulse rounded-2xl bg-brand-background" />
                     </div>
                     <div className="h-28 animate-pulse rounded-2xl bg-brand-background" />
-                    <div className="h-12 w-44 animate-pulse rounded-full bg-brand-border" />
                 </CardContent>
             </Card>
-        </div>
-    );
-};
-
-const BookingCounts = ({
-    counts,
-}: {
-    counts: Record<BookingInboxFilter, number>;
-}) =>
-{
-    const items = [
-        { label: "All requests", value: counts.all },
-        { label: "Pending", value: counts.pending },
-        { label: "Confirmed", value: counts.confirmed },
-        { label: "Declined", value: counts.declined },
-        { label: "Cancelled", value: counts.cancelled },
-        { label: "Completed", value: counts.completed },
-    ];
-
-    return (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {items.map((item) => (
-                <div
-                    key={item.label}
-                    className="rounded-2xl border border-brand-border bg-brand-surface p-4"
-                >
-                    <p className="text-xs uppercase tracking-[0.14em] text-brand-muted">
-                        {item.label}
-                    </p>
-                    <p className="mt-3 text-2xl font-semibold text-brand-primary">
-                        {item.value}
-                    </p>
-                </div>
-            ))}
         </div>
     );
 };
@@ -135,19 +97,26 @@ const EmptyBookingInbox = () =>
                     No incoming requests yet.
                 </h2>
                 <p className="max-w-2xl text-sm leading-7 text-brand-muted">
-                    Once clients start requesting sessions from your public photographer
-                    profile, those requests will appear here for review.
+                    Once clients start requesting sessions from your public
+                    photographer profile, those requests will appear here for
+                    review.
                 </p>
                 <div className="flex flex-wrap gap-3">
                     <Link
                         href="/photographer/dashboard"
-                        className={buttonVariants({ variant: "secondary", size: "md" })}
+                        className={buttonVariants({
+                            variant: "secondary",
+                            size: "md",
+                        })}
                     >
                         Back to dashboard
                     </Link>
                     <Link
                         href="/photographers"
-                        className={buttonVariants({ variant: "primary", size: "md" })}
+                        className={buttonVariants({
+                            variant: "primary",
+                            size: "md",
+                        })}
                     >
                         View public marketplace
                     </Link>
@@ -170,19 +139,24 @@ const WorkspaceRestrictedState = () =>
                 </h1>
                 <p className="max-w-2xl text-sm leading-7 text-brand-muted">
                     Your account is signed in, but this route is meant for the
-                    photographer-side booking workflow. You can still manage your profile
-                    or return to the main marketplace flow.
+                    photographer-side booking workflow.
                 </p>
                 <div className="flex flex-wrap gap-3">
                     <Link
                         href="/profile"
-                        className={buttonVariants({ variant: "secondary", size: "md" })}
+                        className={buttonVariants({
+                            variant: "secondary",
+                            size: "md",
+                        })}
                     >
                         Go to profile
                     </Link>
                     <Link
                         href="/"
-                        className={buttonVariants({ variant: "primary", size: "md" })}
+                        className={buttonVariants({
+                            variant: "primary",
+                            size: "md",
+                        })}
                     >
                         Back to homepage
                     </Link>
@@ -226,10 +200,13 @@ export const PhotographerBookingsPage = () =>
         return {
             all: bookings.length,
             pending: bookings.filter((item) => item.status === "pending").length,
-            confirmed: bookings.filter((item) => item.status === "confirmed").length,
+            confirmed: bookings.filter((item) => item.status === "confirmed")
+                .length,
             declined: bookings.filter((item) => item.status === "declined").length,
-            cancelled: bookings.filter((item) => item.status === "cancelled").length,
-            completed: bookings.filter((item) => item.status === "completed").length,
+            cancelled: bookings.filter((item) => item.status === "cancelled")
+                .length,
+            completed: bookings.filter((item) => item.status === "completed")
+                .length,
         };
     }, [bookings]);
 
@@ -357,111 +334,66 @@ export const PhotographerBookingsPage = () =>
         });
     };
 
-    if (!hasHydrated || isHydrating) {
-        return (
-            <>
-                <Navbar />
-                <main className="min-h-screen bg-brand-background">
-                    <Section className="pt-10 pb-16 sm:pt-14">
-                        <Container>
-                            <BookingInboxSkeleton />
-                        </Container>
-                    </Section>
-                </main>
-                <Footer />
-            </>
-        );
-    }
-
     return (
-        <>
-            <Navbar />
+        <BookingWorkspaceShell
+            eyebrow="Photographer workspace"
+            title="Booking inbox."
+            description="Review incoming booking requests, respond to clients, and track the lifecycle history for each photoshoot."
+            backHref="/photographer/dashboard"
+            backLabel="Back to workspace"
+        >
+            {!hasHydrated || isHydrating ? (
+                <BookingInboxSkeleton />
+            ) : !isPhotographer ? (
+                <WorkspaceRestrictedState />
+            ) : bookingsQuery.isLoading ? (
+                <BookingInboxSkeleton />
+            ) : listErrorMessage ? (
+                <Card className="border-brand-border bg-brand-surface">
+                    <CardContent className="space-y-4 p-6 sm:p-8">
+                        <p className="text-sm font-medium uppercase tracking-[0.18em] text-brand-muted">
+                            Booking inbox
+                        </p>
+                        <h2 className="text-2xl font-semibold text-brand-primary">
+                            We couldn’t load your inbox right now.
+                        </h2>
+                        <p className="text-sm leading-7 text-brand-muted">
+                            {listErrorMessage}
+                        </p>
 
-            <main className="min-h-screen bg-brand-background">
-                <Section className="pt-10 pb-16 sm:pt-14">
-                    <Container className="space-y-8">
-                        <div className="space-y-4">
-                            <Link
-                                href="/photographer/dashboard"
-                                className="inline-flex text-sm font-medium text-brand-muted transition hover:text-brand-primary"
-                            >
-                                Back to workspace
-                            </Link>
+                        <button
+                            type="button"
+                            onClick={() => bookingsQuery.refetch()}
+                            className="inline-flex rounded-full border border-brand-border bg-brand-background px-4 py-2 text-sm font-medium text-brand-primary transition hover:bg-brand-surface"
+                        >
+                            Try again
+                        </button>
+                    </CardContent>
+                </Card>
+            ) : bookings.length === 0 ? (
+                <EmptyBookingInbox />
+            ) : (
+                <div className="grid gap-6 xl:grid-cols-[420px_minmax(0,1fr)]">
+                    <PhotographerBookingsList
+                        bookings={filteredBookings}
+                        selectedBookingId={selectedBookingId}
+                        activeFilter={activeFilter}
+                        counts={counts}
+                        onSelect={setSelectedBookingId}
+                        onFilterChange={setActiveFilter}
+                    />
 
-                            <div className="space-y-3">
-                                <p className="text-sm font-medium uppercase tracking-[0.22em] text-brand-muted">
-                                    Photographer workspace
-                                </p>
-                                <h1 className="text-3xl font-semibold tracking-tight text-brand-primary sm:text-4xl">
-                                    Manage booking lifecycle actions from your inbox.
-                                </h1>
-                                <p className="max-w-2xl text-base text-brand-muted">
-                                    This phase adds event history on top of the current
-                                    lifecycle flow, so you can understand what happened on
-                                    each booking and when it happened.
-                                </p>
-                            </div>
-                        </div>
-
-                        {!isPhotographer ? (
-                            <WorkspaceRestrictedState />
-                        ) : bookingsQuery.isLoading ? (
-                            <BookingInboxSkeleton />
-                        ) : listErrorMessage ? (
-                            <Card className="border-brand-border bg-brand-surface">
-                                <CardContent className="space-y-4 p-6 sm:p-8">
-                                    <p className="text-sm font-medium uppercase tracking-[0.18em] text-brand-muted">
-                                        Booking inbox
-                                    </p>
-                                    <h2 className="text-2xl font-semibold text-brand-primary">
-                                        We couldn’t load your inbox right now.
-                                    </h2>
-                                    <p className="text-sm leading-7 text-brand-muted">
-                                        {listErrorMessage}
-                                    </p>
-
-                                    <button
-                                        type="button"
-                                        onClick={() => bookingsQuery.refetch()}
-                                        className="inline-flex rounded-full border border-brand-border bg-brand-background px-4 py-2 text-sm font-medium text-brand-primary transition hover:bg-brand-surface"
-                                    >
-                                        Try again
-                                    </button>
-                                </CardContent>
-                            </Card>
-                        ) : bookings.length === 0 ? (
-                            <EmptyBookingInbox />
-                        ) : (
-                            <>
-                                <BookingCounts counts={counts} />
-
-                                <div className="grid gap-6 xl:grid-cols-[380px_minmax(0,1fr)]">
-                                    <PhotographerBookingsList
-                                        bookings={filteredBookings}
-                                        selectedBookingId={selectedBookingId}
-                                        activeFilter={activeFilter}
-                                        counts={counts}
-                                        onSelect={setSelectedBookingId}
-                                        onFilterChange={setActiveFilter}
-                                    />
-
-                                    <PhotographerBookingDetailCard
-                                        booking={selectedBooking}
-                                        isUpdating={updateStatusMutation.isPending}
-                                        actionError={actionErrorMessage}
-                                        onStatusChange={handleStatusChange}
-                                        timelineEvents={timelineQuery.data ?? []}
-                                        isTimelineLoading={timelineQuery.isLoading}
-                                        timelineError={timelineErrorMessage}
-                                    />
-                                </div>
-                            </>
-                        )}
-                    </Container>
-                </Section>
-            </main>
-
-            <Footer />
-        </>
+                    <PhotographerBookingDetailCard
+                        booking={selectedBooking}
+                        isUpdating={updateStatusMutation.isPending}
+                        actionError={actionErrorMessage}
+                        onStatusChange={handleStatusChange}
+                        timelineEvents={timelineQuery.data ?? []}
+                        isTimelineLoading={timelineQuery.isLoading}
+                        timelineError={timelineErrorMessage}
+                    />
+                </div>
+            )}
+        </BookingWorkspaceShell>
     );
 };

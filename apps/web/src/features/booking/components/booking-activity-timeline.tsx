@@ -18,6 +18,7 @@ const eventCopy: Record<
     confirmed: { title: "Booking request confirmed" },
     declined: { title: "Booking request declined" },
     cancelled: { title: "Booking request cancelled" },
+    updated: { title: "Booking request updated" },
     completed: { title: "Booking marked as completed" },
 };
 

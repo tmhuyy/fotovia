@@ -25,7 +25,6 @@ import { Container } from "../../../components/layout/container";
 import { Button } from "../../../components/ui/button";
 import { bookingService } from "../../../services/booking.service";
 import { useAuthStore } from "../../../store/auth.store";
-import type { OpenBookingRequestRecord } from "../types/booking.types";
 import { BookingOwnerActionsMenu } from "./booking-owner-actions-menu";
 import
 {
@@ -36,10 +35,17 @@ import
 } from "../utils/booking-display";
 
 import { ApplyToPhotoshootModal } from "./apply-to-photoshoot-modal";
-import type { CreateBookingApplicationPayload } from "../types/booking.types";
 import { OpenBookingApplicationsSection } from "./open-booking-applications-section";
 import { EditOpenBookingDialog } from "./edit-open-booking-dialog";
-import type { UpdateOpenBookingPayload } from "../types/booking.types";
+
+import type {
+    CancelBookingPayload,
+    CreateBookingApplicationPayload,
+    OpenBookingRequestRecord,
+    UpdateOpenBookingPayload,
+} from "../types/booking.types";
+import { BookingActivityTimeline } from "./booking-activity-timeline";
+import { BookingProgressBar } from "./booking-progress-bar";
 
 interface IconProps
 {
@@ -327,10 +333,30 @@ export const OpenBookingDetailPage = () =>
     });
 
     const booking = bookingQuery.data;
+
+    const canLoadOwnerTimeline =
+        hasHydrated &&
+        !isHydrating &&
+        isAuthenticated &&
+        Boolean(booking?.isOwner) &&
+        Boolean(booking?.id);
+
+    const timelineQuery = useQuery({
+        queryKey: [
+            "client-booking-timeline",
+            user?.id ?? user?.email ?? "anonymous",
+            booking?.id ?? "none",
+        ],
+        queryFn: () => bookingService.getMyClientBookingTimeline(booking!.id),
+        enabled: canLoadOwnerTimeline,
+        retry: false,
+    });
+
     const signInHref = `/sign-in?next=${encodeURIComponent(pathname)}`;
 
     const cancelBookingMutation = useMutation({
-        mutationFn: () => bookingService.cancelMyClientBooking(bookingId),
+        mutationFn: (payload: CancelBookingPayload) =>
+            bookingService.cancelMyClientBooking(bookingId, payload),
         onSuccess: async () =>
         {
             toast.success("Booking cancelled", {
@@ -346,11 +372,22 @@ export const OpenBookingDetailPage = () =>
                     queryKey: ["open-booking-feed"],
                 }),
                 queryClient.invalidateQueries({
+                    queryKey: ["open-booking-marketplace"],
+                }),
+                queryClient.invalidateQueries({
+                    queryKey: ["opening-booking-requests"],
+                }),
+                queryClient.invalidateQueries({
                     queryKey: ["client-bookings"],
                 }),
+                queryClient.invalidateQueries({
+                    queryKey: [
+                        "client-booking-timeline",
+                        user?.id ?? user?.email ?? "anonymous",
+                        bookingId,
+                    ],
+                }),
             ]);
-
-            router.push("/my-bookings");
         },
         onError: (error) =>
         {
@@ -527,7 +564,14 @@ export const OpenBookingDetailPage = () =>
                             </div>
                         </div>
                     ) : (
-                        <section className="mx-auto max-w-4xl">
+                        <section className="mx-auto max-w-4xl space-y-6">
+                            {booking.isOwner ? (
+                                <BookingProgressBar
+                                    booking={booking}
+                                    events={timelineQuery.data ?? []}
+                                />
+                            ) : null}
+
                             <div className="rounded-[2rem] border border-border bg-surface p-5 shadow-[0_18px_50px_rgba(23,23,23,0.06)] sm:p-8">
                                 <div className="flex items-start justify-between gap-4 border-b border-border pb-6">
                                     <div className="min-w-0 flex-1">
@@ -536,11 +580,12 @@ export const OpenBookingDetailPage = () =>
                                         </h1>
                                     </div>
 
-                                    {booking.canManage ? (
+                                    {booking.canManage && booking.status !== "cancelled" ? (
                                         <BookingOwnerActionsMenu
                                             bookingId={booking.id}
                                             isCancelling={cancelBookingMutation.isPending}
-                                            onCancel={() => cancelBookingMutation.mutate()}
+                                            canEdit={getApplicationCount(booking) === 0}
+                                            onCancel={(payload) => cancelBookingMutation.mutate(payload)}
                                             onEdit={() => setIsEditBookingOpen(true)}
                                         />
                                     ) : (
@@ -665,6 +710,20 @@ export const OpenBookingDetailPage = () =>
                                     </div>
                                 </div>
                             </div>
+                            {booking.isOwner ? (
+                                <BookingActivityTimeline
+                                    events={timelineQuery.data ?? []}
+                                    isLoading={timelineQuery.isLoading}
+                                    errorMessage={
+                                        timelineQuery.error
+                                            ? getErrorMessage(
+                                                timelineQuery.error,
+                                                "We couldn’t load the booking timeline right now.",
+                                            )
+                                            : null
+                                    }
+                                />
+                            ) : null}
                         </section>
                     )}
                 </Container>
