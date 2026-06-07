@@ -8,6 +8,7 @@ import type { BookingBriefFormValues } from "../schemas/booking-brief.schema";
 import
     {
         BUDGET_MIN_VND,
+        BUDGET_STEP_VND,
         formatBudgetRange,
         formatVndAmount,
         normalizeBudgetToStep,
@@ -47,6 +48,83 @@ const formatBudgetInput = (value: number): string =>
     return formatVndAmount(value);
 };
 
+interface BudgetInputProps
+{
+    id: "budgetFrom" | "budgetTo";
+    label: string;
+    value: number;
+    error?: string;
+    onChange: (value: number) => void;
+    onBlur: () => void;
+}
+
+const BudgetInput = ({
+    id,
+    label,
+    value,
+    error,
+    onChange,
+    onBlur,
+}: BudgetInputProps) =>
+{
+    const increase = () =>
+    {
+        onChange(normalizeBudgetToStep(Number(value) + BUDGET_STEP_VND));
+    };
+
+    const decrease = () =>
+    {
+        onChange(
+            Math.max(
+                BUDGET_MIN_VND,
+                normalizeBudgetToStep(Number(value) - BUDGET_STEP_VND),
+            ),
+        );
+    };
+
+    return (
+        <div className="space-y-2">
+            <Label htmlFor={id}>
+                {label} <span className="text-red-500">*</span>
+            </Label>
+
+            <div className="relative">
+                <input
+                    id={id}
+                    type="text"
+                    inputMode="numeric"
+                    value={formatBudgetInput(Number(value))}
+                    onChange={(event) => onChange(parseVndInput(event.target.value))}
+                    onBlur={onBlur}
+                    className="flex h-12 w-full rounded-2xl border border-border bg-background px-4 py-3 pr-11 text-base text-foreground outline-none transition placeholder:text-muted focus:border-accent focus:ring-2 focus:ring-accent/20"
+                />
+
+                <div className="absolute right-2 top-1/2 flex -translate-y-1/2 flex-col overflow-hidden rounded-xl border border-border bg-surface">
+                    <button
+                        type="button"
+                        onClick={increase}
+                        className="flex h-5 w-7 items-center justify-center text-[0.65rem] leading-none text-muted transition hover:bg-background hover:text-foreground"
+                        aria-label={`Increase ${label}`}
+                    >
+                        ▲
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={decrease}
+                        className="flex h-5 w-7 items-center justify-center border-t border-border text-[0.65rem] leading-none text-muted transition hover:bg-background hover:text-foreground"
+                        aria-label={`Decrease ${label}`}
+                    >
+                        ▼
+                    </button>
+                </div>
+            </div>
+
+            <FieldError message={error} />
+        </div>
+    );
+};
+
 export const BookingBudgetRangeField = () =>
 {
     const {
@@ -80,10 +158,10 @@ export const BookingBudgetRangeField = () =>
 
     const handleBudgetChange = (
         name: "budgetFrom" | "budgetTo",
-        value: string,
+        value: number,
     ) =>
     {
-        setValue(name, parseVndInput(value), {
+        setValue(name, value, {
             shouldDirty: true,
             shouldValidate: true,
         });
@@ -108,52 +186,23 @@ export const BookingBudgetRangeField = () =>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                    <Label htmlFor="budgetFrom">
-                        From (VND) <span className="text-red-500">*</span>
-                    </Label>
+                <BudgetInput
+                    id="budgetFrom"
+                    label="From (VND)"
+                    value={Number(budgetFrom)}
+                    error={resolveErrorMessage(errors.budgetFrom?.message)}
+                    onChange={(value) => handleBudgetChange("budgetFrom", value)}
+                    onBlur={() => handleBudgetBlur("budgetFrom")}
+                />
 
-                    <input
-                        id="budgetFrom"
-                        type="text"
-                        inputMode="numeric"
-                        value={formatBudgetInput(Number(budgetFrom))}
-                        onChange={(event) =>
-                            handleBudgetChange(
-                                "budgetFrom",
-                                event.target.value,
-                            )
-                        }
-                        onBlur={() => handleBudgetBlur("budgetFrom")}
-                        className="flex h-12 w-full rounded-2xl border border-border bg-background px-4 py-3 text-base text-foreground outline-none transition placeholder:text-muted focus:border-accent focus:ring-2 focus:ring-accent/20"
-                    />
-
-                    <FieldError
-                        message={resolveErrorMessage(errors.budgetFrom?.message)}
-                    />
-                </div>
-
-                <div className="space-y-2">
-                    <Label htmlFor="budgetTo">
-                        To (VND) <span className="text-red-500">*</span>
-                    </Label>
-
-                    <input
-                        id="budgetTo"
-                        type="text"
-                        inputMode="numeric"
-                        value={formatBudgetInput(Number(budgetTo))}
-                        onChange={(event) =>
-                            handleBudgetChange("budgetTo", event.target.value)
-                        }
-                        onBlur={() => handleBudgetBlur("budgetTo")}
-                        className="flex h-12 w-full rounded-2xl border border-border bg-background px-4 py-3 text-base text-foreground outline-none transition placeholder:text-muted focus:border-accent focus:ring-2 focus:ring-accent/20"
-                    />
-
-                    <FieldError
-                        message={resolveErrorMessage(errors.budgetTo?.message)}
-                    />
-                </div>
+                <BudgetInput
+                    id="budgetTo"
+                    label="To (VND)"
+                    value={Number(budgetTo)}
+                    error={resolveErrorMessage(errors.budgetTo?.message)}
+                    onChange={(value) => handleBudgetChange("budgetTo", value)}
+                    onBlur={() => handleBudgetBlur("budgetTo")}
+                />
             </div>
 
             <div className="rounded-2xl border border-border bg-surface px-4 py-3 text-sm text-muted">

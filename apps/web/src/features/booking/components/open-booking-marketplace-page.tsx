@@ -2,35 +2,45 @@
 
 import Link from "next/link";
 import
-    {
-        usePathname,
-        useRouter,
-        useSearchParams,
-    } from "next/navigation";
+{
+    usePathname,
+    useRouter,
+    useSearchParams,
+} from "next/navigation";
 import { ReactNode, useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import
+{
+    useMutation,
+    useQuery,
+    useQueryClient,
+} from "@tanstack/react-query";
+import { toast } from "sonner";
 
 import { bookingService } from "../../../services/booking.service";
 import { Container } from "../../../components/layout/container";
+import { useAuthStore } from "../../../store/auth.store";
 import
-    {
-        formatBookingTime,
-        formatBudgetLabel,
-        formatShootTypeLabel,
-    } from "../utils/booking-display";
+{
+    formatBookingTime,
+    formatShootTypeLabel,
+} from "../utils/booking-display";
 import type {
     OpenBookingMarketplaceQuery,
     OpenBookingRequestRecord,
     OpenBookingSort,
+    UpdateOpenBookingPayload,
 } from "../types/booking.types";
 import { BookingPagination } from "./dashboard/booking-pagination";
+import { BookingOwnerActionsMenu } from "./booking-owner-actions-menu";
+import { EditOpenBookingDialog } from "./edit-open-booking-dialog";
 import
-    {
-        OPEN_BOOKING_DEFAULT_FILTERS,
-        OpenBookingFilterPanel,
-        type OpenBookingFilterState,
-        SORT_LABELS,
-    } from "./open-booking-filter-panel";
+{
+    OPEN_BOOKING_DEFAULT_FILTERS,
+    OpenBookingFilterPanel,
+    SORT_LABELS,
+    SORT_OPTIONS_FOR_OPEN_BOOKING,
+    type OpenBookingFilterState,
+} from "./open-booking-filter-panel";
 
 interface IconProps
 {
@@ -41,6 +51,24 @@ interface SearchParamReader
 {
     get: (name: string) => string | null;
 }
+
+type CurrentUserLike = {
+    id?: string;
+    email?: string;
+    fullName?: string;
+} | null;
+
+type PublicOpenBookingRecord = OpenBookingRequestRecord & {
+    clientName?: string | null;
+    clientFullName?: string | null;
+    clientProfileName?: string | null;
+    fullName?: string | null;
+    applicationsCount?: number | null;
+    applicationCount?: number | null;
+    photographerApplicationsCount?: number | null;
+    isOwner?: boolean | null;
+    canManage?: boolean | null;
+};
 
 const UserIcon = ({ className = "h-4 w-4" }: IconProps) => (
     <svg
@@ -100,6 +128,47 @@ const LocationIcon = ({ className = "h-4 w-4" }: IconProps) => (
     </svg>
 );
 
+const FilterIcon = ({ className = "h-4 w-4" }: IconProps) => (
+    <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        className={className}
+        aria-hidden="true"
+    >
+        <path d="M4 5h16l-6.5 7.4v4.2L10.5 19v-6.6L4 5Z" />
+    </svg>
+);
+
+const SortIcon = ({ className = "h-4 w-4" }: IconProps) => (
+    <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        className={className}
+        aria-hidden="true"
+    >
+        <path d="M4 7h11" />
+        <path d="M4 12h8" />
+        <path d="M4 17h5" />
+    </svg>
+);
+
+const ChevronDownIcon = ({ className = "h-4 w-4" }: IconProps) => (
+    <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        className={className}
+        aria-hidden="true"
+    >
+        <path d="m6 9 6 6 6-6" />
+    </svg>
+);
+
 const InfoRow = ({
     icon,
     children,
@@ -113,7 +182,7 @@ const InfoRow = ({
     </div>
 );
 
-const getBookingTitle = (booking: OpenBookingRequestRecord): string =>
+const getBookingTitle = (booking: PublicOpenBookingRecord): string =>
 {
     if (booking.title?.trim()) {
         return booking.title.trim();
@@ -124,18 +193,56 @@ const getBookingTitle = (booking: OpenBookingRequestRecord): string =>
     )} photoshoot`;
 };
 
-const getClientName = (booking: OpenBookingRequestRecord): string =>
+const isBookingOwnedByCurrentUser = (
+    booking: PublicOpenBookingRecord,
+    currentUser: CurrentUserLike,
+): boolean =>
 {
-    return (
+    if (booking.isOwner === true) {
+        return true;
+    }
+
+    const currentUserId = currentUser?.id?.trim();
+    const currentUserEmail = currentUser?.email?.trim().toLowerCase();
+    const bookingClientEmail = booking.clientEmail?.trim().toLowerCase();
+
+    if (currentUserId && booking.clientUserId === currentUserId) {
+        return true;
+    }
+
+    if (currentUserEmail && bookingClientEmail) {
+        return currentUserEmail === bookingClientEmail;
+    }
+
+    return false;
+};
+
+const getClientName = (
+    booking: PublicOpenBookingRecord,
+    currentUser: CurrentUserLike,
+): string =>
+{
+    const directName =
         booking.clientName ||
         booking.clientFullName ||
         booking.clientProfileName ||
-        booking.fullName ||
-        "Client"
-    );
+        booking.fullName;
+
+    if (directName?.trim()) {
+        return directName.trim();
+    }
+
+    if (
+        isBookingOwnedByCurrentUser(booking, currentUser) &&
+        currentUser?.fullName?.trim()
+    ) {
+        return currentUser.fullName.trim();
+    }
+
+    return "Client";
 };
 
-const getApplicationCount = (booking: OpenBookingRequestRecord): number =>
+const getApplicationCount = (booking: PublicOpenBookingRecord): number =>
 {
     return (
         booking.photographerApplicationsCount ??
@@ -192,9 +299,35 @@ const formatPhotoshootDate = (value?: string | null): string =>
     }).format(parsedDate);
 };
 
-const getServiceChips = (booking: OpenBookingRequestRecord): string[] =>
+const formatFotoviaBudget = (value?: string | null): string =>
 {
-    const source = `${booking.notes ?? ""}`.toLowerCase();
+    if (!value?.trim()) {
+        return "Select budget";
+    }
+
+    const parts = value
+        .split("-")
+        .map((part) => Number(part.replace(/[^\d]/g, "")))
+        .filter((part) => Number.isFinite(part) && part > 0);
+
+    const fromValue = parts[0];
+
+    if (typeof fromValue !== "number") {
+        return value;
+    }
+
+    const toValue = parts[1] ?? fromValue;
+
+    const formatter = new Intl.NumberFormat("vi-VN");
+    const from = formatter.format(fromValue);
+    const to = formatter.format(toValue);
+
+    return `${from} VND - ${to} VND`;
+};
+
+const getServiceChips = (booking: PublicOpenBookingRecord): string[] =>
+{
+    const source = `${booking.notes ?? ""} ${booking.inspiration ?? ""}`.toLowerCase();
     const chips: string[] = [];
 
     if (
@@ -235,12 +368,25 @@ const formatMoneyInput = (value: string): string =>
     return new Intl.NumberFormat("vi-VN").format(Number(digits));
 };
 
+const parseSort = (value: string | null): OpenBookingSort =>
+{
+    if (
+        value === "earliest" ||
+        value === "most_applications" ||
+        value === "budget_low" ||
+        value === "budget_high"
+    ) {
+        return value;
+    }
+
+    return "newest";
+};
+
 const parseFiltersFromSearch = (
     searchParams: SearchParamReader,
 ): OpenBookingFilterState =>
 {
     const rawShootTypes = searchParams.get("shootTypes");
-    const rawSort = searchParams.get("sort");
     const rawServices = searchParams.get("services");
 
     return {
@@ -263,13 +409,7 @@ const parseFiltersFromSearch = (
             rawServices === "with" || rawServices === "without"
                 ? rawServices
                 : "all",
-        sort:
-            rawSort === "newest" ||
-                rawSort === "most_applications" ||
-                rawSort === "budget_low" ||
-                rawSort === "budget_high"
-                ? (rawSort as OpenBookingSort)
-                : "earliest",
+        sort: parseSort(searchParams.get("sort")),
     };
 };
 
@@ -292,34 +432,63 @@ const buildQueryOptions = (
     };
 };
 
-const OpenBookingCard = ({ booking }: { booking: OpenBookingRequestRecord }) =>
+const OpenBookingCard = ({
+    booking,
+    currentUser,
+    isCancelling,
+    onCancel,
+    onEdit,
+}: {
+    booking: PublicOpenBookingRecord;
+    currentUser: CurrentUserLike;
+    isCancelling: boolean;
+    onCancel: (bookingId: string) => void;
+    onEdit: (booking: PublicOpenBookingRecord) => void;
+}) =>
 {
-    const applicationCount = getApplicationCount(booking);
+    const shootType = formatShootTypeLabel(
+        booking.shootType || booking.sessionType,
+    );
     const serviceChips = getServiceChips(booking);
+    const applicationCount = getApplicationCount(booking);
+    const isOwnedBooking = isBookingOwnedByCurrentUser(booking, currentUser);
 
     return (
-        <article className="relative border-b border-border px-1 py-6 transition hover:bg-surface/70 sm:rounded-[1.75rem] sm:border sm:bg-surface sm:px-6 sm:shadow-[0_18px_50px_rgba(23,23,23,0.04)] sm:hover:-translate-y-0.5 sm:hover:border-accent/50">
+        <article className="relative rounded-[1.75rem] border border-border bg-surface px-5 py-5 shadow-[0_18px_50px_rgba(23,23,23,0.06)] transition hover:-translate-y-0.5 hover:border-accent/50 hover:shadow-[0_22px_60px_rgba(23,23,23,0.08)] sm:px-6 sm:py-6">
             <Link
                 href={`/bookings/${booking.id}`}
                 className="absolute inset-0 z-0 rounded-[1.75rem]"
                 aria-label={`View ${getBookingTitle(booking)}`}
             />
 
-            <div className="pointer-events-none relative z-10 grid gap-4 lg:grid-cols-[minmax(0,1fr)_17rem] lg:items-start">
-                <div className="min-w-0 space-y-3">
-                    <div className="flex min-w-0 items-start gap-3">
-                        <h3 className="min-w-0 truncate text-xl font-semibold tracking-[-0.02em] text-foreground">
+            <div className="pointer-events-none relative z-10 space-y-4">
+                <div className="mb-0 flex min-w-0 items-start justify-between gap-4">
+                    <div className="flex min-w-0 flex-1 items-baseline gap-2">
+                        <h3 className="min-w-0 truncate text-[1.35rem] font-semibold leading-tight tracking-[-0.02em] text-foreground">
                             {getBookingTitle(booking)}
                         </h3>
 
-                        <span className="shrink-0 text-sm text-muted">
-                            #{booking.id.slice(0, 8)}
-                        </span>
+                        {/* <span className="shrink-0 text-sm text-muted">
+                            #{booking.id.slice(0, 7)}
+                        </span> */}
                     </div>
 
+                    {isOwnedBooking ? (
+                        <BookingOwnerActionsMenu
+                            bookingId={booking.id}
+                            isCancelling={isCancelling}
+                            onCancel={() => onCancel(booking.id)}
+                            onEdit={() => onEdit(booking)}
+                        />
+                    ) : (
+                        <span className="h-9 w-12 shrink-0" aria-hidden="true" />
+                    )}
+                </div>
+
+                <div className="mb-0 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <InfoRow icon={<UserIcon />}>
                         <span className="font-semibold">
-                            {getClientName(booking)}
+                            {getClientName(booking, currentUser)}
                         </span>
                         <span className="mx-1.5 text-muted">·</span>
                         <span className="text-muted">
@@ -327,28 +496,30 @@ const OpenBookingCard = ({ booking }: { booking: OpenBookingRequestRecord }) =>
                         </span>
                     </InfoRow>
 
-                    <InfoRow icon={<CameraIcon />}>
-                        <span className="font-medium">
-                            {formatShootTypeLabel(
-                                booking.shootType || booking.sessionType,
-                            )}
-                        </span>
-                        <span className="mx-1.5 text-muted">·</span>
-                        <span>{formatBookingTime(booking.sessionTime)}</span>
+                    <span className="w-fit rounded-full border border-accent/30 bg-accent/15 px-4 py-1.5 text-sm font-semibold text-foreground">
+                        Looking for photographer
+                    </span>
+                </div>
 
-                        {applicationCount > 0 ? (
-                            <>
-                                <span className="mx-1.5 text-muted">·</span>
-                                <span className="font-medium text-accent">
-                                    {applicationCount}{" "}
-                                    {applicationCount === 1
-                                        ? "application"
-                                        : "applications"}
-                                </span>
-                            </>
-                        ) : null}
-                    </InfoRow>
+                <InfoRow icon={<CameraIcon />}>
+                    <span className="font-medium">{shootType}</span>
+                    <span className="mx-1.5 text-muted">·</span>
+                    <span>{formatBookingTime(booking.sessionTime)}</span>
 
+                    {applicationCount > 0 ? (
+                        <>
+                            <span className="mx-1.5 text-muted">·</span>
+                            <span className="font-medium text-accent">
+                                {applicationCount}{" "}
+                                {applicationCount === 1
+                                    ? "application"
+                                    : "applications"}
+                            </span>
+                        </>
+                    ) : null}
+                </InfoRow>
+
+                <div className="space-y-2.5">
                     <InfoRow icon={<CalendarIcon />}>
                         <span>{formatPhotoshootDate(booking.sessionDate)}</span>
                     </InfoRow>
@@ -358,34 +529,24 @@ const OpenBookingCard = ({ booking }: { booking: OpenBookingRequestRecord }) =>
                             {booking.location || "No location added"}
                         </span>
                     </InfoRow>
-
-                    {serviceChips.length > 0 ? (
-                        <div className="flex flex-wrap gap-2">
-                            {serviceChips.map((chip) => (
-                                <span
-                                    key={chip}
-                                    className="rounded-full border border-border bg-background px-3 py-1 text-sm font-medium text-muted"
-                                >
-                                    {chip}
-                                </span>
-                            ))}
-                        </div>
-                    ) : null}
-
-                    <p className="text-lg font-semibold tracking-[0.02em] text-accent">
-                        {formatBudgetLabel(booking.budget)}
-                    </p>
                 </div>
 
-                <div className="flex flex-col gap-3 lg:items-end lg:text-right">
-                    <span className="w-fit rounded-full border border-accent/30 bg-accent/15 px-4 py-1.5 text-sm font-semibold text-foreground">
-                        Looking for photographer
-                    </span>
+                {serviceChips.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                        {serviceChips.map((chip) => (
+                            <span
+                                key={chip}
+                                className="rounded-full border border-border bg-background px-3 py-1 text-sm font-medium text-muted"
+                            >
+                                {chip}
+                            </span>
+                        ))}
+                    </div>
+                ) : null}
 
-                    <p className="text-sm leading-6 text-muted">
-                        Open request · review details before applying.
-                    </p>
-                </div>
+                <p className="text-[1.15rem] font-semibold leading-tight tracking-[0.02em] text-accent">
+                    {formatFotoviaBudget(booking.budget)}
+                </p>
             </div>
         </article>
     );
@@ -396,8 +557,13 @@ export const OpenBookingMarketplacePage = () =>
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
+    const queryClient = useQueryClient();
+
+    const { user } = useAuthStore();
 
     const [isFilterOpen, setIsFilterOpen] = useState(false);
+    const [editingBooking, setEditingBooking] =
+        useState<PublicOpenBookingRecord | null>(null);
 
     const page = Math.max(Number(searchParams.get("page") ?? "1"), 1);
 
@@ -455,7 +621,7 @@ export const OpenBookingMarketplacePage = () =>
             params.set("services", filters.services);
         }
 
-        if (filters.sort !== "earliest") {
+        if (filters.sort !== "newest") {
             params.set("sort", filters.sort);
         }
 
@@ -470,6 +636,73 @@ export const OpenBookingMarketplacePage = () =>
                 buildQueryOptions(appliedFilters, page),
             ),
         retry: false,
+    });
+
+    const updateBookingMutation = useMutation({
+        mutationFn: ({
+            bookingId,
+            payload,
+        }: {
+            bookingId: string;
+            payload: UpdateOpenBookingPayload;
+        }) => bookingService.updateMyClientOpenBooking(bookingId, payload),
+        onSuccess: async () =>
+        {
+            toast.success("Booking updated");
+            setEditingBooking(null);
+
+            await Promise.all([
+                queryClient.invalidateQueries({
+                    queryKey: ["open-booking-marketplace"],
+                }),
+                queryClient.invalidateQueries({
+                    queryKey: ["opening-booking-requests"],
+                }),
+                queryClient.invalidateQueries({
+                    queryKey: ["open-booking-detail"],
+                }),
+                queryClient.invalidateQueries({
+                    queryKey: ["client-bookings"],
+                }),
+            ]);
+        },
+        onError: () =>
+        {
+            toast.error("We couldn’t update this booking");
+        },
+    });
+
+    const cancelBookingMutation = useMutation({
+        mutationFn: (bookingId: string) =>
+            bookingService.cancelMyClientBooking(bookingId),
+        onSuccess: async () =>
+        {
+            toast.success("Booking cancelled", {
+                description:
+                    "Your open photoshoot request was removed from the public list.",
+            });
+
+            await Promise.all([
+                queryClient.invalidateQueries({
+                    queryKey: ["open-booking-marketplace"],
+                }),
+                queryClient.invalidateQueries({
+                    queryKey: ["opening-booking-requests"],
+                }),
+                queryClient.invalidateQueries({
+                    queryKey: ["open-booking-detail"],
+                }),
+                queryClient.invalidateQueries({
+                    queryKey: ["client-bookings"],
+                }),
+            ]);
+        },
+        onError: () =>
+        {
+            toast.error("We couldn’t cancel this booking", {
+                description: "Please try again in a moment.",
+            });
+        },
     });
 
     const data = marketplaceQuery.data;
@@ -493,6 +726,17 @@ export const OpenBookingMarketplacePage = () =>
         window.scrollTo({ top: 0, behavior: "smooth" });
     };
 
+    const handleSortChange = (sort: OpenBookingSort) =>
+    {
+        const nextFilters = {
+            ...appliedFilters,
+            sort,
+        };
+
+        setDraftFilters(nextFilters);
+        pushFiltersToUrl(nextFilters, 1);
+    };
+
     const hasActiveFilters =
         appliedFilters.shootTypes.length > 0 ||
         Boolean(appliedFilters.location) ||
@@ -506,45 +750,60 @@ export const OpenBookingMarketplacePage = () =>
         <main className="pb-16 pt-10 sm:pb-20 sm:pt-14">
             <Container size="wide">
                 <div className="mx-auto max-w-7xl">
-                    <div className="mb-9 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+                    <div className="mb-9 flex items-center justify-between gap-4">
                         <div>
-
-                            <h1 className="mt-3 font-display text-4xl leading-tight tracking-[-0.04em] text-foreground sm:text-5xl">
+                            <h1 className="font-display text-4xl leading-tight tracking-[-0.04em] text-foreground sm:text-5xl">
                                 Booking List
                             </h1>
                         </div>
 
-                        <div className="flex items-center gap-3">
+                        <div className="hidden items-center gap-3 lg:flex">
+                            <label className="relative">
+                                <SortIcon className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-accent" />
+                                <select
+                                    value={appliedFilters.sort}
+                                    onChange={(event) =>
+                                        handleSortChange(event.target.value as OpenBookingSort)
+                                    }
+                                    className="h-12 min-w-[13rem] appearance-none rounded-2xl border border-border bg-surface py-0 pl-11 pr-10 text-sm font-semibold text-foreground outline-none transition focus:border-accent"
+                                >
+                                    {SORT_OPTIONS_FOR_OPEN_BOOKING.map((option) => (
+                                        <option key={option.value} value={option.value}>
+                                            {option.label}
+                                        </option>
+                                    ))}
+                                </select>
+                                <ChevronDownIcon className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+                            </label>
+                        </div>
+
+                        <div className="flex shrink-0 items-center gap-3 lg:hidden">
                             <button
                                 type="button"
                                 onClick={() => setIsFilterOpen(true)}
-                                className="inline-flex items-center justify-center rounded-2xl border border-border bg-surface px-5 py-3 text-sm font-semibold text-foreground transition hover:border-accent hover:text-accent lg:hidden"
+                                className="inline-flex h-12 w-12 items-center justify-center rounded-[1.15rem] border border-border bg-surface text-accent shadow-[0_12px_30px_rgba(23,23,23,0.06)] transition hover:border-accent"
+                                aria-label="Open filters"
                             >
-                                Filter
+                                <FilterIcon className="h-5 w-5" />
                             </button>
 
-                            <select
-                                value={appliedFilters.sort}
-                                onChange={(event) =>
-                                    pushFiltersToUrl(
-                                        {
-                                            ...appliedFilters,
-                                            sort: event.target
-                                                .value as OpenBookingSort,
-                                        },
-                                        1,
-                                    )
-                                }
-                                className="h-12 rounded-2xl border border-border bg-surface px-4 text-sm font-semibold text-foreground outline-none transition focus:border-accent"
-                            >
-                                {Object.entries(SORT_LABELS).map(
-                                    ([value, label]) => (
-                                        <option key={value} value={value}>
-                                            {label}
+                            <label className="relative inline-flex h-12 w-12 items-center justify-center rounded-[1.15rem] border border-border bg-surface text-accent shadow-[0_12px_30px_rgba(23,23,23,0.06)] transition hover:border-accent">
+                                <SortIcon className="h-5 w-5" />
+                                <select
+                                    aria-label="Sort booking requests"
+                                    value={appliedFilters.sort}
+                                    onChange={(event) =>
+                                        handleSortChange(event.target.value as OpenBookingSort)
+                                    }
+                                    className="absolute inset-0 cursor-pointer opacity-0"
+                                >
+                                    {SORT_OPTIONS_FOR_OPEN_BOOKING.map((option) => (
+                                        <option key={option.value} value={option.value}>
+                                            {option.label}
                                         </option>
-                                    ),
-                                )}
-                            </select>
+                                    ))}
+                                </select>
+                            </label>
                         </div>
                     </div>
 
@@ -587,7 +846,7 @@ export const OpenBookingMarketplacePage = () =>
                             </div>
 
                             {marketplaceQuery.isLoading ? (
-                                <div className="space-y-4">
+                                <div className="grid gap-5 xl:grid-cols-2">
                                     {Array.from({ length: 4 }).map(
                                         (_, index) => (
                                             <div
@@ -615,11 +874,27 @@ export const OpenBookingMarketplacePage = () =>
                                 </div>
                             ) : (
                                 <>
-                                    <div className="space-y-3">
+                                    <div className="grid gap-5 xl:grid-cols-2">
                                         {data.items.map((booking) => (
                                             <OpenBookingCard
                                                 key={booking.id}
                                                 booking={booking}
+                                                currentUser={user}
+                                                isCancelling={
+                                                    cancelBookingMutation.isPending &&
+                                                    cancelBookingMutation.variables ===
+                                                    booking.id
+                                                }
+                                                onCancel={(bookingId) =>
+                                                    cancelBookingMutation.mutate(
+                                                        bookingId,
+                                                    )
+                                                }
+                                                onEdit={(targetBooking) =>
+                                                    setEditingBooking(
+                                                        targetBooking,
+                                                    )
+                                                }
                                             />
                                         ))}
                                     </div>
@@ -666,6 +941,24 @@ export const OpenBookingMarketplacePage = () =>
                     </div>
                 </div>
             ) : null}
+
+            <EditOpenBookingDialog
+                isOpen={Boolean(editingBooking)}
+                booking={editingBooking}
+                isSubmitting={updateBookingMutation.isPending}
+                onClose={() => setEditingBooking(null)}
+                onSubmit={(payload) =>
+                {
+                    if (!editingBooking) {
+                        return;
+                    }
+
+                    updateBookingMutation.mutate({
+                        bookingId: editingBooking.id,
+                        payload,
+                    });
+                }}
+            />
         </main>
     );
 };

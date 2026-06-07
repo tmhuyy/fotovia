@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
+import { ConfirmActionDialog } from "../../../components/common/confirm-action-dialog";
+
 interface BookingOwnerActionsMenuProps
 {
     bookingId: string;
@@ -40,6 +42,7 @@ export const BookingOwnerActionsMenu = ({
 {
     const rootRef = useRef<HTMLDivElement | null>(null);
     const [isOpen, setIsOpen] = useState(false);
+    const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
 
     useEffect(() =>
     {
@@ -67,90 +70,102 @@ export const BookingOwnerActionsMenu = ({
         };
     }, []);
 
-    const handleCancel = () =>
+    const handleCancelClick = () =>
     {
-        const confirmed = window.confirm(
-            "Cancel this open booking request? This will remove it from the public list.",
-        );
-
-        if (!confirmed) {
-            return;
-        }
-
         setIsOpen(false);
+        setIsCancelDialogOpen(true);
+    };
+
+    const handleConfirmCancel = () =>
+    {
         onCancel();
+        setIsCancelDialogOpen(false);
     };
 
     return (
-        <div ref={rootRef} className="relative z-30 pointer-events-auto">
-            <button
-                type="button"
-                onClick={(event) =>
-                {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    setIsOpen((current) => !current);
-                }}
-                className={[
-                    "cursor-pointer inline-flex h-9 w-12 items-center justify-center rounded-full border-2 border-transparent bg-transparent text-muted transition",
-                    "hover:border-[#9BC8EE] hover:bg-surface hover:text-foreground",
-                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9BC8EE]",
-                    isOpen ? "border-[#9BC8EE] bg-surface text-foreground" : "",
-                ].join(" ")}
-                aria-label="Open booking actions"
-                aria-expanded={isOpen}
-                aria-haspopup="menu"
-            >
-                <MoreIcon />
-            </button>
-
-            {isOpen ? (
-                <div
-                    role="menu"
-                    className="absolute right-0 top-[calc(100%+0.55rem)] z-40 w-56 rounded-[1.25rem] border border-border bg-surface p-2 shadow-2xl"
+        <>
+            <div ref={rootRef} className="pointer-events-auto relative z-30">
+                <button
+                    type="button"
                     onClick={(event) =>
                     {
                         event.preventDefault();
                         event.stopPropagation();
+                        setIsOpen((current) => !current);
                     }}
+                    className={[
+                        "inline-flex h-9 w-12 cursor-pointer items-center justify-center rounded-full border-2 border-transparent bg-transparent text-muted transition",
+                        "hover:border-[#9BC8EE] hover:bg-surface hover:text-foreground",
+                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9BC8EE]",
+                        isOpen ? "border-[#9BC8EE] bg-surface text-foreground" : "",
+                    ].join(" ")}
+                    aria-label="Open booking actions"
+                    aria-expanded={isOpen}
+                    aria-haspopup="menu"
                 >
-                    {onEdit ? (
+                    <MoreIcon />
+                </button>
+
+                {isOpen ? (
+                    <div
+                        role="menu"
+                        className="absolute right-0 top-[calc(100%+0.55rem)] z-40 w-56 rounded-[1.25rem] border border-border bg-surface p-2 shadow-2xl"
+                        onClick={(event) =>
+                        {
+                            event.preventDefault();
+                            event.stopPropagation();
+                        }}
+                    >
+                        {onEdit ? (
+                            <button
+                                type="button"
+                                className="block w-full rounded-2xl px-4 py-3 text-left text-sm font-medium text-foreground transition hover:bg-background hover:text-accent"
+                                role="menuitem"
+                                onClick={(event) =>
+                                {
+                                    event.preventDefault();
+                                    event.stopPropagation();
+                                    setIsOpen(false);
+                                    onEdit();
+                                }}
+                            >
+                                Edit booking
+                            </button>
+                        ) : (
+                            <Link
+                                href={editHref ?? `/my-bookings?bookingId=${bookingId}`}
+                                className="block rounded-2xl px-4 py-3 text-sm font-medium text-foreground transition hover:bg-background hover:text-accent"
+                                role="menuitem"
+                                onClick={() => setIsOpen(false)}
+                            >
+                                Edit booking
+                            </Link>
+                        )}
+
                         <button
                             type="button"
-                            className="block w-full rounded-2xl px-4 py-3 text-left text-sm font-medium text-foreground transition hover:bg-background hover:text-accent"
+                            onClick={handleCancelClick}
+                            disabled={isCancelling}
+                            className="mt-1 block w-full rounded-2xl px-4 py-3 text-left text-sm font-medium text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
                             role="menuitem"
-                            onClick={(event) =>
-                            {
-                                event.preventDefault();
-                                event.stopPropagation();
-                                setIsOpen(false);
-                                onEdit();
-                            }}
                         >
-                            Edit booking
+                            {isCancelling ? "Cancelling..." : "Cancel booking"}
                         </button>
-                    ) : (
-                        <Link
-                            href={editHref ?? `/my-bookings?bookingId=${bookingId}`}
-                            className="block rounded-2xl px-4 py-3 text-sm font-medium text-foreground transition hover:bg-background hover:text-accent"
-                            role="menuitem"
-                            onClick={() => setIsOpen(false)}
-                        >
-                            Edit booking
-                        </Link>
-                    )}
+                    </div>
+                ) : null}
+            </div>
 
-                    <button
-                        type="button"
-                        onClick={handleCancel}
-                        disabled={isCancelling}
-                        className="mt-1 block w-full rounded-2xl px-4 py-3 text-left text-sm font-medium text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
-                        role="menuitem"
-                    >
-                        {isCancelling ? "Cancelling..." : "Cancel booking"}
-                    </button>
-                </div>
-            ) : null}
-        </div>
+            <ConfirmActionDialog
+                isOpen={isCancelDialogOpen}
+                title="Cancel this booking?"
+                description="This open photoshoot request will be removed from the public booking list. Photographers will no longer be able to apply."
+                confirmLabel="Cancel booking"
+                cancelLabel="Keep request"
+                tone="danger"
+                isPending={isCancelling}
+                onCancel={() => setIsCancelDialogOpen(false)}
+                onConfirm={handleConfirmCancel}
+            />
+        </>
     );
 };

@@ -39,8 +39,8 @@ const SERVICE_OPTIONS: Array<{
     ];
 
 const SORT_OPTIONS: Array<{ label: string; value: OpenBookingSort }> = [
-    { label: "Earliest shoot date", value: "earliest" },
     { label: "Newest request", value: "newest" },
+    { label: "Earliest shoot date", value: "earliest" },
     { label: "Most applications", value: "most_applications" },
     { label: "Lowest budget", value: "budget_low" },
     { label: "Highest budget", value: "budget_high" },
@@ -54,7 +54,7 @@ export const OPEN_BOOKING_DEFAULT_FILTERS: OpenBookingFilterState = {
     budgetFrom: "",
     budgetTo: "",
     services: "all",
-    sort: "earliest",
+    sort: "newest",
 };
 
 export const SORT_LABELS = SORT_OPTIONS.reduce<Record<string, string>>(
@@ -65,6 +65,8 @@ export const SORT_LABELS = SORT_OPTIONS.reduce<Record<string, string>>(
     },
     {},
 );
+
+export const SORT_OPTIONS_FOR_OPEN_BOOKING = SORT_OPTIONS;
 
 export const OpenBookingFilterPanel = ({
     value,
@@ -102,6 +104,7 @@ export const OpenBookingFilterPanel = ({
                         type="button"
                         onClick={onClose}
                         className="flex h-9 w-9 items-center justify-center rounded-full border border-border text-xl text-foreground"
+                        aria-label="Close filter panel"
                     >
                         ×
                     </button>
