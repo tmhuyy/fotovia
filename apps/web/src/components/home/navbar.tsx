@@ -97,9 +97,9 @@ export const Navbar = () =>
         <header className="sticky top-0 z-40 border-b border-border/70 bg-background/95 backdrop-blur">
             <Container
                 size="wide"
-                className="grid h-[4.75rem] grid-cols-[1fr_auto_1fr] items-center gap-4"
+                className="flex h-[4.75rem] items-center justify-between gap-3 lg:grid lg:grid-cols-[1fr_auto_1fr] lg:gap-4"
             >
-                <div className="flex min-w-0 items-center">
+                <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                     <Link href="/" className="flex min-w-0 items-center gap-4">
                         <span className="font-serif text-2xl tracking-tight text-foreground">
                             Fotovia
@@ -109,6 +109,8 @@ export const Navbar = () =>
                             Photography Booking
                         </span>
                     </Link>
+
+                    <MobileNav navLinks={navLinks} />
                 </div>
 
                 <nav className="hidden items-center gap-7 lg:flex xl:gap-8">
@@ -134,8 +136,6 @@ export const Navbar = () =>
                 </nav>
 
                 <div className="flex items-center justify-end gap-3">
-                    <MobileNav navLinks={navLinks} />
-
                     <div className="hidden items-center gap-3 lg:flex">
                         {!hasHydrated || isHydrating ? (
                             <div className="h-11 w-48 animate-pulse rounded-full border border-border bg-surface/60" />
@@ -161,7 +161,7 @@ export const Navbar = () =>
 
                     <div className="flex shrink-0 items-center gap-3 lg:hidden">
                         {!hasHydrated || isHydrating ? (
-                            <div className="h-10 w-28 animate-pulse rounded-full border border-border bg-surface/60" />
+                            <div className="h-10 w-10 animate-pulse rounded-full border border-border bg-surface/60" />
                         ) : isAuthenticated ? (
                             <AccountMenu
                                 email={user?.email}
@@ -178,7 +178,7 @@ export const Navbar = () =>
                                 className="h-10 cursor-pointer px-4 text-xs min-[380px]:px-5"
                                 onClick={() => router.push("/sign-in")}
                             >
-                                Sign In / Sign Up
+                                Sign In
                             </Button>
                         )}
                     </div>

@@ -248,13 +248,13 @@ const InfoBlock = ({
     label: string;
     value: ReactNode;
 }) => (
-    <div className="grid gap-1.5">
-        <div className="flex items-center gap-2 text-sm text-muted">
-            <span className="text-accent">{icon}</span>
-            <span>{label}</span>
+    <div className="min-w-0 rounded-2xl bg-background/60 p-3 sm:bg-transparent sm:p-0">
+        <div className="flex items-center gap-2 text-xs text-muted sm:text-sm">
+            <span className="shrink-0 text-accent">{icon}</span>
+            <span className="truncate">{label}</span>
         </div>
 
-        <div className="text-base font-semibold leading-6 text-foreground">
+        <div className="mt-1 break-words text-sm font-semibold leading-6 text-foreground sm:text-base">
             {value}
         </div>
     </div>
@@ -529,33 +529,26 @@ export const OpenBookingDetailPage = () =>
                     ) : (
                         <section className="mx-auto max-w-4xl">
                             <div className="rounded-[2rem] border border-border bg-surface p-5 shadow-[0_18px_50px_rgba(23,23,23,0.06)] sm:p-8">
-                                <div className="flex flex-col gap-4 border-b border-border pb-6 sm:flex-row sm:items-start sm:justify-between">
-                                    <div>
-
-                                        <h1 className="mt-3 max-w-xl font-display text-2xl leading-tight tracking-[-0.03em] text-foreground sm:text-3xl">
+                                <div className="flex items-start justify-between gap-4 border-b border-border pb-6">
+                                    <div className="min-w-0 flex-1">
+                                        <h1 className="max-w-xl truncate font-display text-2xl leading-tight tracking-[-0.03em] text-foreground sm:text-3xl">
                                             {getBookingTitle(booking)}
                                         </h1>
                                     </div>
 
-                                    <div className="flex items-center gap-3">
-                                        {/* <span className="w-fit rounded-full border border-accent/30 bg-accent/15 px-4 py-2 text-sm font-semibold text-foreground">
-                                            Looking for photographer
-                                        </span> */}
-
-                                        {booking.canManage ? (
-                                            <BookingOwnerActionsMenu
-                                                bookingId={booking.id}
-                                                isCancelling={cancelBookingMutation.isPending}
-                                                onCancel={() => cancelBookingMutation.mutate()}
-                                                onEdit={() => setIsEditBookingOpen(true)}
-                                            />
-                                        ) : (
-                                            <span className="h-9 w-12 shrink-0" aria-hidden="true" />
-                                        )}
-                                    </div>
+                                    {booking.canManage ? (
+                                        <BookingOwnerActionsMenu
+                                            bookingId={booking.id}
+                                            isCancelling={cancelBookingMutation.isPending}
+                                            onCancel={() => cancelBookingMutation.mutate()}
+                                            onEdit={() => setIsEditBookingOpen(true)}
+                                        />
+                                    ) : (
+                                        <span className="h-9 w-12 shrink-0" aria-hidden="true" />
+                                    )}
                                 </div>
 
-                                <div className="grid gap-6 py-7 md:grid-cols-2">
+                                <div className="grid grid-cols-2 gap-4 py-7 sm:gap-6">
                                     <InfoBlock
                                         icon={<UserIcon />}
                                         label="Customer"
@@ -565,9 +558,7 @@ export const OpenBookingDetailPage = () =>
                                     <InfoBlock
                                         icon={<CalendarIcon />}
                                         label="Shooting date"
-                                        value={formatDetailedDate(
-                                            booking.sessionDate,
-                                        )}
+                                        value={formatDetailedDate(booking.sessionDate)}
                                     />
 
                                     <InfoBlock
@@ -580,11 +571,8 @@ export const OpenBookingDetailPage = () =>
                                         icon={<CameraIcon />}
                                         label="Shooting type"
                                         value={`${formatShootTypeLabel(
-                                            booking.shootType ||
-                                            booking.sessionType,
-                                        )} · ${formatBookingTime(
-                                            booking.sessionTime,
-                                        )}`}
+                                            booking.shootType || booking.sessionType,
+                                        )} · ${formatBookingTime(booking.sessionTime)}`}
                                     />
                                 </div>
 
