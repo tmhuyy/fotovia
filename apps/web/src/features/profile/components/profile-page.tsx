@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -16,13 +16,11 @@ import { assetService } from "../../../services/asset.service";
 import { profileService } from "../../../services/profile.service";
 import { useAuthStore } from "../../../store/auth.store";
 import type { ProfileUpdatePayload } from "../types/profile.types";
-import { ProfileAvatarUploader } from "./profile-avatar-uploader";
-import { ProfileDetailsForm } from "./profile-details-form";
+import { ProfileEditDialog } from "./profile-edit-dialog";
 import { ProfileEmptyState } from "./profile-empty-state";
 import { ProfileHeader } from "./profile-header";
-import { ProfileRoleHighlights } from "./profile-role-highlights";
+import { ProfileOverviewCard } from "./profile-overview-card";
 import { ProfileSignedOut } from "./profile-signed-out";
-import { ProfileSummaryCard } from "./profile-summary-card";
 
 const resolveErrorMessage = (error: unknown, fallbackMessage: string) =>
 {
@@ -47,18 +45,23 @@ const ProfilePageSkeleton = () =>
             <main className="pb-16 pt-10">
                 <Container className="space-y-8">
                     <div className="space-y-4">
-                        <div className="h-5 w-28 animate-pulse rounded bg-border/60" />
+                        <div className="h-5 w-32 animate-pulse rounded bg-border/60" />
                         <div className="h-12 w-80 animate-pulse rounded bg-border/60" />
                         <div className="h-6 w-[32rem] max-w-full animate-pulse rounded bg-border/50" />
                     </div>
 
-                    <div className="grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
-                        <div className="h-80 animate-pulse rounded-[2rem] border border-border bg-surface/60" />
-
-                        <div className="space-y-6">
-                            <div className="h-64 animate-pulse rounded-[2rem] border border-border bg-surface/60" />
-                            <div className="h-[28rem] animate-pulse rounded-[2rem] border border-border bg-surface/60" />
-                            <div className="h-64 animate-pulse rounded-[2rem] border border-border bg-surface/60" />
+                    <div className="overflow-hidden rounded-[2rem] border border-border bg-surface shadow-sm">
+                        <div className="h-56 animate-pulse bg-border/50" />
+                        <div className="space-y-8 px-8 pb-8">
+                            <div className="mx-auto -mt-16 h-32 w-32 animate-pulse rounded-full border-[6px] border-surface bg-border" />
+                            <div className="mx-auto h-8 w-64 animate-pulse rounded bg-border/60" />
+                            <div className="mx-auto h-5 w-80 max-w-full animate-pulse rounded bg-border/50" />
+                            <div className="grid gap-4 md:grid-cols-2">
+                                <div className="h-20 animate-pulse rounded-2xl bg-border/40" />
+                                <div className="h-20 animate-pulse rounded-2xl bg-border/40" />
+                                <div className="h-20 animate-pulse rounded-2xl bg-border/40" />
+                                <div className="h-20 animate-pulse rounded-2xl bg-border/40" />
+                            </div>
                         </div>
                     </div>
                 </Container>
@@ -72,6 +75,7 @@ export const ProfilePage = () =>
 {
     const queryClient = useQueryClient();
     const { user, isAuthenticated, isHydrating, hasHydrated } = useAuthStore();
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
     const authEmail = user?.email ?? "";
     const authRole = user?.role ?? "client";
@@ -158,10 +162,6 @@ export const ProfilePage = () =>
         onSuccess: (profile) =>
         {
             queryClient.setQueryData(queryKey, profile);
-
-            toast.success("Avatar updated", {
-                description: "Your new profile photo is now connected to your account.",
-            });
         },
         onError: (error) =>
         {
@@ -190,7 +190,7 @@ export const ProfilePage = () =>
             return {
                 title: "Your photographer profile",
                 subtitle:
-                    "Manage the real profile foundation that clients will build trust around later.",
+                    "Manage the profile details clients use before choosing a photographer.",
                 roleLabel: "Photographer account",
                 roleVariant: "accent" as const,
             };
@@ -199,7 +199,7 @@ export const ProfilePage = () =>
         return {
             title: "Your client profile",
             subtitle:
-                "Keep your core profile details ready for future booking and recommendation flows.",
+                "Keep your basic profile ready for future booking and recommendation flows.",
             roleLabel: "Client account",
             roleVariant: "neutral" as const,
         };
@@ -230,12 +230,12 @@ export const ProfilePage = () =>
                 <main className="pb-16 pt-10">
                     <Container className="space-y-8">
                         <Section className="space-y-8">
-                            <ProfileHeader
+                            {/* <ProfileHeader
                                 title={headerCopy.title}
                                 subtitle={headerCopy.subtitle}
                                 roleLabel={headerCopy.roleLabel}
                                 roleVariant={headerCopy.roleVariant}
-                            />
+                            /> */}
 
                             <ProfileEmptyState
                                 role={authRole}
@@ -264,7 +264,8 @@ export const ProfilePage = () =>
                                     </h1>
 
                                     <p className="text-sm leading-6 text-muted">
-                                        {profileError?.message ?? "Please try again in a moment."}
+                                        {profileError?.message ??
+                                            "Please try again in a moment."}
                                     </p>
                                 </div>
 
@@ -292,36 +293,34 @@ export const ProfilePage = () =>
             <main className="pb-16 pt-10">
                 <Container className="space-y-8">
                     <Section className="space-y-8">
-                        <ProfileHeader
+                        {/* <ProfileHeader
                             title={headerCopy.title}
                             subtitle={headerCopy.subtitle}
                             roleLabel={headerCopy.roleLabel}
                             roleVariant={headerCopy.roleVariant}
+                        /> */}
+
+                        <ProfileOverviewCard
+                            profile={profile}
+                            onEdit={() => setIsEditDialogOpen(true)}
                         />
-
-                        <div className="grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
-                            <ProfileSummaryCard profile={profile} />
-
-                            <div className="space-y-6">
-                                <ProfileAvatarUploader
-                                    profile={profile}
-                                    isUploading={updateAvatarMutation.isPending}
-                                    onUpload={async (file) => { await updateAvatarMutation.mutateAsync(file); }}
-                                />
-
-                                <ProfileDetailsForm
-                                    role={profile.role}
-                                    profile={profile}
-                                    onSave={async (payload) =>
-                                        updateProfileMutation.mutateAsync(payload)
-                                    }
-                                />
-
-                                <ProfileRoleHighlights profile={profile} />
-                            </div>
-                        </div>
                     </Section>
                 </Container>
+
+                <ProfileEditDialog
+                    isOpen={isEditDialogOpen}
+                    profile={profile}
+                    isSaving={updateProfileMutation.isPending}
+                    isUploading={updateAvatarMutation.isPending}
+                    onClose={() => setIsEditDialogOpen(false)}
+                    onSave={(payload) =>
+                        updateProfileMutation.mutateAsync(payload)
+                    }
+                    onUpload={async (file) =>
+                    {
+                        await updateAvatarMutation.mutateAsync(file);
+                    }}
+                />
             </main>
             <Footer />
         </>

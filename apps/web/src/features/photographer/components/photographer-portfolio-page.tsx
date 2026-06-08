@@ -720,7 +720,7 @@ export const PhotographerPortfolioPage = () =>
             "h-10 rounded-lg border border-border bg-surface text-sm font-semibold shadow-none hover:bg-background",
         })}
       >
-        Edit public info
+        Edit profile
       </Link>
 
       <Link

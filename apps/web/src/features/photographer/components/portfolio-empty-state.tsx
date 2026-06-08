@@ -41,7 +41,7 @@ export const PortfolioEmptyState = () =>
                             size: "lg",
                         })}
                     >
-                        Edit public info
+                        Edit profile
                     </Link>
                 </div>
 
