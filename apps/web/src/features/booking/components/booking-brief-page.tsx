@@ -660,7 +660,7 @@ export const BookingBriefPage = ({ prefill }: BookingBriefPageProps) =>
 
       <main>
         <Section className="py-6 sm:py-8 md:py-10">
-          <Container className="max-w-full space-y-6 overflow-x-hidden">
+          <Container className="space-y-6 overflow-x-hidden">
             <div>
               <h1 className="font-display text-3xl text-foreground md:text-4xl">
                 Complete your booking brief.
