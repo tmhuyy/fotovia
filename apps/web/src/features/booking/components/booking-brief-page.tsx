@@ -655,12 +655,12 @@ export const BookingBriefPage = ({ prefill }: BookingBriefPageProps) =>
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen overflow-x-hidden bg-background">
       <Navbar />
 
       <main>
         <Section className="py-6 sm:py-8 md:py-10">
-          <Container className="space-y-6">
+          <Container className="max-w-full space-y-6 overflow-x-hidden">
             <div>
               <h1 className="font-display text-3xl text-foreground md:text-4xl">
                 Complete your booking brief.
@@ -673,13 +673,13 @@ export const BookingBriefPage = ({ prefill }: BookingBriefPageProps) =>
                   handleSubmit,
                   handleInvalid,
                 )}
-                className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]"
+                className="grid w-full max-w-full min-w-0 gap-6 overflow-x-hidden lg:grid-cols-[minmax(0,1fr)_360px]"
               >
-                <div className="space-y-6">
+                <div className="min-w-0 space-y-6">
                   <BookingBriefForm />
                 </div>
 
-                <div className="space-y-6 lg:sticky lg:top-24 lg:self-start">
+                <div className="min-w-0 space-y-6 lg:sticky lg:top-24 lg:self-start">
                   <BookingBriefSummaryCard
                     errorMessage={submitError}
                     submitLabel="Confirm request"

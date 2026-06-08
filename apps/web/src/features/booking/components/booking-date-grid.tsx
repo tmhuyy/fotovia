@@ -149,36 +149,36 @@ export const BookingDateGrid = () =>
             : undefined;
 
     return (
-        <div className="space-y-3">
-            <div className="flex items-center justify-between gap-4">
+        <div className="w-full min-w-0 space-y-3 overflow-hidden">
+            <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                 <label className="text-base font-semibold text-foreground">
                     Expected shoot date <span className="text-red-500">*</span>
                 </label>
 
-                <p className="shrink-0 text-sm font-semibold text-foreground">
+                <p className="min-w-0 text-sm font-semibold text-foreground sm:shrink-0">
                     {selectedDateValue || "Not selected"}
                 </p>
             </div>
 
-            <div className="rounded-[1.5rem] border border-border bg-surface p-4">
-                <div className="mb-4 flex items-center justify-center gap-6">
+            <div className="w-full min-w-0 overflow-hidden rounded-[1.5rem] border border-border bg-surface p-3 sm:p-4">
+                <div className="mb-4 flex min-w-0 items-center justify-center gap-2 sm:gap-6">
                     <button
                         type="button"
-                        className="flex h-9 w-9 items-center justify-center rounded-full text-xl text-muted transition hover:bg-background hover:text-foreground"
+                        className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-xl text-muted transition hover:bg-background hover:text-foreground"
                         onClick={handlePreviousMonth}
                         aria-label="Previous month"
                     >
                         ‹
                     </button>
 
-                    <p className="min-w-44 text-center text-sm font-semibold text-foreground">
+                    <p className="min-w-0 flex-1 truncate text-center text-sm font-semibold text-foreground sm:min-w-44 sm:flex-none">
                         {MONTH_NAMES[calendarMonth.getMonth()]}{" "}
                         {calendarMonth.getFullYear()}
                     </p>
 
                     <button
                         type="button"
-                        className="flex h-9 w-9 items-center justify-center rounded-full text-xl text-muted transition hover:bg-background hover:text-foreground"
+                        className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-xl text-muted transition hover:bg-background hover:text-foreground"
                         onClick={handleNextMonth}
                         aria-label="Next month"
                     >
@@ -186,18 +186,18 @@ export const BookingDateGrid = () =>
                     </button>
                 </div>
 
-                <div className="grid grid-cols-7 gap-2 text-center">
+                <div className="grid min-w-0 grid-cols-7 gap-1 text-center sm:gap-2">
                     {WEEKDAY_LABELS.map((weekday) => (
                         <div
                             key={weekday}
-                            className="text-xs font-semibold text-muted"
+                            className="truncate text-[0.65rem] font-semibold text-muted sm:text-xs"
                         >
                             {weekday}
                         </div>
                     ))}
 
                     {blankDays.map((_, index) => (
-                        <div key={`blank-${index}`} />
+                        <div key={`blank-${index}`} className="aspect-square" />
                     ))}
 
                     {days.map((date) =>
@@ -214,16 +214,14 @@ export const BookingDateGrid = () =>
                                 type="button"
                                 disabled={isDisabled}
                                 className={[
-                                    "flex h-11 items-center justify-center rounded-2xl text-sm font-semibold transition",
+                                    "flex aspect-square w-full min-w-0 items-center justify-center rounded-xl text-xs font-semibold transition sm:rounded-2xl sm:text-sm",
                                     isSelected
                                         ? "bg-foreground text-background"
                                         : "bg-background text-foreground hover:bg-accent/20",
-                                    isWeekend && !isSelected
-                                        ? "bg-accent/10"
-                                        : "",
+                                    isWeekend && !isSelected ? "bg-accent/10" : "",
                                     isDisabled
                                         ? "cursor-not-allowed bg-background text-muted/35 hover:bg-background"
-                                        : "",
+                                        : "cursor-pointer",
                                 ]
                                     .filter(Boolean)
                                     .join(" ")}

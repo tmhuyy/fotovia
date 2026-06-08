@@ -54,20 +54,20 @@ export const BookingBriefForm = () =>
   const normalizedErrors = errors as Record<string, { message?: unknown }>;
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader className="space-y-1 pb-4">
+    <div className="w-full max-w-full min-w-0 space-y-6 overflow-x-hidden">
+      <Card className="min-w-0 overflow-hidden">
+        <CardHeader className="space-y-1 px-4 pb-4 pt-5 sm:px-6 sm:pt-6">
           <p className="text-xs uppercase tracking-[0.3em] text-muted">
             Step 01
           </p>
 
-          <h2 className="text-2xl font-semibold text-foreground">
+          <h2 className="text-xl font-semibold text-foreground sm:text-2xl">
             Choose your shoot type.
           </h2>
         </CardHeader>
 
-        <CardContent className="space-y-4">
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <CardContent className="space-y-4 px-4 pb-5 sm:px-6 sm:pb-6">
+          <div className="grid min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-5">
             {shootTypeOptions.map((option) =>
             {
               const isSelected = selectedShootType === option.value;
@@ -76,7 +76,7 @@ export const BookingBriefForm = () =>
                 <label
                   key={option.value}
                   className={[
-                    "group cursor-pointer overflow-hidden rounded-[1.25rem] border bg-background transition",
+                    "group min-w-0 cursor-pointer overflow-hidden rounded-[1.25rem] border bg-background transition",
                     isSelected
                       ? "border-accent bg-accent/10 shadow-sm"
                       : "border-border hover:border-accent/50",
@@ -91,16 +91,18 @@ export const BookingBriefForm = () =>
                     {...register("shootType")}
                   />
 
-                  <div className="flex h-full flex-col">
+                  <div className="flex h-full min-w-0 flex-col">
                     <div className="flex h-20 items-center justify-center bg-gradient-to-br from-background via-surface to-accent/20 text-3xl">
                       {option.visual}
                     </div>
 
-                    <div className="space-y-1 p-3 text-center">
+                    <div className="min-w-0 space-y-1 p-3 text-center">
                       <p
                         className={[
-                          "text-sm font-semibold",
-                          isSelected ? "text-accent" : "text-foreground",
+                          "truncate text-sm font-semibold",
+                          isSelected
+                            ? "text-accent"
+                            : "text-foreground",
                         ]
                           .filter(Boolean)
                           .join(" ")}
@@ -108,7 +110,9 @@ export const BookingBriefForm = () =>
                         {option.label}
                       </p>
 
-                      <p className="text-xs text-muted">{option.subtitle}</p>
+                      <p className="break-words text-xs text-muted">
+                        {option.subtitle}
+                      </p>
                     </div>
                   </div>
                 </label>
@@ -122,22 +126,23 @@ export const BookingBriefForm = () =>
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader className="space-y-1 pb-4">
+      <Card className="min-w-0 overflow-hidden">
+        <CardHeader className="space-y-1 px-4 pb-4 pt-5 sm:px-6 sm:pt-6">
           <p className="text-xs uppercase tracking-[0.3em] text-muted">
             Step 02
           </p>
 
-          <h2 className="text-2xl font-semibold text-foreground">
+          <h2 className="text-xl font-semibold text-foreground sm:text-2xl">
             Choose date and place.
           </h2>
         </CardHeader>
 
-        <CardContent className="space-y-5">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
+        <CardContent className="space-y-5 px-4 pb-5 sm:px-6 sm:pb-6">
+          <div className="grid min-w-0 gap-4 md:grid-cols-2">
+            <div className="min-w-0 space-y-2">
               <Label htmlFor="location">
-                Province / city <span className="text-red-500">*</span>
+                Province / city{" "}
+                <span className="text-red-500">*</span>
               </Label>
 
               <Select id="location" {...register("location")}>
@@ -146,21 +151,29 @@ export const BookingBriefForm = () =>
                 </option>
 
                 {VIETNAM_LOCATION_OPTIONS.map((location) => (
-                  <option key={location.value} value={location.value}>
+                  <option
+                    key={location.value}
+                    value={location.value}
+                  >
                     {location.label}
                   </option>
                 ))}
               </Select>
 
               <FieldError
-                message={getErrorMessage(normalizedErrors, "location")}
+                message={getErrorMessage(
+                  normalizedErrors,
+                  "location",
+                )}
               />
             </div>
 
-            <div className="space-y-2">
+            <div className="min-w-0 space-y-2">
               <Label htmlFor="preferredTime">
                 Preferred time{" "}
-                <span className="font-normal text-muted">(optional)</span>
+                <span className="font-normal text-muted">
+                  (optional)
+                </span>
               </Label>
 
               <Input
@@ -170,7 +183,10 @@ export const BookingBriefForm = () =>
               />
 
               <FieldError
-                message={getErrorMessage(normalizedErrors, "preferredTime")}
+                message={getErrorMessage(
+                  normalizedErrors,
+                  "preferredTime",
+                )}
               />
             </div>
           </div>
@@ -179,19 +195,19 @@ export const BookingBriefForm = () =>
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader className="space-y-1 pb-4">
+      <Card className="min-w-0 overflow-hidden">
+        <CardHeader className="space-y-1 px-4 pb-4 pt-5 sm:px-6 sm:pt-6">
           <p className="text-xs uppercase tracking-[0.3em] text-muted">
             Step 03
           </p>
 
-          <h2 className="text-2xl font-semibold text-foreground">
+          <h2 className="text-xl font-semibold text-foreground sm:text-2xl">
             Add shoot details.
           </h2>
         </CardHeader>
 
-        <CardContent className="space-y-5">
-          <div className="space-y-2">
+        <CardContent className="space-y-5 px-4 pb-5 sm:px-6 sm:pb-6">
+          <div className="min-w-0 space-y-2">
             <Label htmlFor="title">
               Shoot title <span className="text-red-500">*</span>
             </Label>
@@ -203,10 +219,12 @@ export const BookingBriefForm = () =>
               {...register("title")}
             />
 
-            <FieldError message={getErrorMessage(normalizedErrors, "title")} />
+            <FieldError
+              message={getErrorMessage(normalizedErrors, "title")}
+            />
           </div>
 
-          <div className="space-y-2">
+          <div className="min-w-0 space-y-2">
             <Label htmlFor="concept">
               Shoot brief <span className="text-red-500">*</span>
             </Label>
@@ -219,12 +237,15 @@ export const BookingBriefForm = () =>
               {...register("concept")}
             />
 
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex min-w-0 items-center justify-between gap-4">
               <FieldError
-                message={getErrorMessage(normalizedErrors, "concept")}
+                message={getErrorMessage(
+                  normalizedErrors,
+                  "concept",
+                )}
               />
 
-              <p className="ml-auto text-xs text-muted">
+              <p className="ml-auto shrink-0 text-xs text-muted">
                 {(concept ?? "").length}/500
               </p>
             </div>
@@ -234,16 +255,21 @@ export const BookingBriefForm = () =>
 
           <BookingBudgetRangeField />
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="contactPreference">Contact preference</Label>
+          <div className="grid min-w-0 gap-4 md:grid-cols-2">
+            <div className="min-w-0 space-y-2">
+              <Label htmlFor="contactPreference">
+                Contact preference
+              </Label>
 
               <Select
                 id="contactPreference"
                 {...register("contactPreference")}
               >
                 {contactOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
+                  <option
+                    key={option.value}
+                    value={option.value}
+                  >
                     {option.label}
                   </option>
                 ))}
@@ -257,10 +283,12 @@ export const BookingBriefForm = () =>
               />
             </div>
 
-            <div className="space-y-2">
+            <div className="min-w-0 space-y-2">
               <Label htmlFor="inspiration">
                 Inspiration link{" "}
-                <span className="font-normal text-muted">(optional)</span>
+                <span className="font-normal text-muted">
+                  (optional)
+                </span>
               </Label>
 
               <Input
@@ -271,7 +299,10 @@ export const BookingBriefForm = () =>
               />
 
               <FieldError
-                message={getErrorMessage(normalizedErrors, "inspiration")}
+                message={getErrorMessage(
+                  normalizedErrors,
+                  "inspiration",
+                )}
               />
             </div>
           </div>
