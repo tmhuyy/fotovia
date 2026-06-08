@@ -333,6 +333,9 @@ export const OpenBookingDetailPage = () =>
     });
 
     const booking = bookingQuery.data;
+    const canManageCurrentBooking =
+        Boolean(booking?.isOwner || booking?.canManage) &&
+        booking?.status !== "cancelled";
 
     const canLoadOwnerTimeline =
         hasHydrated &&
@@ -564,7 +567,13 @@ export const OpenBookingDetailPage = () =>
                             </div>
                         </div>
                     ) : (
-                        <section className="mx-auto max-w-4xl space-y-6">
+                        <section
+                            className={
+                                booking.isOwner
+                                    ? "mx-auto grid max-w-6xl gap-6 lg:grid-cols-[17rem_minmax(0,1fr)] lg:items-start"
+                                    : "mx-auto max-w-4xl space-y-6"
+                            }
+                        >
                             {booking.isOwner ? (
                                 <BookingProgressBar
                                     booking={booking}
@@ -572,158 +581,158 @@ export const OpenBookingDetailPage = () =>
                                 />
                             ) : null}
 
-                            <div className="rounded-[2rem] border border-border bg-surface p-5 shadow-[0_18px_50px_rgba(23,23,23,0.06)] sm:p-8">
-                                <div className="flex items-start justify-between gap-4 border-b border-border pb-6">
-                                    <div className="min-w-0 flex-1">
-                                        <h1 className="max-w-xl truncate font-display text-2xl leading-tight tracking-[-0.03em] text-foreground sm:text-3xl">
-                                            {getBookingTitle(booking)}
-                                        </h1>
+                            <div className="space-y-6">
+                                <div className="rounded-[2rem] border border-border bg-surface p-5 shadow-[0_18px_50px_rgba(23,23,23,0.06)] sm:p-8">
+                                    <div className="flex items-start justify-between gap-4 border-b border-border pb-6">
+                                        <div className="min-w-0 flex-1">
+                                            <h1 className="max-w-xl truncate font-display text-2xl leading-tight tracking-[-0.03em] text-foreground sm:text-3xl">
+                                                {getBookingTitle(booking)}
+                                            </h1>
+                                        </div>
+
+                                        {canManageCurrentBooking ? (
+                                            <BookingOwnerActionsMenu
+                                                bookingId={booking.id}
+                                                isCancelling={cancelBookingMutation.isPending}
+                                                canEdit={getApplicationCount(booking) === 0}
+                                                onCancel={(payload) =>
+                                                    cancelBookingMutation.mutate(payload)
+                                                }
+                                                onEdit={() => setIsEditBookingOpen(true)}
+                                            />
+                                        ) : (
+                                            <span className="h-9 w-12 shrink-0" aria-hidden="true" />
+                                        )}
                                     </div>
 
-                                    {booking.canManage && booking.status !== "cancelled" ? (
-                                        <BookingOwnerActionsMenu
-                                            bookingId={booking.id}
-                                            isCancelling={cancelBookingMutation.isPending}
-                                            canEdit={getApplicationCount(booking) === 0}
-                                            onCancel={(payload) => cancelBookingMutation.mutate(payload)}
-                                            onEdit={() => setIsEditBookingOpen(true)}
+                                    <div className="grid grid-cols-2 gap-4 py-7 sm:gap-6">
+                                        <InfoBlock
+                                            icon={<UserIcon />}
+                                            label="Customer"
+                                            value={getClientName(booking)}
                                         />
-                                    ) : (
-                                        <span className="h-9 w-12 shrink-0" aria-hidden="true" />
-                                    )}
-                                </div>
 
-                                <div className="grid grid-cols-2 gap-4 py-7 sm:gap-6">
-                                    <InfoBlock
-                                        icon={<UserIcon />}
-                                        label="Customer"
-                                        value={getClientName(booking)}
-                                    />
+                                        <InfoBlock
+                                            icon={<CalendarIcon />}
+                                            label="Shooting date"
+                                            value={formatDetailedDate(booking.sessionDate)}
+                                        />
 
-                                    <InfoBlock
-                                        icon={<CalendarIcon />}
-                                        label="Shooting date"
-                                        value={formatDetailedDate(booking.sessionDate)}
-                                    />
+                                        <InfoBlock
+                                            icon={<LocationIcon />}
+                                            label="Location"
+                                            value={booking.location}
+                                        />
 
-                                    <InfoBlock
-                                        icon={<LocationIcon />}
-                                        label="Location"
-                                        value={booking.location}
-                                    />
+                                        <InfoBlock
+                                            icon={<CameraIcon />}
+                                            label="Shooting type"
+                                            value={`${formatShootTypeLabel(
+                                                booking.shootType || booking.sessionType,
+                                            )} · ${formatBookingTime(booking.sessionTime)}`}
+                                        />
+                                    </div>
 
-                                    <InfoBlock
-                                        icon={<CameraIcon />}
-                                        label="Shooting type"
-                                        value={`${formatShootTypeLabel(
-                                            booking.shootType || booking.sessionType,
-                                        )} · ${formatBookingTime(booking.sessionTime)}`}
-                                    />
-                                </div>
+                                    <div className="space-y-6 border-t border-border pt-7">
+                                        <section>
+                                            <div className="flex items-center gap-2 text-sm text-muted">
+                                                <DocumentIcon className="h-4 w-4 text-accent" />
+                                                <span>Photoshoot description</span>
+                                            </div>
 
-                                <div className="space-y-6 border-t border-border pt-7">
-                                    <section>
-                                        <div className="flex items-center gap-2 text-sm text-muted">
-                                            <DocumentIcon className="h-4 w-4 text-accent" />
-                                            <span>Photoshoot description</span>
-                                        </div>
+                                            <p className="mt-2 whitespace-pre-line rounded-2xl bg-background px-4 py-4 text-base leading-7 text-foreground">
+                                                {booking.concept || "No description was added."}
+                                            </p>
+                                        </section>
 
-                                        <p className="mt-2 whitespace-pre-line rounded-2xl bg-background px-4 py-4 text-base leading-7 text-foreground">
-                                            {booking.concept ||
-                                                "No description was added."}
-                                        </p>
-                                    </section>
+                                        <section>
+                                            <div className="flex items-center gap-2 text-sm text-muted">
+                                                <TagIcon className="h-4 w-4 text-accent" />
+                                                <span>Request</span>
+                                            </div>
 
-                                    <section>
-                                        <div className="flex items-center gap-2 text-sm text-muted">
-                                            <TagIcon className="h-4 w-4 text-accent" />
-                                            <span>Request</span>
-                                        </div>
-
-                                        <div className="mt-3 flex flex-wrap gap-2">
-                                            {getServiceChips(booking).length > 0 ? (
-                                                getServiceChips(booking).map(
-                                                    (chip) => (
+                                            <div className="mt-3 flex flex-wrap gap-2">
+                                                {getServiceChips(booking).length > 0 ? (
+                                                    getServiceChips(booking).map((chip) => (
                                                         <span
                                                             key={chip}
                                                             className="rounded-full border border-accent/30 bg-accent/15 px-3 py-1.5 text-sm font-medium text-foreground"
                                                         >
                                                             {chip}
                                                         </span>
-                                                    ),
-                                                )
-                                            ) : (
-                                                <span className="rounded-full border border-border bg-background px-3 py-1.5 text-sm text-muted">
-                                                    No extra service requested
+                                                    ))
+                                                ) : (
+                                                    <span className="rounded-full border border-border bg-background px-3 py-1.5 text-sm text-muted">
+                                                        No extra service requested
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </section>
+
+                                        <div className="rounded-2xl bg-background px-4 py-4">
+                                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                                <span className="text-sm font-medium text-muted">
+                                                    Expected cost
                                                 </span>
-                                            )}
+
+                                                <span className="text-lg font-semibold tracking-[0.02em] text-accent">
+                                                    {formatBudgetLabel(booking.budget)}
+                                                </span>
+                                            </div>
                                         </div>
-                                    </section>
 
-                                    <div className="rounded-2xl bg-background px-4 py-4">
-                                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                            <span className="text-sm font-medium text-muted">
-                                                Expected cost
-                                            </span>
+                                        <OpenBookingApplicationsSection
+                                            booking={booking}
+                                            bookingId={booking.id}
+                                        />
 
-                                            <span className="text-lg font-semibold tracking-[0.02em] text-accent">
-                                                {formatBudgetLabel(booking.budget)}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    <OpenBookingApplicationsSection
-                                        booking={booking}
-                                        bookingId={booking.id}
-                                    />
-
-                                    <div className="flex justify-center pt-1">
-                                        {primaryCta.disabled ? (
-                                            <button
-                                                type="button"
-                                                disabled
-                                                className="inline-flex min-w-[15rem] cursor-not-allowed items-center justify-center rounded-2xl bg-foreground/40 px-8 py-4 text-base font-semibold text-background"
-                                            >
-                                                {primaryCta.label}
-                                            </button>
-                                        ) : (
-                                            "action" in primaryCta &&
-                                                primaryCta.action === "apply" ? (
+                                        <div className="flex justify-center pt-1">
+                                            {primaryCta.disabled ? (
                                                 <button
                                                     type="button"
-                                                    onClick={() =>
-                                                        setIsApplyModalOpen(true)
-                                                    }
-                                                    className="inline-flex min-w-[15rem] items-center justify-center rounded-2xl bg-foreground px-8 py-4 text-base font-semibold text-background transition hover:opacity-90"
+                                                    disabled
+                                                    className="inline-flex min-w-[15rem] cursor-not-allowed items-center justify-center rounded-2xl bg-foreground/40 px-8 py-4 text-base font-semibold text-background"
                                                 >
                                                     {primaryCta.label}
                                                 </button>
                                             ) : (
-                                                <Link
-                                                    href={primaryCta.href}
-                                                    className="inline-flex min-w-[15rem] items-center justify-center rounded-2xl bg-foreground px-8 py-4 text-base font-semibold text-background transition hover:opacity-90"
-                                                >
-                                                    {primaryCta.label}
-                                                </Link>
-                                            )
-                                        )}
+                                                "action" in primaryCta &&
+                                                    primaryCta.action === "apply" ? (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setIsApplyModalOpen(true)}
+                                                        className="inline-flex min-w-[15rem] cursor-pointer items-center justify-center rounded-2xl bg-foreground px-8 py-4 text-base font-semibold text-background transition hover:opacity-90"
+                                                    >
+                                                        {primaryCta.label}
+                                                    </button>
+                                                ) : (
+                                                    <Link
+                                                        href={primaryCta.href}
+                                                        className="inline-flex min-w-[15rem] items-center justify-center rounded-2xl bg-foreground px-8 py-4 text-base font-semibold text-background transition hover:opacity-90"
+                                                    >
+                                                        {primaryCta.label}
+                                                    </Link>
+                                                )
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
+
+                                {booking.isOwner ? (
+                                    <BookingActivityTimeline
+                                        events={timelineQuery.data ?? []}
+                                        isLoading={timelineQuery.isLoading}
+                                        errorMessage={
+                                            timelineQuery.error
+                                                ? getErrorMessage(
+                                                    timelineQuery.error,
+                                                    "We couldn’t load the booking timeline right now.",
+                                                )
+                                                : null
+                                        }
+                                    />
+                                ) : null}
                             </div>
-                            {booking.isOwner ? (
-                                <BookingActivityTimeline
-                                    events={timelineQuery.data ?? []}
-                                    isLoading={timelineQuery.isLoading}
-                                    errorMessage={
-                                        timelineQuery.error
-                                            ? getErrorMessage(
-                                                timelineQuery.error,
-                                                "We couldn’t load the booking timeline right now.",
-                                            )
-                                            : null
-                                    }
-                                />
-                            ) : null}
                         </section>
                     )}
                 </Container>

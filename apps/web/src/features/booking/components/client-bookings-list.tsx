@@ -2,18 +2,20 @@ import Link from "next/link";
 
 import type {
     BookingRequestRecord,
+    CancelBookingPayload,
     ClientBookingFilter,
 } from "../types/booking.types";
 import
-    {
-        formatBookingDate,
-        formatBookingTime,
-        formatBudgetLabel,
-        formatShootTypeLabel,
-        formatSubmittedAt,
-        getBookingDisplayTitle,
-        hasAssignedPhotographer,
-    } from "../utils/booking-display";
+{
+    formatBookingDate,
+    formatBookingTime,
+    formatBudgetLabel,
+    formatShootTypeLabel,
+    formatSubmittedAt,
+    getBookingDisplayTitle,
+    hasAssignedPhotographer,
+} from "../utils/booking-display";
+import { BookingOwnerActionsMenu } from "./booking-owner-actions-menu";
 import { BookingStatusPill } from "./booking-status-pill";
 
 interface ClientBookingsListProps
@@ -21,6 +23,9 @@ interface ClientBookingsListProps
     bookings: BookingRequestRecord[];
     activeFilter: ClientBookingFilter;
     counts: Record<ClientBookingFilter, number>;
+    cancellingBookingId?: string | null;
+    onCancel: (bookingId: string, payload: CancelBookingPayload) => void;
+    onEdit: (booking: BookingRequestRecord) => void;
     onFilterChange: (filter: ClientBookingFilter) => void;
 }
 
@@ -138,54 +143,59 @@ const getServiceChips = (booking: BookingRequestRecord): string[] =>
     return chips;
 };
 
+const canShowOwnerActions = (booking: BookingRequestRecord): boolean =>
+{
+    return booking.status !== "cancelled";
+};
+
 export const ClientBookingsList = ({
     bookings,
     activeFilter,
     counts,
+    cancellingBookingId,
+    onCancel,
+    onEdit,
     onFilterChange,
 }: ClientBookingsListProps) =>
 {
     return (
         <div className="space-y-6">
-            <div className=" ">
-                
+            <div className="flex flex-wrap gap-2">
+                {filterOptions.map((option) =>
+                {
+                    const isActive = option.value === activeFilter;
 
-                <div className="mt-5 flex flex-wrap gap-2">
-                    {filterOptions.map((option) =>
-                    {
-                        const isActive = option.value === activeFilter;
-
-                        return (
-                            <button
-                                key={option.value}
-                                type="button"
-                                onClick={() => onFilterChange(option.value)}
+                    return (
+                        <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => onFilterChange(option.value)}
+                            className={[
+                                "inline-flex cursor-pointer items-center gap-2 rounded-full border px-5 py-2.5 text-sm font-semibold transition",
+                                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40",
+                                isActive
+                                    ? "border-foreground bg-foreground text-background shadow-[0_12px_30px_rgba(23,23,23,0.14)]"
+                                    : "border-border bg-surface text-muted hover:border-accent/60 hover:bg-accent/10 hover:text-foreground",
+                            ].join(" ")}
+                        >
+                            <span>{option.label}</span>
+                            <span
                                 className={[
-                                    "inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm transition",
+                                    "rounded-full px-2 py-0.5 text-xs transition",
                                     isActive
-                                        ? "border-foreground bg-foreground text-background"
-                                        : "border-border bg-brand-background text-brand-primary hover:text-foreground",
+                                        ? "bg-background/15 text-background"
+                                        : "bg-background text-foreground",
                                 ].join(" ")}
                             >
-                                <span>{option.label}</span>
-                                <span
-                                    className={[
-                                        "rounded-full px-2 py-0.5 text-xs",
-                                        isActive
-                                            ? "bg-background/15 text-background"
-                                            : "bg-brand-background  text-foreground",
-                                    ].join(" ")}
-                                >
-                                    {counts[option.value]}
-                                </span>
-                            </button>
-                        );
-                    })}
-                </div>
+                                {counts[option.value]}
+                            </span>
+                        </button>
+                    );
+                })}
             </div>
 
             {bookings.length === 0 ? (
-                <div className=" p-8 text-center text-sm text-muted">
+                <div className="p-8 text-center text-sm text-muted">
                     No matching results
                 </div>
             ) : (
@@ -195,126 +205,146 @@ export const ClientBookingsList = ({
                         const applicationCount = getApplicationCount(booking);
                         const serviceChips = getServiceChips(booking);
                         const hasPhotographer = hasAssignedPhotographer(booking);
+                        const showOwnerActions = canShowOwnerActions(booking);
 
                         return (
-                            <Link
+                            <article
                                 key={booking.id}
-                                href={`/bookings/${booking.id}`}
-                                className="group block rounded-[1.75rem] border border-border bg-surface px-5 py-5 shadow-[0_18px_50px_rgba(23,23,23,0.05)] transition hover:-translate-y-0.5 hover:border-accent/50 hover:shadow-[0_22px_60px_rgba(23,23,23,0.08)] sm:px-6 sm:py-6"
+                                className="group relative rounded-[1.75rem] border border-border bg-surface shadow-[0_18px_50px_rgba(23,23,23,0.05)] transition hover:-translate-y-0.5 hover:border-accent/50 hover:shadow-[0_22px_60px_rgba(23,23,23,0.08)]"
                             >
-                                <div className="flex items-start justify-between gap-4">
-                                    <div className="min-w-0">
-                                        <h3 className="truncate text-[1.35rem] font-semibold leading-tight tracking-[-0.02em] text-foreground">
-                                            {getBookingDisplayTitle(booking)}
-                                        </h3>
-                                        
-                                    </div>
-
-                                    <BookingStatusPill status={booking.status} />
-                                </div>
-
-                                <div className="mt-4 space-y-2.5">
-                                    <div className="grid grid-cols-[1rem_minmax(0,1fr)] items-start gap-3 text-[0.95rem] leading-6 text-foreground">
-                                        <span className="mt-1 text-muted">
-                                            <UserIcon />
-                                        </span>
+                                <Link
+                                    href={`/bookings/${booking.id}`}
+                                    className="block px-5 py-5 sm:px-6 sm:py-6"
+                                >
+                                    <div className={"flex items-start justify-between gap-4 " + (showOwnerActions ? "pr-12" : "")}>
                                         <div className="min-w-0">
-                                            <span className="font-semibold">
-                                                {getClientName(booking)}
-                                            </span>
-                                            <span className="mx-1.5 text-muted">
-                                                ·
-                                            </span>
-                                            <span className="text-muted">
-                                                {formatSubmittedAt(
-                                                    booking.createdAt,
-                                                )}
-                                            </span>
+                                            <h3 className="truncate text-[1.35rem] font-semibold leading-tight tracking-[-0.02em] text-foreground">
+                                                {getBookingDisplayTitle(booking)}
+                                            </h3>
                                         </div>
+
+                                        <BookingStatusPill status={booking.status} />
                                     </div>
 
-                                    <div className="grid grid-cols-[1rem_minmax(0,1fr)] items-start gap-3 text-[0.95rem] leading-6 text-foreground">
-                                        <span className="mt-1 text-muted">
-                                            <CameraIcon />
-                                        </span>
-                                        <div>
-                                            <span className="font-medium">
-                                                {formatShootTypeLabel(
-                                                    booking.shootType ||
-                                                    booking.sessionType,
-                                                )}
+                                    <div className="mt-4 space-y-2.5">
+                                        <div className="grid grid-cols-[1rem_minmax(0,1fr)] items-start gap-3 text-[0.95rem] leading-6 text-foreground">
+                                            <span className="mt-1 text-muted">
+                                                <UserIcon />
                                             </span>
-                                            <span className="mx-1.5 text-muted">
-                                                ·
+                                            <div className="min-w-0">
+                                                <span className="font-semibold">
+                                                    {getClientName(booking)}
+                                                </span>
+                                                <span className="mx-1.5 text-muted">
+                                                    ·
+                                                </span>
+                                                <span className="text-muted">
+                                                    {formatSubmittedAt(
+                                                        booking.createdAt,
+                                                    )}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-[1rem_minmax(0,1fr)] items-start gap-3 text-[0.95rem] leading-6 text-foreground">
+                                            <span className="mt-1 text-muted">
+                                                <CameraIcon />
+                                            </span>
+                                            <div>
+                                                <span className="font-medium">
+                                                    {formatShootTypeLabel(
+                                                        booking.shootType ||
+                                                        booking.sessionType,
+                                                    )}
+                                                </span>
+                                                <span className="mx-1.5 text-muted">
+                                                    ·
+                                                </span>
+                                                <span>
+                                                    {formatBookingTime(
+                                                        booking.sessionTime,
+                                                    )}
+                                                </span>
+
+                                                {applicationCount > 0 &&
+                                                    !hasPhotographer ? (
+                                                    <>
+                                                        <span className="mx-1.5 text-muted">
+                                                            ·
+                                                        </span>
+                                                        <span className="font-medium text-accent">
+                                                            {applicationCount}{" "}
+                                                            {applicationCount === 1
+                                                                ? "application"
+                                                                : "applications"}
+                                                        </span>
+                                                    </>
+                                                ) : null}
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-[1rem_minmax(0,1fr)] items-start gap-3 text-[0.95rem] leading-6 text-foreground">
+                                            <span className="mt-1 text-muted">
+                                                <CalendarIcon />
                                             </span>
                                             <span>
-                                                {formatBookingTime(
-                                                    booking.sessionTime,
+                                                {formatBookingDate(
+                                                    booking.sessionDate,
                                                 )}
                                             </span>
+                                        </div>
 
-                                            {applicationCount > 0 &&
-                                                !hasPhotographer ? (
-                                                <>
-                                                    <span className="mx-1.5 text-muted">
-                                                        ·
-                                                    </span>
-                                                    <span className="font-medium text-accent">
-                                                        {applicationCount}{" "}
-                                                        {applicationCount === 1
-                                                            ? "application"
-                                                            : "applications"}
-                                                    </span>
-                                                </>
-                                            ) : null}
+                                        <div className="grid grid-cols-[1rem_minmax(0,1fr)] items-start gap-3 text-[0.95rem] leading-6 text-foreground">
+                                            <span className="mt-1 text-muted">
+                                                <LocationIcon />
+                                            </span>
+                                            <span>
+                                                {booking.location ||
+                                                    "Location not set"}
+                                            </span>
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-[1rem_minmax(0,1fr)] items-start gap-3 text-[0.95rem] leading-6 text-foreground">
-                                        <span className="mt-1 text-muted">
-                                            <CalendarIcon />
-                                        </span>
-                                        <span>
-                                            {formatBookingDate(
-                                                booking.sessionDate,
-                                            )}
+                                    {serviceChips.length > 0 ? (
+                                        <div className="mt-4 flex flex-wrap gap-2">
+                                            {serviceChips.map((chip) => (
+                                                <span
+                                                    key={chip}
+                                                    className="rounded-full border border-border bg-background px-3 py-1 text-sm font-medium text-muted"
+                                                >
+                                                    {chip}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    ) : null}
+
+                                    <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                        <p className="text-[1.15rem] font-semibold leading-tight tracking-[0.02em] text-accent">
+                                            {formatBudgetLabel(booking.budget)}
+                                        </p>
+
+                                        <span className="text-sm font-semibold text-muted transition group-hover:text-accent">
+                                            View details →
                                         </span>
                                     </div>
+                                </Link>
 
-                                    <div className="grid grid-cols-[1rem_minmax(0,1fr)] items-start gap-3 text-[0.95rem] leading-6 text-foreground">
-                                        <span className="mt-1 text-muted">
-                                            <LocationIcon />
-                                        </span>
-                                        <span>
-                                            {booking.location ||
-                                                "Location not set"}
-                                        </span>
-                                    </div>
-                                </div>
-
-                                {serviceChips.length > 0 ? (
-                                    <div className="mt-4 flex flex-wrap gap-2">
-                                        {serviceChips.map((chip) => (
-                                            <span
-                                                key={chip}
-                                                className="rounded-full border border-border bg-background px-3 py-1 text-sm font-medium text-muted"
-                                            >
-                                                {chip}
-                                            </span>
-                                        ))}
+                                {showOwnerActions ? (
+                                    <div className="absolute right-5 top-5 z-20">
+                                        <BookingOwnerActionsMenu
+                                            bookingId={booking.id}
+                                            isCancelling={
+                                                cancellingBookingId === booking.id
+                                            }
+                                            canEdit={applicationCount === 0}
+                                            onCancel={(payload) =>
+                                                onCancel(booking.id, payload)
+                                            }
+                                            onEdit={() => onEdit(booking)}
+                                        />
                                     </div>
                                 ) : null}
-
-                                <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                                    <p className="text-[1.15rem] font-semibold leading-tight tracking-[0.02em] text-accent">
-                                        {formatBudgetLabel(booking.budget)}
-                                    </p>
-
-                                    <span className="text-sm font-semibold text-muted transition group-hover:text-accent">
-                                        View details →
-                                    </span>
-                                </div>
-                            </Link>
+                            </article>
                         );
                     })}
                 </div>

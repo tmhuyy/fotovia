@@ -4,7 +4,8 @@ import { isAxiosError } from "axios";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 import { Section } from "../../../components/common/section";
 import { Footer } from "../../../components/home/footer";
@@ -16,9 +17,12 @@ import { bookingService } from "../../../services/booking.service";
 import { useAuthStore } from "../../../store/auth.store";
 import type {
     BookingRequestRecord,
+    CancelBookingPayload,
     ClientBookingFilter,
+    UpdateOpenBookingPayload,
 } from "../types/booking.types";
 import { ClientBookingsList } from "./client-bookings-list";
+import { EditOpenBookingDialog } from "./edit-open-booking-dialog";
 
 const getErrorMessage = (error: unknown, fallback: string): string =>
 {
@@ -72,13 +76,16 @@ const EmptyBookingHistory = () =>
                 <p className="text-sm font-medium uppercase tracking-[0.18em] text-brand-muted">
                     Booking requests
                 </p>
+
                 <h2 className="text-2xl font-semibold text-brand-primary">
                     You have not sent any booking requests yet.
                 </h2>
+
                 <p className="max-w-2xl text-sm leading-7 text-brand-muted">
                     Start from the homepage search bar or open a photographer
                     portfolio to send your first request.
                 </p>
+
                 <div className="flex flex-wrap gap-3">
                     <Link
                         href="/bookings/new"
@@ -89,6 +96,7 @@ const EmptyBookingHistory = () =>
                     >
                         Create booking request
                     </Link>
+
                     <Link
                         href="/photographers"
                         className={buttonVariants({
@@ -107,23 +115,109 @@ const EmptyBookingHistory = () =>
 export const ClientBookingsPage = () =>
 {
     const searchParams = useSearchParams();
+    const queryClient = useQueryClient();
     const { user, isAuthenticated, isHydrating, hasHydrated } = useAuthStore();
 
     const isCreatedRedirect = searchParams.get("created") === "1";
+
+    const [activeFilter, setActiveFilter] =
+        useState<ClientBookingFilter>("all");
+    const [editingBooking, setEditingBooking] =
+        useState<BookingRequestRecord | null>(null);
 
     const bookingHistoryQueryKey = [
         "client-bookings",
         user?.id ?? user?.email ?? "anonymous",
     ];
 
-    const [activeFilter, setActiveFilter] =
-        useState<ClientBookingFilter>("all");
-
     const bookingsQuery = useQuery({
         queryKey: bookingHistoryQueryKey,
         queryFn: () => bookingService.getMyClientBookings(),
         enabled: hasHydrated && !isHydrating && isAuthenticated,
         retry: false,
+    });
+
+    const cancelBookingMutation = useMutation({
+        mutationFn: ({
+            bookingId,
+            payload,
+        }: {
+            bookingId: string;
+            payload: CancelBookingPayload;
+        }) => bookingService.cancelMyClientBooking(bookingId, payload),
+        onSuccess: async () =>
+        {
+            toast.success("Booking cancelled", {
+                description:
+                    "Your open photoshoot request was removed from the public booking list.",
+            });
+
+            await Promise.all([
+                queryClient.invalidateQueries({
+                    queryKey: ["client-bookings"],
+                }),
+                queryClient.invalidateQueries({
+                    queryKey: ["open-booking-detail"],
+                }),
+                queryClient.invalidateQueries({
+                    queryKey: ["opening-booking-requests"],
+                }),
+                queryClient.invalidateQueries({
+                    queryKey: ["open-booking-marketplace"],
+                }),
+            ]);
+        },
+        onError: (error) =>
+        {
+            toast.error("We couldn’t cancel this booking", {
+                description: getErrorMessage(
+                    error,
+                    "Please try again in a moment.",
+                ),
+            });
+        },
+    });
+
+    const updateBookingMutation = useMutation({
+        mutationFn: ({
+            bookingId,
+            payload,
+        }: {
+            bookingId: string;
+            payload: UpdateOpenBookingPayload;
+        }) => bookingService.updateMyClientOpenBooking(bookingId, payload),
+        onSuccess: async () =>
+        {
+            toast.success("Booking updated", {
+                description: "Your photoshoot request has been updated.",
+            });
+
+            setEditingBooking(null);
+
+            await Promise.all([
+                queryClient.invalidateQueries({
+                    queryKey: ["client-bookings"],
+                }),
+                queryClient.invalidateQueries({
+                    queryKey: ["open-booking-detail"],
+                }),
+                queryClient.invalidateQueries({
+                    queryKey: ["opening-booking-requests"],
+                }),
+                queryClient.invalidateQueries({
+                    queryKey: ["open-booking-marketplace"],
+                }),
+            ]);
+        },
+        onError: (error) =>
+        {
+            toast.error("We couldn’t update this booking", {
+                description: getErrorMessage(
+                    error,
+                    "Please check the booking details and try again.",
+                ),
+            });
+        },
     });
 
     const bookings = useMemo<BookingRequestRecord[]>(() =>
@@ -207,7 +301,7 @@ export const ClientBookingsPage = () =>
                                     <p className="text-sm font-medium uppercase tracking-[0.18em] text-brand-muted">
                                         My bookings
                                     </p>
-                                    
+
                                     <p className="text-sm leading-7 text-brand-muted">
                                         {listErrorMessage}
                                     </p>
@@ -215,7 +309,7 @@ export const ClientBookingsPage = () =>
                                     <button
                                         type="button"
                                         onClick={() => bookingsQuery.refetch()}
-                                        className="inline-flex rounded-full border border-brand-border bg-brand-background px-4 py-2 text-sm font-medium text-brand-primary transition hover:bg-brand-surface"
+                                        className="inline-flex cursor-pointer rounded-full border border-brand-border bg-brand-background px-4 py-2 text-sm font-medium text-brand-primary transition hover:bg-brand-surface"
                                     >
                                         Try again
                                     </button>
@@ -228,12 +322,43 @@ export const ClientBookingsPage = () =>
                                 bookings={filteredBookings}
                                 activeFilter={activeFilter}
                                 counts={counts}
+                                cancellingBookingId={
+                                    cancelBookingMutation.isPending
+                                        ? cancelBookingMutation.variables
+                                            ?.bookingId ?? null
+                                        : null
+                                }
+                                onCancel={(bookingId, payload) =>
+                                    cancelBookingMutation.mutate({
+                                        bookingId,
+                                        payload,
+                                    })
+                                }
+                                onEdit={(booking) => setEditingBooking(booking)}
                                 onFilterChange={setActiveFilter}
                             />
                         )}
                     </Container>
                 </Section>
             </main>
+
+            <EditOpenBookingDialog
+                isOpen={Boolean(editingBooking)}
+                booking={editingBooking}
+                isSubmitting={updateBookingMutation.isPending}
+                onClose={() => setEditingBooking(null)}
+                onSubmit={(payload) =>
+                {
+                    if (!editingBooking) {
+                        return;
+                    }
+
+                    updateBookingMutation.mutate({
+                        bookingId: editingBooking.id,
+                        payload,
+                    });
+                }}
+            />
 
             <Footer />
         </>

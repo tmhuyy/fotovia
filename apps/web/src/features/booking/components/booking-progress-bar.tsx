@@ -8,6 +8,13 @@ interface BookingProgressBarProps
     events?: BookingEventRecord[];
 }
 
+interface ProgressStep
+{
+    label: string;
+    helper: string;
+    active: boolean;
+}
+
 const getApplicationCount = (booking: BookingRequestRecord): number =>
 {
     return (
@@ -42,97 +49,114 @@ export const BookingProgressBar = ({
     const isCompleted = booking.status === "completed";
     const cancelledEvent = getCancelledEvent(events);
 
-    const steps = isCancelled
+    const steps: ProgressStep[] = isCancelled
         ? [
             {
                 label: "Booking created",
+                helper: "The client published the booking request.",
                 active: true,
             },
             {
                 label: "Request cancelled",
+                helper: "The booking request is now closed.",
                 active: true,
             },
         ]
         : [
             {
                 label: "Booking created",
+                helper: "Your photoshoot brief is ready.",
                 active: true,
             },
             {
                 label: "Photographer applied",
+                helper:
+                    applicationCount > 0
+                        ? `${applicationCount} photographer${applicationCount === 1 ? "" : "s"} applied.`
+                        : "Waiting for photographer proposals.",
                 active: applicationCount > 0 || hasPhotographer,
             },
             {
                 label: "Photographer selected",
+                helper: hasPhotographer
+                    ? "A photographer has been selected."
+                    : "Choose the photographer that fits your brief.",
                 active: hasPhotographer || isConfirmed,
             },
             {
                 label: "Confirmed",
+                helper: isConfirmed
+                    ? "The booking is confirmed."
+                    : "Confirmation happens after photographer selection.",
                 active: isConfirmed,
             },
             {
                 label: "Completed",
+                helper: isCompleted
+                    ? "This photoshoot has been completed."
+                    : "Final state after the photoshoot is finished.",
                 active: isCompleted,
             },
         ];
 
     return (
-        <section className="">
-            
+        <aside className="rounded-[2rem] border border-border bg-surface p-5 shadow-[0_18px_50px_rgba(23,23,23,0.05)] lg:sticky lg:top-28">
+            <p className="text-xs font-semibold uppercase tracking-[0.32em] text-muted">
+                Booking progress
+            </p>
 
-            <div className="mt-6 overflow-x-auto pb-1">
-                <div className="flex min-w-max items-center gap-3">
-                    {steps.map((step, index) =>
-                    {
-                        const isLast = index === steps.length - 1;
+            <div className="mt-6 space-y-1">
+                {steps.map((step, index) =>
+                {
+                    const isLast = index === steps.length - 1;
+                    const nextStepIsActive = steps[index + 1]?.active;
+                    const isDangerStep = isCancelled && step.label.includes("cancelled");
 
-                        return (
+                    return (
+                        <div key={step.label} className="relative flex gap-4 pb-7 last:pb-0">
+                            {!isLast ? (
+                                <div
+                                    className={[
+                                        "absolute left-[1.05rem] top-10 h-[calc(100%-2.25rem)] w-px",
+                                        nextStepIsActive
+                                            ? isCancelled
+                                                ? "bg-rose-500"
+                                                : "bg-accent"
+                                            : "bg-border",
+                                    ].join(" ")}
+                                />
+                            ) : null}
+
                             <div
-                                key={step.label}
-                                className="flex items-center gap-3"
+                                className={[
+                                    "relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-sm font-semibold shadow-sm transition",
+                                    step.active
+                                        ? isDangerStep
+                                            ? "border-rose-500 bg-rose-500 text-white"
+                                            : "border-accent bg-accent text-white"
+                                        : "border-border bg-background text-muted",
+                                ].join(" ")}
                             >
-                                <div className="flex min-w-28 flex-col items-center gap-2">
-                                    <div
-                                        className={[
-                                            "flex h-9 w-9 items-center justify-center rounded-full border text-sm font-semibold transition",
-                                            step.active
-                                                ? isCancelled
-                                                    ? "border-rose-500 bg-rose-500 text-white"
-                                                    : "border-accent bg-accent text-white"
-                                                : "border-border bg-background text-muted",
-                                        ].join(" ")}
-                                    >
-                                        {step.active ? "✓" : index + 1}
-                                    </div>
-
-                                    <span
-                                        className={[
-                                            "max-w-32 text-center text-xs font-medium leading-5",
-                                            step.active
-                                                ? "text-foreground"
-                                                : "text-muted",
-                                        ].join(" ")}
-                                    >
-                                        {step.label}
-                                    </span>
-                                </div>
-
-                                {!isLast ? (
-                                    <div
-                                        className={[
-                                            "h-px w-14 sm:w-20",
-                                            steps[index + 1]?.active
-                                                ? isCancelled
-                                                    ? "bg-rose-500"
-                                                    : "bg-accent"
-                                                : "bg-border",
-                                        ].join(" ")}
-                                    />
-                                ) : null}
+                                {step.active ? "✓" : index + 1}
                             </div>
-                        );
-                    })}
-                </div>
+
+                            <div className="-mt-0.5 min-w-0">
+                                <p
+                                    className={[
+                                        "text-base font-semibold leading-6",
+                                        step.active ? "text-foreground" : "text-muted",
+                                    ].join(" ")}
+                                >
+                                    {step.label}
+                                </p>
+
+                                {/* <p className="mt-1 text-sm leading-6 text-muted">
+                                    {step.helper}
+                                </p> */}
+                            </div>
+                        </div>
+                    );
+                })}
             </div>
 
             {isCancelled && cancelledEvent?.note ? (
@@ -141,6 +165,6 @@ export const BookingProgressBar = ({
                     {cancelledEvent.note.replace(/^Cancel reason:\s*/i, "")}
                 </div>
             ) : null}
-        </section>
+        </aside>
     );
 };
