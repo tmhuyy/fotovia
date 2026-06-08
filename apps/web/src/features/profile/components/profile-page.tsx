@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -18,7 +18,6 @@ import { useAuthStore } from "../../../store/auth.store";
 import type { ProfileUpdatePayload } from "../types/profile.types";
 import { ProfileEditDialog } from "./profile-edit-dialog";
 import { ProfileEmptyState } from "./profile-empty-state";
-import { ProfileHeader } from "./profile-header";
 import { ProfileOverviewCard } from "./profile-overview-card";
 import { ProfileSignedOut } from "./profile-signed-out";
 
@@ -42,20 +41,14 @@ const ProfilePageSkeleton = () =>
     return (
         <>
             <Navbar />
-            <main className="pb-16 pt-10">
+            <main className="pb-16 pt-4 sm:pt-6">
                 <Container className="space-y-8">
-                    <div className="space-y-4">
-                        <div className="h-5 w-32 animate-pulse rounded bg-border/60" />
-                        <div className="h-12 w-80 animate-pulse rounded bg-border/60" />
-                        <div className="h-6 w-[32rem] max-w-full animate-pulse rounded bg-border/50" />
-                    </div>
+                    <div className="mx-auto max-w-4xl overflow-hidden rounded-[2rem] border border-border bg-surface px-8 py-10 shadow-sm">
+                        <div className="mx-auto h-28 w-28 animate-pulse rounded-full bg-border" />
+                        <div className="mx-auto mt-6 h-8 w-64 animate-pulse rounded bg-border/60" />
+                        <div className="mx-auto mt-3 h-5 w-80 max-w-full animate-pulse rounded bg-border/50" />
 
-                    <div className="overflow-hidden rounded-[2rem] border border-border bg-surface shadow-sm">
-                        <div className="h-56 animate-pulse bg-border/50" />
-                        <div className="space-y-8 px-8 pb-8">
-                            <div className="mx-auto -mt-16 h-32 w-32 animate-pulse rounded-full border-[6px] border-surface bg-border" />
-                            <div className="mx-auto h-8 w-64 animate-pulse rounded bg-border/60" />
-                            <div className="mx-auto h-5 w-80 max-w-full animate-pulse rounded bg-border/50" />
+                        <div className="mt-8 border-t border-border pt-8">
                             <div className="grid gap-4 md:grid-cols-2">
                                 <div className="h-20 animate-pulse rounded-2xl bg-border/40" />
                                 <div className="h-20 animate-pulse rounded-2xl bg-border/40" />
@@ -182,28 +175,6 @@ export const ProfilePage = () =>
         : null;
 
     const isProfileMissing = profileError?.status === 404;
-    const resolvedRole = profileQuery.data?.role ?? authRole;
-
-    const headerCopy = useMemo(() =>
-    {
-        if (resolvedRole === "photographer") {
-            return {
-                title: "Your photographer profile",
-                subtitle:
-                    "Manage the profile details clients use before choosing a photographer.",
-                roleLabel: "Photographer account",
-                roleVariant: "accent" as const,
-            };
-        }
-
-        return {
-            title: "Your client profile",
-            subtitle:
-                "Keep your basic profile ready for future booking and recommendation flows.",
-            roleLabel: "Client account",
-            roleVariant: "neutral" as const,
-        };
-    }, [resolvedRole]);
 
     if (!hasHydrated || isHydrating) {
         return <ProfilePageSkeleton />;
@@ -227,16 +198,9 @@ export const ProfilePage = () =>
         return (
             <>
                 <Navbar />
-                <main className="pb-16 pt-10">
+                <main className="pb-16 pt-4 sm:pt-6">
                     <Container className="space-y-8">
-                        <Section className="space-y-8">
-                            {/* <ProfileHeader
-                                title={headerCopy.title}
-                                subtitle={headerCopy.subtitle}
-                                roleLabel={headerCopy.roleLabel}
-                                roleVariant={headerCopy.roleVariant}
-                            /> */}
-
+                        <Section className="space-y-8 py-6 sm:py-8 md:py-10">
                             <ProfileEmptyState
                                 role={authRole}
                                 isCreating={createProfileMutation.isPending}
@@ -254,7 +218,7 @@ export const ProfilePage = () =>
         return (
             <>
                 <Navbar />
-                <main className="pb-16 pt-10">
+                <main className="pb-16 pt-4 sm:pt-6">
                     <Container>
                         <Card className="rounded-[2rem] border-border bg-surface shadow-sm">
                             <CardContent className="space-y-4 p-8">
@@ -271,7 +235,7 @@ export const ProfilePage = () =>
 
                                 <Button
                                     type="button"
-                                    className="rounded-full"
+                                    className="cursor-pointer rounded-full"
                                     onClick={() => profileQuery.refetch()}
                                 >
                                     Try again
@@ -290,19 +254,16 @@ export const ProfilePage = () =>
     return (
         <>
             <Navbar />
-            <main className="pb-16 pt-10">
+            <main className="pb-16 pt-4 sm:pt-6">
                 <Container className="space-y-8">
-                    <Section className="space-y-8">
-                        {/* <ProfileHeader
-                            title={headerCopy.title}
-                            subtitle={headerCopy.subtitle}
-                            roleLabel={headerCopy.roleLabel}
-                            roleVariant={headerCopy.roleVariant}
-                        /> */}
-
+                    <Section className="space-y-8 py-6 sm:py-8 md:py-10">
                         <ProfileOverviewCard
                             profile={profile}
+                            isAvatarUploading={updateAvatarMutation.isPending}
                             onEdit={() => setIsEditDialogOpen(true)}
+                            onAvatarUpload={(file) =>
+                                updateAvatarMutation.mutateAsync(file)
+                            }
                         />
                     </Section>
                 </Container>
@@ -311,15 +272,10 @@ export const ProfilePage = () =>
                     isOpen={isEditDialogOpen}
                     profile={profile}
                     isSaving={updateProfileMutation.isPending}
-                    isUploading={updateAvatarMutation.isPending}
                     onClose={() => setIsEditDialogOpen(false)}
                     onSave={(payload) =>
                         updateProfileMutation.mutateAsync(payload)
                     }
-                    onUpload={async (file) =>
-                    {
-                        await updateAvatarMutation.mutateAsync(file);
-                    }}
                 />
             </main>
             <Footer />
