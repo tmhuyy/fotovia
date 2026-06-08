@@ -6,15 +6,15 @@ import type {
     ClientBookingFilter,
 } from "../types/booking.types";
 import
-{
-    formatBookingDate,
-    formatBookingTime,
-    formatBudgetLabel,
-    formatShootTypeLabel,
-    formatSubmittedAt,
-    getBookingDisplayTitle,
-    hasAssignedPhotographer,
-} from "../utils/booking-display";
+    {
+        formatBookingDate,
+        formatBookingTime,
+        formatBudgetLabel,
+        formatShootTypeLabel,
+        formatSubmittedAt,
+        getBookingDisplayTitle,
+        hasAssignedPhotographer,
+    } from "../utils/booking-display";
 import { BookingOwnerActionsMenu } from "./booking-owner-actions-menu";
 import { BookingStatusPill } from "./booking-status-pill";
 
@@ -159,8 +159,8 @@ export const ClientBookingsList = ({
 }: ClientBookingsListProps) =>
 {
     return (
-        <div className="space-y-6">
-            <div className="flex flex-wrap gap-2">
+        <div className="w-full max-w-full space-y-6 overflow-x-hidden">
+            <div className="flex max-w-full flex-wrap gap-2 overflow-hidden">
                 {filterOptions.map((option) =>
                 {
                     const isActive = option.value === activeFilter;
@@ -171,17 +171,17 @@ export const ClientBookingsList = ({
                             type="button"
                             onClick={() => onFilterChange(option.value)}
                             className={[
-                                "inline-flex cursor-pointer items-center gap-2 rounded-full border px-5 py-2.5 text-sm font-semibold transition",
+                                "inline-flex min-w-0 cursor-pointer items-center gap-2 rounded-full border px-5 py-2.5 text-sm font-semibold transition",
                                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40",
                                 isActive
                                     ? "border-foreground bg-foreground text-background shadow-[0_12px_30px_rgba(23,23,23,0.14)]"
                                     : "border-border bg-surface text-muted hover:border-accent/60 hover:bg-accent/10 hover:text-foreground",
                             ].join(" ")}
                         >
-                            <span>{option.label}</span>
+                            <span className="truncate">{option.label}</span>
                             <span
                                 className={[
-                                    "rounded-full px-2 py-0.5 text-xs transition",
+                                    "shrink-0 rounded-full px-2 py-0.5 text-xs transition",
                                     isActive
                                         ? "bg-background/15 text-background"
                                         : "bg-background text-foreground",
@@ -199,7 +199,7 @@ export const ClientBookingsList = ({
                     No matching results
                 </div>
             ) : (
-                <div className="grid gap-5 lg:grid-cols-2">
+                <div className="grid w-full max-w-full min-w-0 gap-5 lg:grid-cols-2">
                     {bookings.map((booking) =>
                     {
                         const applicationCount = getApplicationCount(booking);
@@ -210,28 +210,37 @@ export const ClientBookingsList = ({
                         return (
                             <article
                                 key={booking.id}
-                                className="group relative rounded-[1.75rem] border border-border bg-surface shadow-[0_18px_50px_rgba(23,23,23,0.05)] transition hover:-translate-y-0.5 hover:border-accent/50 hover:shadow-[0_22px_60px_rgba(23,23,23,0.08)]"
+                                className="group relative min-w-0 overflow-hidden rounded-[1.75rem] border border-border bg-surface shadow-[0_18px_50px_rgba(23,23,23,0.05)] transition hover:-translate-y-0.5 hover:border-accent/50 hover:shadow-[0_22px_60px_rgba(23,23,23,0.08)]"
                             >
                                 <Link
                                     href={`/bookings/${booking.id}`}
-                                    className="block px-5 py-5 sm:px-6 sm:py-6"
+                                    className="block min-w-0 px-5 py-5 sm:px-6 sm:py-6"
                                 >
-                                    <div className={"flex items-start justify-between gap-4 " + (showOwnerActions ? "pr-12" : "")}>
-                                        <div className="min-w-0">
-                                            <h3 className="truncate text-[1.35rem] font-semibold leading-tight tracking-[-0.02em] text-foreground">
+                                    <div
+                                        className={[
+                                            "flex min-w-0 flex-col items-start gap-3",
+                                            "sm:flex-row sm:items-start sm:justify-between sm:gap-4",
+                                            showOwnerActions ? "pr-12" : "",
+                                        ].join(" ")}
+                                    >
+                                        <div className="min-w-0 max-w-full">
+                                            <h3 className="max-w-full truncate text-[1.35rem] font-semibold leading-tight tracking-[-0.02em] text-foreground">
                                                 {getBookingDisplayTitle(booking)}
                                             </h3>
                                         </div>
 
-                                        <BookingStatusPill status={booking.status} />
+                                        <div className="max-w-full shrink-0">
+                                            <BookingStatusPill status={booking.status} />
+                                        </div>
                                     </div>
 
                                     <div className="mt-4 space-y-2.5">
-                                        <div className="grid grid-cols-[1rem_minmax(0,1fr)] items-start gap-3 text-[0.95rem] leading-6 text-foreground">
+                                        <div className="grid min-w-0 grid-cols-[1rem_minmax(0,1fr)] items-start gap-3 text-[0.95rem] leading-6 text-foreground">
                                             <span className="mt-1 text-muted">
                                                 <UserIcon />
                                             </span>
-                                            <div className="min-w-0">
+
+                                            <div className="min-w-0 break-words">
                                                 <span className="font-semibold">
                                                     {getClientName(booking)}
                                                 </span>
@@ -246,11 +255,12 @@ export const ClientBookingsList = ({
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-[1rem_minmax(0,1fr)] items-start gap-3 text-[0.95rem] leading-6 text-foreground">
+                                        <div className="grid min-w-0 grid-cols-[1rem_minmax(0,1fr)] items-start gap-3 text-[0.95rem] leading-6 text-foreground">
                                             <span className="mt-1 text-muted">
                                                 <CameraIcon />
                                             </span>
-                                            <div>
+
+                                            <div className="min-w-0 break-words">
                                                 <span className="font-medium">
                                                     {formatShootTypeLabel(
                                                         booking.shootType ||
@@ -283,22 +293,22 @@ export const ClientBookingsList = ({
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-[1rem_minmax(0,1fr)] items-start gap-3 text-[0.95rem] leading-6 text-foreground">
+                                        <div className="grid min-w-0 grid-cols-[1rem_minmax(0,1fr)] items-start gap-3 text-[0.95rem] leading-6 text-foreground">
                                             <span className="mt-1 text-muted">
                                                 <CalendarIcon />
                                             </span>
-                                            <span>
+                                            <span className="min-w-0 break-words">
                                                 {formatBookingDate(
                                                     booking.sessionDate,
                                                 )}
                                             </span>
                                         </div>
 
-                                        <div className="grid grid-cols-[1rem_minmax(0,1fr)] items-start gap-3 text-[0.95rem] leading-6 text-foreground">
+                                        <div className="grid min-w-0 grid-cols-[1rem_minmax(0,1fr)] items-start gap-3 text-[0.95rem] leading-6 text-foreground">
                                             <span className="mt-1 text-muted">
                                                 <LocationIcon />
                                             </span>
-                                            <span>
+                                            <span className="min-w-0 break-words">
                                                 {booking.location ||
                                                     "Location not set"}
                                             </span>
@@ -306,11 +316,11 @@ export const ClientBookingsList = ({
                                     </div>
 
                                     {serviceChips.length > 0 ? (
-                                        <div className="mt-4 flex flex-wrap gap-2">
+                                        <div className="mt-4 flex min-w-0 flex-wrap gap-2">
                                             {serviceChips.map((chip) => (
                                                 <span
                                                     key={chip}
-                                                    className="rounded-full border border-border bg-background px-3 py-1 text-sm font-medium text-muted"
+                                                    className="max-w-full break-words rounded-full border border-border bg-background px-3 py-1 text-sm font-medium text-muted"
                                                 >
                                                     {chip}
                                                 </span>
@@ -318,8 +328,8 @@ export const ClientBookingsList = ({
                                         </div>
                                     ) : null}
 
-                                    <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                                        <p className="text-[1.15rem] font-semibold leading-tight tracking-[0.02em] text-accent">
+                                    <div className="mt-4 flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                        <p className="min-w-0 break-words text-[1.15rem] font-semibold leading-tight tracking-[0.02em] text-accent">
                                             {formatBudgetLabel(booking.budget)}
                                         </p>
 
