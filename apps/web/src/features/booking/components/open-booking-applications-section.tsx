@@ -19,6 +19,11 @@ import type {
     OpenBookingRequestRecord,
 } from "../types/booking.types";
 import { ApplyToPhotoshootModal } from "./apply-to-photoshoot-modal";
+import
+{
+    getApplicationDeliverableLabels,
+    getApplicationServiceLabels,
+} from "../utils/application-deliverables";
 
 interface OpenBookingApplicationsSectionProps
 {
@@ -29,6 +34,24 @@ interface OpenBookingApplicationsSectionProps
 const formatPrice = (value: number): string =>
 {
     return `${new Intl.NumberFormat("vi-VN").format(value)} VND`;
+};
+
+const formatAppliedDate = (value?: string | null): string =>
+{
+    if (!value) {
+        return "Applied just now";
+    }
+
+    const parsedDate = new Date(value);
+
+    if (Number.isNaN(parsedDate.getTime())) {
+        return "Applied just now";
+    }
+
+    return `Applied ${new Intl.DateTimeFormat("en-US", {
+        month: "short",
+        day: "2-digit",
+    }).format(parsedDate)}`;
 };
 
 const getApplicationCount = (booking: OpenBookingRequestRecord): number =>
@@ -58,6 +81,33 @@ const getStatusLabel = (application: BookingApplicationRecord): string =>
         default:
             return "Submitted";
     }
+};
+
+const getApplicationServiceChips = (
+    application: BookingApplicationRecord,
+): string[] =>
+{
+    const source = `${application.message} ${application.includedDeliverables}`.toLowerCase();
+    const chips: string[] = [];
+
+    if (
+        source.includes("make") ||
+        source.includes("hair") ||
+        source.includes("tóc") ||
+        source.includes("trang điểm")
+    ) {
+        chips.push("Make-up + hair styling");
+    }
+
+    if (source.includes("studio")) {
+        chips.push("Studio rental");
+    }
+
+    if (chips.length === 0 && application.availableOnRequestedDate) {
+        chips.push("Available on requested date");
+    }
+
+    return chips;
 };
 
 const ApplicationAvatar = ({
@@ -112,7 +162,7 @@ const ProfileIdentity = ({
             />
 
             <div className="min-w-0">
-                <h3 className="truncate text-base font-semibold text-foreground transition group-hover:text-accent">
+                <h3 className="truncate text-lg font-semibold text-foreground transition group-hover:text-accent">
                     {application.photographerName}
                 </h3>
 
@@ -138,26 +188,204 @@ const ProfileIdentity = ({
     );
 };
 
+const ApplicationMeta = ({
+    application,
+}: {
+    application: BookingApplicationRecord;
+}) =>
+{
+    const deliverableLabels = getApplicationDeliverableLabels(
+        application.includedDeliverables,
+    );
+
+    return (
+        <div className="mt-4 space-y-1.5 text-sm leading-6 text-foreground">
+            <p>
+                Shooting duration:{" "}
+                <span className="font-semibold">
+                    {application.estimatedDuration || "Not specified"}
+                </span>
+            </p>
+
+            {deliverableLabels
+                .filter(
+                    (label) =>
+                        label.toLowerCase() ===
+                        "all original photos provided.",
+                )
+                .map((label) => (
+                    <p key={label}>{label}</p>
+                ))}
+
+            <p>
+                Availability:{" "}
+                <span className="font-semibold">
+                    {application.availableOnRequestedDate
+                        ? "Available on requested date"
+                        : "Not confirmed"}
+                </span>
+            </p>
+        </div>
+    );
+};
+
 const ApplicationChips = ({
     application,
 }: {
     application: BookingApplicationRecord;
 }) =>
 {
-    return (
-        <div className="flex flex-wrap gap-2 text-xs text-muted">
-            {application.estimatedDuration ? (
-                <span className="rounded-full border border-border bg-background px-3 py-1.5">
-                    Duration: {application.estimatedDuration}
-                </span>
-            ) : null}
+    const chips = getApplicationServiceLabels(application.includedDeliverables);
 
-            <span className="rounded-full border border-border bg-background px-3 py-1.5">
-                {application.availableOnRequestedDate
-                    ? "Available on requested date"
-                    : "Availability not confirmed"}
-            </span>
+    if (chips.length === 0) {
+        return null;
+    }
+
+    return (
+        <div className="mt-4 flex flex-wrap gap-2">
+            {chips.map((chip) => (
+                <span
+                    key={chip}
+                    className="rounded-full bg-accent/15 px-3 py-1.5 text-sm font-medium text-foreground"
+                >
+                    {chip}
+                </span>
+            ))}
         </div>
+    );
+};
+
+interface ApplicationProposalCardProps
+{
+    application: BookingApplicationRecord;
+    mode: "review" | "submitted" | "readonly";
+    isChoosing?: boolean;
+    isWithdrawing?: boolean;
+    canManage?: boolean;
+    onReview?: () => void;
+    onChoose?: () => void;
+    onEdit?: () => void;
+    onWithdraw?: () => void;
+}
+
+const ApplicationProposalCard = ({
+    application,
+    mode,
+    isChoosing = false,
+    isWithdrawing = false,
+    canManage = false,
+    onReview,
+    onChoose,
+    onEdit,
+    onWithdraw,
+}: ApplicationProposalCardProps) =>
+{
+    const isInteractive = mode === "review" && Boolean(onReview);
+    const priceLabel = formatPrice(application.proposedPrice);
+
+    return (
+        <article
+            role={isInteractive ? "button" : undefined}
+            tabIndex={isInteractive ? 0 : undefined}
+            onClick={isInteractive ? onReview : undefined}
+            onKeyDown={
+                isInteractive
+                    ? (event) =>
+                    {
+                        if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            onReview?.();
+                        }
+                    }
+                    : undefined
+            }
+            className={[
+                "rounded-[1.75rem] border border-border bg-background/70 p-5 transition sm:p-6",
+                isInteractive
+                    ? "cursor-pointer hover:-translate-y-0.5 hover:border-accent/50 hover:shadow-[0_18px_50px_rgba(23,23,23,0.08)] focus:outline-none focus:ring-2 focus:ring-accent/30"
+                    : "",
+            ].join(" ")}
+        >
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <ProfileIdentity
+                    application={application}
+                    avatarClassName="h-16 w-16"
+                />
+
+                <span className="w-fit rounded-full bg-surface px-3 py-1 text-xs font-semibold text-accent">
+                    {getStatusLabel(application)}
+                </span>
+            </div>
+
+            <ApplicationMeta application={application} />
+            <ApplicationChips application={application} />
+
+            <div className="mt-4 rounded-2xl bg-surface px-4 py-3 text-sm leading-6 text-foreground">
+                {application.message}
+            </div>
+
+            <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                    <p className="text-xl font-semibold tracking-[0.02em] text-accent">
+                        {priceLabel}
+                    </p>
+
+                    <p className="mt-1 text-sm text-muted">
+                        {formatAppliedDate(application.createdAt)}
+                    </p>
+                </div>
+
+                {mode === "review" ? (
+                    <div className="flex flex-col gap-3 sm:flex-row">
+                        <button
+                            type="button"
+                            onClick={(event) =>
+                            {
+                                event.stopPropagation();
+                                onReview?.();
+                            }}
+                            className="inline-flex cursor-pointer items-center justify-center rounded-2xl border border-border bg-surface px-5 py-3 text-sm font-semibold text-foreground transition hover:border-accent hover:text-accent"
+                        >
+                            Review details
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={(event) =>
+                            {
+                                event.stopPropagation();
+                                onChoose?.();
+                            }}
+                            disabled={isChoosing}
+                            className="inline-flex cursor-pointer items-center justify-center rounded-2xl bg-accent px-6 py-3 text-sm font-semibold text-background transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                            {isChoosing ? "Choosing..." : "Choose"}
+                        </button>
+                    </div>
+                ) : null}
+
+                {mode === "submitted" && canManage ? (
+                    <div className="flex flex-col gap-3 sm:flex-row">
+                        <button
+                            type="button"
+                            onClick={onEdit}
+                            className="inline-flex cursor-pointer items-center justify-center rounded-2xl border border-border bg-surface px-5 py-3 text-sm font-semibold text-foreground transition hover:border-accent hover:text-accent"
+                        >
+                            Edit application
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={onWithdraw}
+                            disabled={isWithdrawing}
+                            className="inline-flex cursor-pointer items-center justify-center rounded-2xl border border-rose-200 bg-surface px-5 py-3 text-sm font-semibold text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                            {isWithdrawing ? "Withdrawing..." : "Withdraw"}
+                        </button>
+                    </div>
+                ) : null}
+            </div>
+        </article>
     );
 };
 
@@ -168,90 +396,7 @@ const ApplicationFullDetails = ({
 }) =>
 {
     return (
-        <div className="rounded-[1.75rem] border border-border bg-surface p-5 sm:p-6">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <ProfileIdentity
-                    application={application}
-                    avatarClassName="h-14 w-14"
-                />
-
-                <p className="shrink-0 text-base font-semibold text-accent">
-                    {formatPrice(application.proposedPrice)}
-                </p>
-            </div>
-
-            <p className="mt-5 whitespace-pre-line text-sm leading-7 text-foreground">
-                {application.message}
-            </p>
-
-            <div className="mt-5 rounded-2xl bg-background px-4 py-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">
-                    Included deliverables
-                </p>
-
-                <p className="mt-2 whitespace-pre-line text-sm leading-6 text-foreground">
-                    {application.includedDeliverables}
-                </p>
-            </div>
-
-            <div className="mt-4">
-                <ApplicationChips application={application} />
-            </div>
-        </div>
-    );
-};
-
-const ApplicationCompactCard = ({
-    application,
-    onReview,
-}: {
-    application: BookingApplicationRecord;
-    onReview: () => void;
-}) =>
-{
-    return (
-        <article
-            role="button"
-            tabIndex={0}
-            onClick={onReview}
-            onKeyDown={(event) =>
-            {
-                if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    onReview();
-                }
-            }}
-            className="cursor-pointer rounded-[1.75rem] border border-border bg-surface p-5 transition hover:-translate-y-0.5 hover:border-accent/50 hover:shadow-[0_18px_50px_rgba(23,23,23,0.08)] focus:outline-none focus:ring-2 focus:ring-accent/30 sm:p-6"
-        >
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <ProfileIdentity
-                    application={application}
-                    avatarClassName="h-14 w-14"
-                />
-
-                <p className="shrink-0 text-base font-semibold text-accent">
-                    {formatPrice(application.proposedPrice)}
-                </p>
-            </div>
-
-            <p className="mt-5 max-h-[3.5rem] overflow-hidden text-sm leading-7 text-foreground">
-                {application.message}
-            </p>
-
-            <div className="mt-4 rounded-2xl bg-background px-4 py-3">
-                <p className="line-clamp-2 text-sm leading-6 text-muted">
-                    {application.includedDeliverables}
-                </p>
-            </div>
-
-            <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <ApplicationChips application={application} />
-
-                <span className="text-sm font-semibold text-accent">
-                    Review proposal →
-                </span>
-            </div>
-        </article>
+        <ApplicationProposalCard application={application} mode="readonly" />
     );
 };
 
@@ -305,7 +450,7 @@ const ApplicationReviewDialog = ({
             <button
                 type="button"
                 aria-label="Close application review"
-                className="fixed inset-0"
+                className="fixed inset-0 cursor-default"
                 onClick={() =>
                 {
                     if (!isRejecting && !isChoosing) {
@@ -319,20 +464,23 @@ const ApplicationReviewDialog = ({
                     <div className="shrink-0 border-b border-border px-5 py-5 sm:px-7">
                         <div className="flex items-start justify-between gap-4">
                             <div>
-
-
-                                <h2 className="mt-2 font-display text-3xl tracking-[-0.03em] text-foreground">
+                                <h2 className="font-display text-3xl tracking-[-0.03em] text-foreground">
                                     Review proposal
                                 </h2>
 
-
+                                <p className="mt-2 text-sm leading-6 text-muted">
+                                    Check the photographer’s message, proposed
+                                    price, and included deliverables before
+                                    making a decision.
+                                </p>
                             </div>
 
                             <button
                                 type="button"
                                 onClick={onClose}
                                 disabled={isRejecting || isChoosing}
-                                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border text-xl text-foreground transition hover:border-accent disabled:cursor-not-allowed disabled:opacity-60"
+                                className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full border border-border text-xl text-foreground transition hover:border-accent disabled:cursor-not-allowed disabled:opacity-60"
+                                aria-label="Close application review"
                             >
                                 ×
                             </button>
@@ -349,7 +497,7 @@ const ApplicationReviewDialog = ({
                                 type="button"
                                 onClick={() => onReject(application)}
                                 disabled={isRejecting || isChoosing}
-                                className="inline-flex items-center justify-center rounded-2xl border border-rose-200 bg-surface px-5 py-3 text-sm font-semibold text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                className="inline-flex cursor-pointer items-center justify-center rounded-2xl border border-rose-200 bg-surface px-5 py-3 text-sm font-semibold text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 {isRejecting ? "Rejecting..." : "Reject"}
                             </button>
@@ -358,7 +506,7 @@ const ApplicationReviewDialog = ({
                                 type="button"
                                 onClick={() => onChoose(application)}
                                 disabled={isRejecting || isChoosing}
-                                className="inline-flex items-center justify-center rounded-2xl bg-foreground px-5 py-3 text-sm font-semibold text-background transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                                className="inline-flex cursor-pointer items-center justify-center rounded-2xl bg-foreground px-5 py-3 text-sm font-semibold text-background transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 {isChoosing
                                     ? "Choosing..."
@@ -550,6 +698,10 @@ export const OpenBookingApplicationsSection = ({
             application.status !== "rejected",
     );
 
+    const canManageMyApplication =
+        myApplication?.status === "submitted" ||
+        myApplication?.status === "shortlisted";
+
     return (
         <section className="border-t border-border pt-6">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -576,62 +728,17 @@ export const OpenBookingApplicationsSection = ({
 
             {hasApplied ? (
                 <div className="mt-5 space-y-4">
-                    <div className="rounded-2xl border border-accent/30 bg-accent/10 px-5 py-4">
-                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                            <div>
-                                <p className="text-sm font-semibold text-foreground">
-                                    Your application is submitted.
-                                </p>
-
-                                <p className="mt-1 text-sm leading-6 text-muted">
-                                    The client can now review your proposal. You
-                                    can still edit or withdraw it while it is not
-                                    selected.
-                                </p>
-                            </div>
-
-                            <span className="w-fit rounded-full bg-surface px-3 py-1 text-xs font-semibold text-accent">
-                                {booking.myApplicationStatus ?? "submitted"}
-                            </span>
-                        </div>
-                    </div>
-
                     {myApplicationQuery.isLoading ? (
-                        <div className="h-40 animate-pulse rounded-2xl bg-background" />
+                        <div className="h-56 animate-pulse rounded-[1.75rem] bg-background" />
                     ) : myApplication ? (
-                        <>
-                            <ApplicationFullDetails
-                                application={myApplication}
-                            />
-
-                            {myApplication.status === "submitted" ||
-                                myApplication.status === "shortlisted" ? (
-                                <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
-                                    <button
-                                        type="button"
-                                        onClick={() =>
-                                            setIsEditModalOpen(true)
-                                        }
-                                        className="inline-flex items-center justify-center rounded-2xl border border-border bg-surface px-5 py-3 text-sm font-semibold text-foreground transition hover:border-accent hover:text-accent"
-                                    >
-                                        Edit application
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        onClick={() =>
-                                            setIsWithdrawConfirmOpen(true)
-                                        }
-                                        disabled={withdrawMutation.isPending}
-                                        className="inline-flex items-center justify-center rounded-2xl border border-rose-200 bg-surface px-5 py-3 text-sm font-semibold text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
-                                    >
-                                        {withdrawMutation.isPending
-                                            ? "Withdrawing..."
-                                            : "Withdraw"}
-                                    </button>
-                                </div>
-                            ) : null}
-                        </>
+                        <ApplicationProposalCard
+                            application={myApplication}
+                            mode="submitted"
+                            canManage={canManageMyApplication}
+                            isWithdrawing={withdrawMutation.isPending}
+                            onEdit={() => setIsEditModalOpen(true)}
+                            onWithdraw={() => setIsWithdrawConfirmOpen(true)}
+                        />
                     ) : null}
 
                     <ApplyToPhotoshootModal
@@ -653,16 +760,24 @@ export const OpenBookingApplicationsSection = ({
                 <div className="mt-5 space-y-4">
                     {clientApplicationsQuery.isLoading ? (
                         <>
-                            <div className="h-36 animate-pulse rounded-[1.75rem] bg-background" />
-                            <div className="h-36 animate-pulse rounded-[1.75rem] bg-background" />
+                            <div className="h-56 animate-pulse rounded-[1.75rem] bg-background" />
+                            <div className="h-56 animate-pulse rounded-[1.75rem] bg-background" />
                         </>
                     ) : activeApplications.length > 0 ? (
                         activeApplications.map((application) => (
-                            <ApplicationCompactCard
+                            <ApplicationProposalCard
                                 key={application.id}
                                 application={application}
+                                mode="review"
+                                isChoosing={
+                                    selectMutation.isPending &&
+                                    selectingApplication?.id === application.id
+                                }
                                 onReview={() =>
                                     setReviewingApplication(application)
+                                }
+                                onChoose={() =>
+                                    setSelectingApplication(application)
                                 }
                             />
                         ))
