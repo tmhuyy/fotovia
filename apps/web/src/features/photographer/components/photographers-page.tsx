@@ -11,30 +11,97 @@ import { Container } from "../../../components/layout/container";
 import { Badge } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";
 import { Card, CardContent } from "../../../components/ui/card";
+import { VIETNAM_LOCATION_OPTIONS } from "../../../shared/data/vietnam-locations";
 import { photographerService } from "../../../services/photographer.service";
 import type { PhotographerProfile } from "../types/photographer.types";
 import { PhotographerCard } from "./photographer-card";
 import { PhotographerFilters } from "./photographer-filters";
 
+const SHOOT_STYLE_OPTIONS = [
+  "Aerial",
+  "Architecture",
+  "Event",
+  "Fashion",
+  "Food",
+  "Nature",
+  "Sports",
+  "Street",
+  "Wedding",
+  "Wildlife",
+];
+
+const normalizeText = (value: string) =>
+{
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+};
+
+const resolveInitialStyle = (value: string | null) =>
+{
+  if (!value?.trim()) return "all";
+
+  const normalizedValue = normalizeText(value);
+  const matchedStyle = SHOOT_STYLE_OPTIONS.find(
+    (option) => normalizeText(option) === normalizedValue,
+  );
+
+  return matchedStyle ?? "all";
+};
+
 const budgetMatches = (price: number | null, budget: string) =>
 {
-  if (price === null) {
-    return budget === "all";
+  if (budget === "all") return true;
+  if (price === null) return false;
+
+  if (budget === "under-500000") {
+    return price < 500000;
   }
 
-  if (budget === "under-400") {
-    return price < 400;
+  if (budget === "500000-1500000") {
+    return price >= 500000 && price <= 1500000;
   }
 
-  if (budget === "400-700") {
-    return price >= 400 && price <= 700;
-  }
-
-  if (budget === "over-700") {
-    return price > 700;
+  if (budget === "over-1500000") {
+    return price > 1500000;
   }
 
   return true;
+};
+
+const locationMatches = (profileLocation: string, selectedLocation: string) =>
+{
+  if (selectedLocation === "all") return true;
+
+  const normalizedProfileLocation = normalizeText(profileLocation);
+  const selectedOption = VIETNAM_LOCATION_OPTIONS.find(
+    (option) => option.value === selectedLocation,
+  );
+
+  const acceptedLocationValues = selectedOption
+    ? [selectedOption.label, selectedOption.value, ...selectedOption.aliases]
+    : [selectedLocation];
+
+  return acceptedLocationValues.some(
+    (value) => normalizeText(value) === normalizedProfileLocation,
+  );
+};
+
+const styleMatches = (photographer: PhotographerProfile, selectedStyle: string) =>
+{
+  if (selectedStyle === "all") return true;
+
+  const normalizedStyle = normalizeText(selectedStyle);
+  const styleValues = [
+    photographer.primaryDiscoveryStyle ?? "",
+    ...photographer.discoveryStyles,
+    ...photographer.styles,
+    ...photographer.tags,
+  ];
+
+  return styleValues.some((value) => normalizeText(value) === normalizedStyle);
 };
 
 const sortProfiles = (
@@ -110,13 +177,13 @@ const PhotographersPageSkeleton = () =>
             <div className="h-6 w-[36rem] max-w-full animate-pulse rounded bg-border/50" />
           </div>
 
-          <div className="grid gap-8 lg:grid-cols-[280px_minmax(0,1fr)]">
-            <div className="h-[24rem] animate-pulse rounded-[2rem] border border-border bg-surface/70" />
+          <div className="grid gap-8 lg:grid-cols-[320px_minmax(0,1fr)]">
+            <div className="h-[30rem] animate-pulse rounded-[2rem] border border-border bg-surface/70" />
             <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
               {Array.from({ length: 6 }).map((_, index) => (
                 <div
                   key={index}
-                  className="h-[25rem] animate-pulse rounded-[2rem] border border-border bg-surface/70"
+                  className="h-[34rem] animate-pulse rounded-[2rem] border border-border bg-surface/70"
                 />
               ))}
             </div>
@@ -131,7 +198,7 @@ const PhotographersPageSkeleton = () =>
 export const PhotographersPage = () =>
 {
   const searchParams = useSearchParams();
-  const initialStyle = searchParams.get("style")?.trim() || "all";
+  const initialStyle = resolveInitialStyle(searchParams.get("style"));
 
   const [search, setSearch] = useState("");
   const [style, setStyle] = useState(initialStyle);
@@ -147,34 +214,9 @@ export const PhotographersPage = () =>
 
   const photographerList = photographersQuery.data ?? [];
 
-  const styleOptions = useMemo(() =>
-  {
-    return Array.from(
-      new Set(
-        photographerList.flatMap((item) =>
-          item.discoveryStyles.length
-            ? item.discoveryStyles
-            : item.styles,
-        ),
-      ),
-    ).sort((a, b) => a.localeCompare(b));
-  }, [photographerList]);
-
-  const locationOptions = useMemo(() =>
-  {
-    return Array.from(new Set(photographerList.map((item) => item.location))).sort(
-      (a, b) => a.localeCompare(b),
-    );
-  }, [photographerList]);
-
-  const quickStyles = useMemo(() =>
-  {
-    return styleOptions.slice(0, 6);
-  }, [styleOptions]);
-
   const filtered = useMemo(() =>
   {
-    const normalizedSearch = search.trim().toLowerCase();
+    const normalizedSearch = normalizeText(search);
 
     const results = photographerList.filter((item) =>
     {
@@ -189,22 +231,16 @@ export const PhotographersPage = () =>
         item.primaryDiscoveryStyle ?? "",
       ]
         .join(" ")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
         .toLowerCase();
 
       const matchesSearch = normalizedSearch
         ? searchHaystack.includes(normalizedSearch)
         : true;
 
-      const matchesStyle =
-        style === "all"
-          ? true
-          : item.primaryDiscoveryStyle === style ||
-          item.discoveryStyles.includes(style) ||
-          item.styles.includes(style);
-
-      const matchesLocation =
-        location === "all" ? true : item.location === location;
-
+      const matchesStyle = styleMatches(item, style);
+      const matchesLocation = locationMatches(item.location, location);
       const matchesBudget = budgetMatches(item.startingPrice, budget);
 
       return (
@@ -224,6 +260,10 @@ export const PhotographersPage = () =>
     location !== "all" ||
     budget !== "all" ||
     sort !== "recommended";
+
+  const aiReadyCount = photographerList.filter(
+    (item) => item.classifiedPortfolioCount > 0,
+  ).length;
 
   const handleReset = () =>
   {
@@ -256,7 +296,7 @@ export const PhotographersPage = () =>
 
                 <Button
                   type="button"
-                  className="rounded-full"
+                  className="cursor-pointer rounded-full"
                   onClick={() => photographersQuery.refetch()}
                 >
                   Try again
@@ -276,95 +316,73 @@ export const PhotographersPage = () =>
       <main className="pb-16 pt-10">
         <Container className="space-y-8">
           <section className="space-y-5">
-            <Badge variant="ai">AI style discovery</Badge>
 
-            <div className="space-y-3">
-              <h1 className="font-serif text-4xl text-foreground sm:text-5xl">
-                Find photographers by real portfolio style.
+            <div className="max-w-4xl space-y-3">
+              <h1 className="font-serif text-4xl text-foreground sm:text-5xl lg:text-6xl">
+               Fotovia's Photographers
               </h1>
-
-              <p className="max-w-3xl text-sm leading-7 text-muted sm:text-base">
-                Browse public profiles using AI-detected style
-                signals from real portfolio work instead of long,
-                instruction-heavy browsing flows.
-              </p>
             </div>
 
-            <div className="flex flex-wrap gap-3">
-              <Badge variant="neutral">
+            <div className="flex flex-wrap gap-3 text-sm text-muted">
+              <span>
                 {filtered.length} photographer
                 {filtered.length === 1 ? "" : "s"} found
-              </Badge>
+              </span>
 
-              <Badge variant="neutral">
-                {photographerList.filter(
-                  (item) => item.classifiedPortfolioCount > 0,
-                ).length}{" "}
-                with AI-ready portfolios
-              </Badge>
-
-              {hasActiveFilters ? (
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  onClick={handleReset}
-                >
-                  Clear filters
-                </Button>
-              ) : null}
             </div>
           </section>
 
-          {quickStyles.length ? (
-            <section className="space-y-3">
-              <p className="text-xs uppercase tracking-[0.22em] text-muted">
-                Quick style entry
-              </p>
+          <section className="space-y-3">
+            <p className="text-xs uppercase tracking-[0.22em] text-muted">
+              Quick style entry
+            </p>
 
-              <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant={style === "all" ? "primary" : "secondary"}
+                className="cursor-pointer"
+                onClick={() => setStyle("all")}
+              >
+                All styles
+              </Button>
+
+              {SHOOT_STYLE_OPTIONS.map((option) => (
                 <Button
+                  key={option}
                   type="button"
                   size="sm"
-                  variant={style === "all" ? "primary" : "secondary"}
-                  onClick={() => setStyle("all")}
+                  variant={
+                    style === option ? "primary" : "secondary"
+                  }
+                  className="cursor-pointer"
+                  onClick={() => setStyle(option)}
                 >
-                  All styles
+                  {option}
                 </Button>
+              ))}
+            </div>
+          </section>
 
-                {quickStyles.map((option) => (
-                  <Button
-                    key={option}
-                    type="button"
-                    size="sm"
-                    variant={
-                      style === option ? "primary" : "secondary"
-                    }
-                    onClick={() => setStyle(option)}
-                  >
-                    {option}
-                  </Button>
-                ))}
-              </div>
-            </section>
-          ) : null}
-
-          <div className="grid gap-8 lg:grid-cols-[280px_minmax(0,1fr)]">
+          <div className="grid gap-8 lg:grid-cols-[320px_minmax(0,1fr)]">
             <Card className="h-fit rounded-[2rem] border-border bg-surface shadow-sm">
               <CardContent className="space-y-6 p-6">
-                <div className="space-y-2">
-                  <p className="text-xs uppercase tracking-[0.22em] text-muted">
-                    Filter discovery
-                  </p>
+                <div className="overflow-hidden rounded-[1.75rem] border border-border bg-background">
+                  <div className="bg-[radial-gradient(circle_at_25%_20%,rgba(214,187,145,0.45),transparent_36%),radial-gradient(circle_at_80%_0%,rgba(237,229,255,0.7),transparent_38%)] px-5 py-6">
+                    <p className="text-xs uppercase tracking-[0.28em] text-muted">
+                      Filter discovery
+                    </p>
 
-                  <h2 className="font-serif text-2xl text-foreground">
-                    Keep it simple
-                  </h2>
+                    <h2 className="mt-3 font-serif text-3xl text-foreground">
+                      Keep it simple
+                    </h2>
 
-                  <p className="text-sm leading-6 text-muted">
-                    Search, pick an AI style, then compare real
-                    portfolios.
-                  </p>
+                    <p className="mt-3 text-sm leading-6 text-muted">
+                      Search, choose a style, then compare
+                      real Fotovia portfolios.
+                    </p>
+                  </div>
                 </div>
 
                 <PhotographerFilters
@@ -378,9 +396,22 @@ export const PhotographersPage = () =>
                   onBudgetChange={setBudget}
                   sort={sort}
                   onSortChange={setSort}
-                  styleOptions={styleOptions}
-                  locationOptions={locationOptions}
+                  styleOptions={SHOOT_STYLE_OPTIONS}
+                  locationOptions={VIETNAM_LOCATION_OPTIONS.map(
+                    (option) => option.value,
+                  )}
                 />
+
+                {hasActiveFilters ? (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="w-full cursor-pointer rounded-2xl"
+                    onClick={handleReset}
+                  >
+                    Clear filters
+                  </Button>
+                ) : null}
               </CardContent>
             </Card>
 
@@ -401,13 +432,15 @@ export const PhotographersPage = () =>
                   </h2>
 
                   <p className="text-sm leading-7 text-muted">
-                    Try adjusting your search or AI style filter
-                    to discover more photographers.
+                    Try adjusting your search, style, or
+                    location filter to discover more
+                    photographers.
                   </p>
 
                   <Button
                     type="button"
                     variant="secondary"
+                    className="cursor-pointer rounded-full"
                     onClick={handleReset}
                   >
                     Reset filters

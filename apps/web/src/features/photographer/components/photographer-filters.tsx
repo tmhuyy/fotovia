@@ -18,7 +18,7 @@ interface PhotographerFiltersProps
 }
 
 const selectClassName =
-  "h-11 w-full rounded-xl border border-border bg-surface px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent";
+  "h-12 w-full cursor-pointer rounded-2xl border border-border bg-background px-4 text-sm text-foreground transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent";
 
 export const PhotographerFilters = ({
   search,
@@ -43,19 +43,20 @@ export const PhotographerFilters = ({
           id="photographer-search"
           value={search}
           onChange={(event) => onSearchChange(event.target.value)}
-          placeholder="Search by name, style, or location"
+          placeholder="Search photographers"
+          className="h-12 rounded-2xl bg-background"
         />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="photographer-style">AI style</Label>
+        <Label htmlFor="photographer-style">Styles</Label>
         <select
           id="photographer-style"
           value={style}
           onChange={(event) => onStyleChange(event.target.value)}
           className={selectClassName}
         >
-          <option value="all">All detected styles</option>
+          <option value="all">All styles</option>
           {styleOptions.map((option) => (
             <option key={option} value={option}>
               {option}
@@ -81,7 +82,7 @@ export const PhotographerFilters = ({
         </select>
       </div>
 
-      <div className="space-y-2">
+      {/* <div className="space-y-2">
         <Label htmlFor="photographer-budget">Budget</Label>
         <select
           id="photographer-budget"
@@ -90,13 +91,15 @@ export const PhotographerFilters = ({
           className={selectClassName}
         >
           <option value="all">Any budget</option>
-          <option value="under-400">Under $400</option>
-          <option value="400-700">$400 - $700</option>
-          <option value="over-700">Over $700</option>
+          <option value="under-500000">Under 500.000 VND</option>
+          <option value="500000-1500000">
+            500.000 VND - 1.500.000 VND
+          </option>
+          <option value="over-1500000">Over 1.500.000 VND</option>
         </select>
-      </div>
+      </div> */}
 
-      <div className="space-y-2">
+      {/* <div className="space-y-2">
         <Label htmlFor="photographer-sort">Sort by</Label>
         <select
           id="photographer-sort"
@@ -110,7 +113,7 @@ export const PhotographerFilters = ({
           <option value="price-high">Price: high to low</option>
           <option value="name">Name (A-Z)</option>
         </select>
-      </div>
+      </div> */}
     </div>
   );
 };
