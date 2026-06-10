@@ -319,7 +319,7 @@ export const PhotographersPage = () =>
 
             <div className="max-w-4xl space-y-3">
               <h1 className="font-serif text-4xl text-foreground sm:text-5xl lg:text-6xl">
-               Fotovia's Photographers
+                Fotovia's Photographers
               </h1>
             </div>
 
@@ -416,7 +416,7 @@ export const PhotographersPage = () =>
             </Card>
 
             {filtered.length ? (
-              <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+              <div className="grid items-stretch gap-6 md:grid-cols-2">
                 {filtered.map((photographer) => (
                   <PhotographerCard
                     key={photographer.id}

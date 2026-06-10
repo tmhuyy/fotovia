@@ -1,25 +1,123 @@
+"use client";
+
 import Link from "next/link";
+
+import { useQuery } from "@tanstack/react-query";
 
 import { Badge } from "../../../components/ui/badge";
 import { buttonVariants } from "../../../components/ui/button";
 import { Card, CardContent } from "../../../components/ui/card";
+import { photographerService } from "../../../services/photographer.service";
+import type { PhotographerDetail } from "../types/photographer-detail.types";
 import type { PhotographerProfile } from "../types/photographer.types";
 
-interface PhotographerCardProps {
+type RepresentativePortfolioItem = PhotographerDetail["portfolio"][number];
+
+interface PhotographerCardProps
+{
   photographer: PhotographerProfile;
 }
 
-const getInitials = (name: string) => {
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part.charAt(0))
-    .join("")
-    .toUpperCase();
+const getShortBio = (value: string) =>
+{
+  const normalizedValue = value.trim();
+
+  if (normalizedValue.length <= 112) {
+    return normalizedValue;
+  }
+
+  return `${normalizedValue.slice(0, 109).trim()}...`;
 };
 
-const formatStartingPrice = (value: number | null) => {
+const getDisplayStyles = (styles: string[], discoveryStyles: string[]) =>
+{
+  const mergedStyles = [...discoveryStyles, ...styles]
+    .map((style) => style.trim())
+    .filter(Boolean);
+
+  return Array.from(new Set(mergedStyles)).slice(0, 3);
+};
+
+const getRepresentativePortfolioItem = (
+  detail: PhotographerDetail | null,
+): RepresentativePortfolioItem | null =>
+{
+  const portfolioItems = detail?.portfolio ?? [];
+
+  if (portfolioItems.length === 0) {
+    return null;
+  }
+
+  return (
+    portfolioItems.find((item) => item.isFeatured) ??
+    portfolioItems[0] ??
+    null
+  );
+};
+
+const getStyleSignal = ({
+  profile,
+  representativeItem,
+}: {
+  profile: PhotographerProfile;
+  representativeItem: RepresentativePortfolioItem | null;
+}) =>
+{
+  return (
+    representativeItem?.styleLabel?.trim() ||
+    profile.primaryDiscoveryStyle?.trim() ||
+    profile.discoveryStyles[0]?.trim() ||
+    profile.styles[0]?.trim() ||
+    "Portfolio"
+  );
+};
+
+const getCoverImageUrl = (
+  representativeItem: RepresentativePortfolioItem | null,
+) =>
+{
+  return representativeItem?.coverImageUrl?.trim() || null;
+};
+
+const getGalleryThumbnailUrls = (
+  representativeItem: RepresentativePortfolioItem | null,
+) =>
+{
+  return Array.from(
+    new Set(
+      (representativeItem?.galleryImages ?? [])
+        .map((url) => url.trim())
+        .filter(Boolean),
+    ),
+  ).slice(0, 3);
+};
+
+const getPortfolioCountLabel = (count: number) =>
+{
+  if (count <= 0) {
+    return "Portfolio updating";
+  }
+
+  if (count === 1) {
+    return "1 public work";
+  }
+
+  return `${count} public works`;
+};
+
+const getWorkLabel = (
+  representativeItem: RepresentativePortfolioItem | null,
+) =>
+{
+  if (!representativeItem) {
+    return "Portfolio";
+  }
+
+  return representativeItem.isFeatured ? "Featured work" : "Latest work";
+};
+
+const formatStartingPrice = (value: number | null) =>
+{
   if (value === null) {
     return "Pricing on request";
   }
@@ -27,156 +125,178 @@ const formatStartingPrice = (value: number | null) => {
   return `From ${new Intl.NumberFormat("vi-VN").format(value)} VND`;
 };
 
-const normalizeStyleLabel = (value: string | null | undefined) =>
+const PortfolioImageFallback = ({ styleSignal }: { styleSignal: string }) =>
 {
-  if (!value?.trim()) return "Portfolio";
+  return (
+    <div className="flex h-full w-full items-end bg-gradient-to-br from-accent/25 via-surface to-background p-5">
+      <div>
+        <p className="text-xs uppercase tracking-[0.22em] text-muted">
+          Style signal
+        </p>
 
-  return value
-    .split(/[\s-_]+/)
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
+        <p className="mt-2 font-serif text-3xl leading-tight text-foreground">
+          {styleSignal}
+        </p>
+
+        <p className="mt-2 text-sm text-muted">
+          Portfolio image coming soon
+        </p>
+      </div>
+    </div>
+  );
+};
+
+const PhotographerImagePreview = ({
+  coverImageUrl,
+  galleryThumbnailUrls,
+  styleSignal,
+  portfolioItemCount,
+  workLabel,
+}: {
+  coverImageUrl: string | null;
+  galleryThumbnailUrls: string[];
+  styleSignal: string;
+  portfolioItemCount: number;
+  workLabel: string;
+}) =>
+{
+  return (
+    <div className="relative aspect-[4/3] overflow-hidden rounded-[1.5rem] border border-border bg-background">
+      {coverImageUrl ? (
+        <img
+          src={coverImageUrl}
+          alt={`${styleSignal} portfolio cover preview`}
+          className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
+        />
+      ) : (
+        <PortfolioImageFallback styleSignal={styleSignal} />
+      )}
+
+      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-foreground/80 via-foreground/40 to-transparent px-5 py-4">
+        <p className="text-xs uppercase tracking-[0.22em] text-background/70">
+          Style signal
+        </p>
+
+        <p className="mt-1 font-serif text-3xl leading-tight text-background">
+          {styleSignal}
+        </p>
+      </div>
+
+      <div className="absolute left-4 top-4 flex flex-wrap gap-2">
+        <span className="rounded-full bg-surface/90 px-3 py-1 text-xs font-semibold text-foreground shadow-sm">
+          {workLabel}
+        </span>
+
+        <span className="rounded-full bg-foreground/80 px-3 py-1 text-xs font-semibold text-background shadow-sm">
+          {getPortfolioCountLabel(portfolioItemCount)}
+        </span>
+      </div>
+
+      {galleryThumbnailUrls.length > 0 ? (
+        <div className="absolute right-4 top-4 hidden w-16 gap-1 sm:grid">
+          {galleryThumbnailUrls.map((url) => (
+            <div
+              key={url}
+              className="aspect-square overflow-hidden rounded-xl border border-background/70 bg-surface shadow-sm"
+            >
+              <img
+                src={url}
+                alt=""
+                className="h-full w-full object-cover"
+                aria-hidden="true"
+              />
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
 };
 
 export const PhotographerCard = ({ photographer }: PhotographerCardProps) =>
 {
-  const visibleStyleChips = (
-    photographer.discoveryStyles.length
-      ? photographer.discoveryStyles
-      : photographer.styles
+  const detailQuery = useQuery({
+    queryKey: ["public-photographer-detail-card", photographer.slug],
+    queryFn: () =>
+      photographerService.getPublicPhotographerDetailBySlug(
+        photographer.slug,
+      ),
+    retry: false,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const detail = detailQuery.data ?? null;
+  const representativeItem = getRepresentativePortfolioItem(detail);
+
+  const styleSignal = getStyleSignal({
+    profile: photographer,
+    representativeItem,
+  });
+
+  const styleBadges = Array.from(
+    new Set([
+      styleSignal,
+      ...getDisplayStyles(
+        photographer.styles,
+        photographer.discoveryStyles,
+      ),
+    ]),
   ).slice(0, 3);
 
-  const primaryStyle = normalizeStyleLabel(
-    photographer.primaryDiscoveryStyle ||
-    visibleStyleChips[0] ||
-    photographer.specialty,
-  );
+  const coverImageUrl = getCoverImageUrl(representativeItem);
+  const galleryThumbnailUrls = getGalleryThumbnailUrls(representativeItem);
 
-  const heroImageUrl = photographer.avatarUrl;
-  const hasPortfolioWork = photographer.portfolioItemCount > 0;
+  const portfolioItemCount =
+    detail?.portfolio.length ?? photographer.portfolioItemCount;
 
   return (
-    <Card className="overflow-hidden rounded-[2rem] border-border bg-surface shadow-sm transition hover:-translate-y-1 hover:shadow-[0_24px_70px_rgba(23,23,23,0.1)]">
-      <CardContent className="space-y-5 p-5">
-        <div className="relative h-72 overflow-hidden rounded-[1.75rem] border border-border bg-background">
-          {heroImageUrl ? (
-            <img
-              src={heroImageUrl}
-              alt={`${photographer.name} portfolio preview`}
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center bg-[radial-gradient(circle_at_30%_20%,rgba(214,187,145,0.5),transparent_32%),radial-gradient(circle_at_80%_30%,rgba(237,229,255,0.85),transparent_36%)] text-5xl font-semibold text-foreground">
-              {getInitials(photographer.name)}
-            </div>
-          )}
+    <Card className="group flex h-full overflow-hidden rounded-[2rem] border-border bg-surface shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+      <CardContent className="flex h-full w-full flex-col p-4">
+        <PhotographerImagePreview
+          coverImageUrl={coverImageUrl}
+          galleryThumbnailUrls={galleryThumbnailUrls}
+          styleSignal={styleSignal}
+          portfolioItemCount={portfolioItemCount}
+          workLabel={getWorkLabel(representativeItem)}
+        />
 
-          <div className="absolute inset-0 bg-gradient-to-t from-foreground/70 via-foreground/20 to-transparent" />
-
-          <div className="absolute left-4 top-4 flex flex-wrap gap-2">
-            <span className="rounded-full bg-surface/90 px-4 py-2 text-sm font-semibold text-foreground shadow-sm backdrop-blur">
-              {hasPortfolioWork ? "Latest work" : "Profile"}
-            </span>
-
-            <span className="rounded-full bg-foreground/55 px-4 py-2 text-sm font-semibold text-background shadow-sm backdrop-blur">
-              {photographer.portfolioItemCount} public work
-              {photographer.portfolioItemCount === 1 ? "" : "s"}
-            </span>
-          </div>
-
-          {heroImageUrl ? (
-            <div className="absolute right-4 top-4 h-20 w-20 overflow-hidden rounded-2xl border-2 border-surface shadow-md">
-              <img
-                src={heroImageUrl}
-                alt={`${photographer.name} thumbnail`}
-                className="h-full w-full object-cover"
-              />
-            </div>
-          ) : null}
-
-          <div className="absolute bottom-5 left-5 right-5">
-            <p className="text-xs uppercase tracking-[0.32em] text-background/75">
-              Style signal
-            </p>
-
-            <h3 className="mt-2 font-serif text-4xl leading-none text-background">
-              {primaryStyle}
-            </h3>
-          </div>
-        </div>
-
-        <div className="space-y-4 px-1">
-          <div>
-            <p className="text-xs uppercase tracking-[0.28em] text-muted">
+        <div className="flex flex-1 flex-col px-1 pt-5">
+          <div className="space-y-1">
+            <p className="text-xs uppercase tracking-[0.22em] text-muted">
               {photographer.location}
             </p>
 
-            <h2 className="mt-3 font-serif text-4xl leading-none text-foreground">
+            <h3 className="font-serif text-3xl leading-tight text-foreground">
               {photographer.name}
-            </h2>
+            </h3>
           </div>
 
-          <p className="line-clamp-4 text-base leading-8 text-muted">
-            {photographer.bio}
+          <p className="mt-3 h-[4.5rem] overflow-hidden text-sm leading-6 text-muted">
+            {getShortBio(photographer.bio)}
           </p>
 
-          {visibleStyleChips.length ? (
-            <div className="flex flex-wrap gap-2">
-              {visibleStyleChips.map((style) => (
-                <Badge
-                  key={style}
-                  variant={
-                    style === photographer.primaryDiscoveryStyle
-                      ? "ai"
-                      : "neutral"
-                  }
-                  className="px-4 py-2 text-sm"
-                >
-                  {normalizeStyleLabel(style)}
-                </Badge>
-              ))}
-            </div>
-          ) : null}
-
-          <div className="grid gap-3 rounded-[1.5rem] border border-border bg-background px-4 py-4 text-sm sm:grid-cols-2">
-            <div>
-              <p className="text-muted">Portfolio</p>
-              <p className="mt-1 font-semibold text-foreground">
-                {photographer.portfolioItemCount} public work
-                {photographer.portfolioItemCount === 1 ? "" : "s"}
-              </p>
-            </div>
-
-            <div>
-              <p className="text-muted">AI-ready</p>
-              <p className="mt-1 font-semibold text-foreground">
-                {photographer.classifiedPortfolioCount} classified
-              </p>
-            </div>
+          <div className="mt-4 flex min-h-8 flex-wrap gap-2">
+            {styleBadges.map((style) => (
+              <Badge
+                key={style}
+                variant={style === styleSignal ? "ai" : "neutral"}
+              >
+                {style}
+              </Badge>
+            ))}
           </div>
-
-          <div className="flex items-center justify-between gap-4 text-sm">
-            <p className="text-muted">
-              {photographer.reviewCount && photographer.rating
-                ? `${photographer.rating.toFixed(1)} rating · ${photographer.reviewCount} reviews`
-                : "New public profile"}
-            </p>
-
-            <p className="font-semibold text-foreground">
-              {formatStartingPrice(photographer.startingPrice)}
-            </p>
+          
+          <div className="pt-5">
+            <Link
+              href={`/photographers/${photographer.slug}`}
+              className={buttonVariants({
+                size: "lg",
+                className: "w-full cursor-pointer rounded-full",
+              })}
+            >
+              View portfolio
+            </Link>
           </div>
-
-          <Link
-            href={`/photographers/${photographer.slug}`}
-            className={buttonVariants({
-              size: "lg",
-              className:
-                "w-full cursor-pointer rounded-2xl py-6 text-base font-semibold",
-            })}
-          >
-            View portfolio
-          </Link>
         </div>
       </CardContent>
     </Card>
