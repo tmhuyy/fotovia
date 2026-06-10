@@ -56,7 +56,7 @@ export const PhotographerCard = ({ photographer }: PhotographerCardProps) => {
   const hasPortfolioWork = photographer.portfolioItemCount > 0;
 
   return (
-    <Card className="w-full overflow-hidden rounded-[2rem] border-border bg-surface shadow-sm transition hover:-translate-y-1 hover:shadow-[0_24px_70px_rgba(23,23,23,0.1)]">
+    <Card className="col-span-full w-full max-w-[44rem] justify-self-start overflow-hidden rounded-[2rem] border-border bg-surface shadow-sm transition hover:-translate-y-1 hover:shadow-[0_24px_70px_rgba(23,23,23,0.1)]">
       <CardContent className="space-y-5 p-5 sm:p-6">
         <div className="relative h-[27rem] overflow-hidden rounded-[1.75rem] border border-border bg-background sm:h-[30rem]">
           {heroImageUrl ? (
@@ -66,7 +66,7 @@ export const PhotographerCard = ({ photographer }: PhotographerCardProps) => {
               className="h-full w-full object-cover"
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center bg-[radial-gradient(circle_at_30%_20%,rgba(214,187,145,0.5),transparent_32%),radial-gradient(circle_at_80%_30%,rgba(237,229,255,0.85),transparent_36%)] text-5xl font-semibold text-foreground">
+            <div className="flex h-full w-full items-center justify-center bg-background text-5xl font-semibold text-foreground">
               {getInitials(photographer.name)}
             </div>
           )}
