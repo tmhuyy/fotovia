@@ -464,7 +464,13 @@ export const PhotographerDetailPage = ({ slug }: PhotographerDetailPageProps) =>
                 </div>
               ) : null}
 
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div
+                className={
+                  isOwnPhotographerProfile
+                    ? "mt-4 grid gap-3 sm:grid-cols-2"
+                    : "mt-4"
+                }
+              >
                 {isOwnPhotographerProfile ? (
                   <>
                     <Link
@@ -492,29 +498,15 @@ export const PhotographerDetailPage = ({ slug }: PhotographerDetailPageProps) =>
                     </Link>
                   </>
                 ) : (
-                  <>
-                    <Link
-                      href={bookingHref}
-                      className={buttonVariants({
-                        size: "sm",
-                        className: "h-10 rounded-lg text-sm font-semibold",
-                      })}
-                    >
-                      Request booking
-                    </Link>
-
-                    <Link
-                      href="/photographers"
-                      className={buttonVariants({
-                        variant: "secondary",
-                        size: "sm",
-                        className:
-                          "h-10 rounded-lg border border-border bg-surface text-sm font-semibold shadow-none hover:bg-background",
-                      })}
-                    >
-                      Compare photographers
-                    </Link>
-                  </>
+                  <Link
+                    href={bookingHref}
+                    className={buttonVariants({
+                      size: "sm",
+                      className: "h-10 w-full rounded-lg text-sm font-semibold",
+                    })}
+                  >
+                    Request booking
+                  </Link>
                 )}
               </div>
             </div>
