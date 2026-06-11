@@ -353,12 +353,19 @@ const normalizePortfolioShowcaseItem = (
 ): PhotographerPortfolioShowcaseItem => {
     const explicitStyleLabel = normalizeNullableString(payload.styleLabel);
     const legacyCategory = normalizeNullableString(payload.category);
-    const styleLabel = explicitStyleLabel ?? legacyCategory;
-    const fallbackSource: PhotographerPortfolioStyleSource = explicitStyleLabel
-        ? "ai"
-        : legacyCategory
-          ? "legacy"
-          : "none";
+    const detectedPrimaryStyle = normalizeNullableString(
+        payload.detectedPrimaryStyle,
+    );
+
+    const styleLabel =
+        explicitStyleLabel ?? detectedPrimaryStyle ?? legacyCategory;
+
+    const fallbackSource: PhotographerPortfolioStyleSource =
+        explicitStyleLabel || detectedPrimaryStyle
+            ? "ai"
+            : legacyCategory
+              ? "legacy"
+              : "none";
 
     return {
         id: normalizeString(payload.id),
@@ -376,6 +383,41 @@ const normalizePortfolioShowcaseItem = (
             fallbackSource,
         ),
         isFeatured: normalizeBoolean(payload.isFeatured),
+        sortOrder: normalizeNumber(payload.sortOrder) ?? 0,
+        createdAt:
+            typeof payload.createdAt === "string"
+                ? payload.createdAt
+                : new Date(0).toISOString(),
+        updatedAt:
+            typeof payload.updatedAt === "string"
+                ? payload.updatedAt
+                : undefined,
+        classificationStatus: normalizeClassificationStatus(
+            payload.classificationStatus,
+        ),
+        classificationError: normalizeNullableString(
+            payload.classificationError,
+        ),
+        classificationRequestedAt: normalizeIsoDate(
+            payload.classificationRequestedAt,
+        ),
+        classificationStartedAt: normalizeIsoDate(
+            payload.classificationStartedAt,
+        ),
+        classificationCompletedAt: normalizeIsoDate(
+            payload.classificationCompletedAt,
+        ),
+        classificationFailedAt: normalizeIsoDate(
+            payload.classificationFailedAt,
+        ),
+        detectedPrimaryStyle: detectedPrimaryStyle ?? styleLabel,
+        detectedPrimaryScore: normalizeNumber(payload.detectedPrimaryScore),
+        detectedSecondaryStyles: normalizeSecondaryStyleLabels(
+            payload.detectedSecondaryStyles,
+        ),
+        detectedStyleDistribution: normalizeStyleDistribution(
+            payload.detectedStyleDistribution,
+        ),
     };
 };
 

@@ -10,6 +10,8 @@ import { Card, CardContent } from "../../../components/ui/card";
 import { photographerService } from "../../../services/photographer.service";
 import type { PhotographerDetail } from "../types/photographer-detail.types";
 import type { PhotographerProfile } from "../types/photographer.types";
+import { profileService } from "../../../services/profile.service";
+import { useAuthStore } from "../../../store/auth.store";
 
 type RepresentativePortfolioItem = PhotographerDetail["portfolio"][number];
 
@@ -224,6 +226,27 @@ export const PhotographerCard = ({ photographer }: PhotographerCardProps) =>
     retry: false,
     staleTime: 5 * 60 * 1000,
   });
+  const { user, isAuthenticated, hasHydrated, isHydrating } = useAuthStore();
+
+  const myProfileQuery = useQuery({
+    queryKey: ["my-profile", user?.email ?? "anonymous"],
+    queryFn: () => profileService.getMyProfile(user?.email ?? ""),
+    enabled:
+      hasHydrated &&
+      !isHydrating &&
+      isAuthenticated &&
+      user?.role === "photographer",
+    retry: false,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const isOwnPhotographerProfile =
+    user?.role === "photographer" &&
+    myProfileQuery.data?.id === photographer.id;
+
+  const portfolioHref = isOwnPhotographerProfile
+    ? "/photographer/portfolio"
+    : `/photographers/${photographer.slug}`;
 
   const detail = detailQuery.data ?? null;
   const representativeItem = getRepresentativePortfolioItem(detail);
@@ -285,10 +308,10 @@ export const PhotographerCard = ({ photographer }: PhotographerCardProps) =>
               </Badge>
             ))}
           </div>
-          
+
           <div className="pt-5">
             <Link
-              href={`/photographers/${photographer.slug}`}
+              href={portfolioHref}
               className={buttonVariants({
                 size: "lg",
                 className: "w-full cursor-pointer rounded-full",

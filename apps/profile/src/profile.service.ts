@@ -93,6 +93,11 @@ type PublicPhotographerSummary = {
     hasFeaturedWork: boolean;
 };
 
+type PublicPortfolioStyleEntry = {
+    label: string;
+    score: number;
+};
+
 type PublicPhotographerPortfolioItem = {
     id: string;
     title: string;
@@ -102,6 +107,19 @@ type PublicPhotographerPortfolioItem = {
     styleLabel: string | null;
     styleSource: 'ai' | 'legacy' | 'none';
     isFeatured: boolean;
+    sortOrder: number;
+    createdAt: string;
+    updatedAt: string | null;
+    classificationStatus: string;
+    classificationError: string | null;
+    classificationRequestedAt: string | null;
+    classificationStartedAt: string | null;
+    classificationCompletedAt: string | null;
+    classificationFailedAt: string | null;
+    detectedPrimaryStyle: string | null;
+    detectedPrimaryScore: number | null;
+    detectedSecondaryStyles: PublicPortfolioStyleEntry[];
+    detectedStyleDistribution: PublicPortfolioStyleEntry[];
 };
 
 type PublicPhotographerDiscoverySummary = {
@@ -909,18 +927,53 @@ export class ProfileService {
             services: [],
             testimonials: [],
             specialties,
-            portfolio: portfolioItems.map((item) => ({
-                id: item.id,
-                title: item.title,
-                description: item.description,
-                coverImageUrl: item.assetUrl,
-                galleryImages: (item.galleryImages ?? []).map(
-                    (galleryImage) => galleryImage.assetUrl,
-                ),
-                styleLabel: this.resolvePortfolioStyleLabel(item),
-                styleSource: this.resolvePortfolioStyleSource(item),
-                isFeatured: item.isFeatured,
-            })),
+            portfolio: portfolioItems.map((item) => {
+                const detectedPrimaryStyle =
+                    typeof item.detectedPrimaryStyle === 'string' &&
+                    item.detectedPrimaryStyle.trim().length > 0
+                        ? this.toDisplayLabel(item.detectedPrimaryStyle)
+                        : null;
+
+                return {
+                    id: item.id,
+                    title: item.title,
+                    description: item.description,
+                    coverImageUrl: item.assetUrl,
+                    galleryImages: (item.galleryImages ?? []).map(
+                        (galleryImage) => galleryImage.assetUrl,
+                    ),
+                    styleLabel: this.resolvePortfolioStyleLabel(item),
+                    styleSource: this.resolvePortfolioStyleSource(item),
+                    isFeatured: item.isFeatured,
+                    sortOrder: item.sortOrder,
+                    createdAt:
+                        this.toIsoString(item.createdAt) ??
+                        new Date(0).toISOString(),
+                    updatedAt: this.toIsoString(item.updatedAt),
+                    classificationStatus: item.classificationStatus,
+                    classificationError: item.classificationError,
+                    classificationRequestedAt: this.toIsoString(
+                        item.classificationRequestedAt,
+                    ),
+                    classificationStartedAt: this.toIsoString(
+                        item.classificationStartedAt,
+                    ),
+                    classificationCompletedAt: this.toIsoString(
+                        item.classificationCompletedAt,
+                    ),
+                    classificationFailedAt: this.toIsoString(
+                        item.classificationFailedAt,
+                    ),
+                    detectedPrimaryStyle,
+                    detectedPrimaryScore: item.detectedPrimaryScore,
+                    detectedSecondaryStyles: this.normalizePublicStyleEntries(
+                        item.detectedSecondaryStyles,
+                    ),
+                    detectedStyleDistribution: this.normalizePublicStyleEntries(
+                        item.detectedStyleDistribution,
+                    ),
+                };
+            }),
         };
     }
 
@@ -1236,6 +1289,53 @@ export class ProfileService {
         }
 
         return 'none';
+    }
+
+    private normalizePublicStyleEntries(
+        entries: Array<{ label: string; score: number }> | null | undefined,
+    ): PublicPortfolioStyleEntry[] {
+        if (!Array.isArray(entries)) {
+            return [];
+        }
+
+        return entries
+            .map((entry) => {
+                const label =
+                    typeof entry?.label === 'string' ? entry.label.trim() : '';
+                const score =
+                    typeof entry?.score === 'number' &&
+                    Number.isFinite(entry.score)
+                        ? entry.score
+                        : null;
+
+                if (!label || score === null) {
+                    return null;
+                }
+
+                return {
+                    label: this.toDisplayLabel(label),
+                    score,
+                };
+            })
+            .filter(
+                (entry): entry is PublicPortfolioStyleEntry => entry !== null,
+            );
+    }
+
+    private toIsoString(
+        value: Date | string | null | undefined,
+    ): string | null {
+        if (!value) {
+            return null;
+        }
+
+        const date = value instanceof Date ? value : new Date(value);
+
+        if (Number.isNaN(date.getTime())) {
+            return null;
+        }
+
+        return date.toISOString();
     }
 
     private toDisplayLabel(value: string): string {

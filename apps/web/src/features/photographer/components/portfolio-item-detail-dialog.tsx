@@ -25,6 +25,7 @@ interface PortfolioItemDetailDialogProps
     authorName: string;
     authorAvatarUrl?: string | null;
     isRetryingClassification?: boolean;
+    showAiStyleAnalysis?: boolean;
     onRetryClassification?: (item: PhotographerPortfolioItem) => void;
     onClose: () => void;
     onOpenPreviousItem?: () => void;
@@ -776,6 +777,7 @@ export const PortfolioItemDetailDialog = ({
     authorName,
     authorAvatarUrl,
     isRetryingClassification = false,
+    showAiStyleAnalysis = true,
     onRetryClassification,
     onClose,
     onOpenPreviousItem,
@@ -895,6 +897,12 @@ export const PortfolioItemDetailDialog = ({
         ...secondaryStyles.map((style) => formatStyleLabel(style.label)),
     ];
 
+    const detailSubtitle = showAiStyleAnalysis
+        ? `${statusConfig.label}${primaryStyleLabel ? ` · ${primaryStyleLabel}` : ""}`
+        : primaryStyleLabel
+            ? `Portfolio work · ${primaryStyleLabel}`
+            : "Portfolio work";
+
     const goToPreviousImage = () =>
     {
         setActiveImageIndex((current) =>
@@ -985,8 +993,7 @@ export const PortfolioItemDetailDialog = ({
                             </p>
 
                             <p className="truncate text-xs text-muted">
-                                {statusConfig.label}
-                                {primaryStyleLabel ? ` · ${primaryStyleLabel}` : ""}
+                                {detailSubtitle}
                             </p>
                         </div>
                     </div>
@@ -1082,8 +1089,7 @@ export const PortfolioItemDetailDialog = ({
                                 </p>
 
                                 <p className="truncate text-xs text-muted">
-                                    {statusConfig.label}
-                                    {primaryStyleLabel ? ` · ${primaryStyleLabel}` : ""}
+                                    {detailSubtitle}
                                 </p>
                             </div>
                         </div>
@@ -1132,22 +1138,24 @@ export const PortfolioItemDetailDialog = ({
                             </div>
                         ) : null}
 
-                        <AiStyleAnalysisCard
-                            item={item}
-                            statusConfig={statusConfig}
-                            primaryStyleLabel={primaryStyleLabel}
-                            primaryConfidence={primaryConfidence}
-                            secondaryStyles={secondaryStyles}
-                            classificationJourney={classificationJourney}
-                            isAiCompleted={isAiCompleted}
-                            isAiInProgress={isAiInProgress}
-                            isAiFailed={isAiFailed}
-                            isRetryingClassification={isRetryingClassification}
-                            onRetryClassification={
-                                onRetryClassification ? () => onRetryClassification(item) : undefined
-                            }
-                            onOpenAnalysis={() => setIsAiAnalysisOpen(true)}
-                        />
+                        {showAiStyleAnalysis ? (
+                            <AiStyleAnalysisCard
+                                item={item}
+                                statusConfig={statusConfig}
+                                primaryStyleLabel={primaryStyleLabel}
+                                primaryConfidence={primaryConfidence}
+                                secondaryStyles={secondaryStyles}
+                                classificationJourney={classificationJourney}
+                                isAiCompleted={isAiCompleted}
+                                isAiInProgress={isAiInProgress}
+                                isAiFailed={isAiFailed}
+                                isRetryingClassification={isRetryingClassification}
+                                onRetryClassification={
+                                    onRetryClassification ? () => onRetryClassification(item) : undefined
+                                }
+                                onOpenAnalysis={() => setIsAiAnalysisOpen(true)}
+                            />
+                        ) : null}
                         {/* old design */}
                         {/* <div className={`rounded-[1.25rem] border p-4 ${isAiFailed
                             ? "border-red-200 bg-red-50/35"
@@ -1303,7 +1311,7 @@ export const PortfolioItemDetailDialog = ({
             </section>
 
 
-            {isAiAnalysisOpen ? (
+            {showAiStyleAnalysis && isAiAnalysisOpen ? (
                 <AiStyleAnalysisSheet
                     item={item}
                     statusConfig={statusConfig}

@@ -1,3 +1,7 @@
+import type {
+    PortfolioItemClassificationStatus,
+    PortfolioStyleDistributionEntry,
+} from "./portfolio.types";
 import type { PhotographerProfile } from "./photographer.types";
 
 export type PhotographerPortfolioStyleSource = "ai" | "legacy" | "none";
@@ -24,6 +28,19 @@ export interface PhotographerPortfolioShowcaseItem {
     styleLabel: string | null;
     styleSource: PhotographerPortfolioStyleSource;
     isFeatured: boolean;
+    sortOrder: number;
+    createdAt: string;
+    updatedAt?: string;
+    classificationStatus: PortfolioItemClassificationStatus;
+    classificationError: string | null;
+    classificationRequestedAt: string | null;
+    classificationStartedAt: string | null;
+    classificationCompletedAt: string | null;
+    classificationFailedAt: string | null;
+    detectedPrimaryStyle: string | null;
+    detectedPrimaryScore: number | null;
+    detectedSecondaryStyles: string[];
+    detectedStyleDistribution: PortfolioStyleDistributionEntry[];
 }
 
 export interface PhotographerDetail extends PhotographerProfile {
