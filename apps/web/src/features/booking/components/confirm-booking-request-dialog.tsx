@@ -12,6 +12,8 @@ interface ConfirmBookingRequestDialogProps
     isOpen: boolean;
     values: BookingBriefFormValues | null;
     isSubmitting: boolean;
+    confirmLabel?: string;
+    submittingLabel?: string;
     onClose: () => void;
     onConfirm: () => void;
 }
@@ -70,6 +72,8 @@ export const ConfirmBookingRequestDialog = ({
     isOpen,
     values,
     isSubmitting,
+    confirmLabel = "Find photographer",
+    submittingLabel = "Creating...",
     onClose,
     onConfirm,
 }: ConfirmBookingRequestDialogProps) =>
@@ -213,7 +217,7 @@ export const ConfirmBookingRequestDialog = ({
                             disabled={isSubmitting}
                             className="inline-flex items-center justify-center rounded-2xl bg-foreground px-6 py-3 text-sm font-semibold text-background transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                         >
-                            {isSubmitting ? "Creating..." : "Find photographer"}
+                            {isSubmitting ? submittingLabel : confirmLabel}
                         </button>
                     </div>
                 </div>

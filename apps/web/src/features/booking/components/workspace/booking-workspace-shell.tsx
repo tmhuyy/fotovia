@@ -30,8 +30,8 @@ export const BookingWorkspaceShell = ({
             <Navbar />
 
             <main className="min-h-screen bg-brand-background">
-                <Section className="pt-8 pb-16 sm:pt-10">
-                    <Container className="space-y-8">
+                <Section className="py-6 sm:py-8 lg:py-10">
+                    <Container className="space-y-6">
                         <div className="space-y-4">
                             {backHref && backLabel ? (
                                 <Link

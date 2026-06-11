@@ -541,6 +541,20 @@ export const OpenBookingApplicationsSection = ({
     const canViewApplications = Boolean(booking.canViewApplications);
     const hasApplied = Boolean(booking.hasApplied);
 
+    const hasAssignedPhotographer = Boolean(
+        booking.photographerProfileId ||
+        booking.photographerUserId ||
+        booking.photographerSlug ||
+        booking.photographerName,
+    );
+
+    const isSelectionLocked =
+        hasAssignedPhotographer || booking.status !== "pending";
+
+    if (isSelectionLocked && applicationCount === 0 && !hasApplied) {
+        return null;
+    }
+
     const clientApplicationsQuery = useQuery({
         queryKey: ["client-booking-applications", bookingId],
         queryFn: () => bookingService.getMyClientBookingApplications(bookingId),
@@ -691,12 +705,24 @@ export const OpenBookingApplicationsSection = ({
     });
 
     const myApplication = myApplicationQuery.data;
-    const activeApplications = (clientApplicationsQuery.data ?? []).filter(
+
+    const clientApplications = clientApplicationsQuery.data ?? [];
+
+    const activeApplications = clientApplications.filter(
         (application) =>
             application.status !== "withdrawn" &&
             application.status !== "expired" &&
             application.status !== "rejected",
     );
+
+    const selectedApplications = clientApplications.filter(
+        (application) => application.status === "selected",
+    );
+
+    const visibleApplications =
+        isSelectionLocked && selectedApplications.length > 0
+            ? selectedApplications
+            : activeApplications;
 
     const canManageMyApplication =
         myApplication?.status === "submitted" ||
@@ -706,14 +732,16 @@ export const OpenBookingApplicationsSection = ({
         <section className="border-t border-border pt-6">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <h2 className="text-lg font-semibold text-foreground">
-                    Photographer applications{" "}
+                    {isSelectionLocked ? "Selected photographer" : "Photographer applications"}{" "}
                     <span className="ml-1 rounded-full bg-accent/15 px-2 py-0.5 text-sm text-accent">
-                        {applicationCount}
+                        {isSelectionLocked && visibleApplications.length > 0
+                            ? visibleApplications.length
+                            : applicationCount}
                     </span>
                 </h2>
             </div>
 
-            {applicationCount === 0 && !hasApplied ? (
+            {!isSelectionLocked && applicationCount === 0 && !hasApplied ? (
                 <div className="mt-5 rounded-2xl bg-background px-5 py-8 text-center">
                     <p className="text-sm font-medium text-foreground">
                         No photographers have applied for this photoshoot yet.
@@ -763,24 +791,34 @@ export const OpenBookingApplicationsSection = ({
                             <div className="h-56 animate-pulse rounded-[1.75rem] bg-background" />
                             <div className="h-56 animate-pulse rounded-[1.75rem] bg-background" />
                         </>
-                    ) : activeApplications.length > 0 ? (
-                        activeApplications.map((application) => (
-                            <ApplicationProposalCard
-                                key={application.id}
-                                application={application}
-                                mode="review"
-                                isChoosing={
-                                    selectMutation.isPending &&
-                                    selectingApplication?.id === application.id
-                                }
-                                onReview={() =>
-                                    setReviewingApplication(application)
-                                }
-                                onChoose={() =>
-                                    setSelectingApplication(application)
-                                }
-                            />
-                        ))
+                    ) : visibleApplications.length > 0 ? (
+                        visibleApplications.map((application) =>
+                        {
+                            const canChooseApplication =
+                                !isSelectionLocked && application.status !== "selected";
+
+                            return (
+                                <ApplicationProposalCard
+                                    key={application.id}
+                                    application={application}
+                                    mode={canChooseApplication ? "review" : "readonly"}
+                                    isChoosing={
+                                        selectMutation.isPending &&
+                                        selectingApplication?.id === application.id
+                                    }
+                                    onReview={
+                                        canChooseApplication
+                                            ? () => setReviewingApplication(application)
+                                            : undefined
+                                    }
+                                    onChoose={
+                                        canChooseApplication
+                                            ? () => setSelectingApplication(application)
+                                            : undefined
+                                    }
+                                />
+                            );
+                        })
                     ) : (
                         <div className="rounded-2xl bg-background px-5 py-8 text-center text-sm leading-6 text-muted">
                             No active applications are available right now.

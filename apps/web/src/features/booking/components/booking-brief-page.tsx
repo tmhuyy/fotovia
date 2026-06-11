@@ -547,6 +547,13 @@ export const BookingBriefPage = ({
         const createdBookingId = createdBooking.id?.trim();
 
         if (createdBookingId) {
+          if (selectedPhotographer) {
+            router.push(
+              `/bookings/${encodeURIComponent(createdBookingId)}?created=1&direct=1`,
+            );
+            return;
+          }
+
           router.push(
             `/my-bookings?bookingId=${encodeURIComponent(
               createdBookingId,
@@ -555,7 +562,7 @@ export const BookingBriefPage = ({
           return;
         }
 
-        router.push("/my-bookings?created=1");
+        router.push(selectedPhotographer ? "/my-bookings?direct=1" : "/my-bookings?created=1");
       } catch (error) {
         setSubmitError(getSubmitErrorMessage(error));
         setIsCreatingBooking(false);
@@ -767,6 +774,8 @@ export const BookingBriefPage = ({
         isOpen={Boolean(pendingBriefValues)}
         values={pendingBriefValues}
         isSubmitting={isCreatingBooking}
+        confirmLabel={selectedPhotographer ? "Send request" : "Find photographer"}
+        submittingLabel={selectedPhotographer ? "Sending..." : "Creating..."}
         onClose={() => setPendingBriefValues(null)}
         onConfirm={() =>
         {

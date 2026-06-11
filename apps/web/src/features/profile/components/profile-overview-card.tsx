@@ -142,7 +142,7 @@ export const ProfileOverviewCard = ({
                         type="button"
                         onClick={() => avatarInputRef.current?.click()}
                         disabled={isAvatarUploading}
-                        className="absolute -bottom-1 -right-1 flex h-10 w-10 items-center justify-center rounded-full border border-border bg-surface text-foreground shadow-md transition hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-60"
+                        className="cursor-pointer absolute -bottom-1 -right-1 flex h-10 w-10 items-center justify-center rounded-full border border-border bg-surface text-foreground shadow-md transition hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-60"
                         aria-label="Change profile avatar"
                     >
                         <CameraIcon className="h-5 w-5" />
