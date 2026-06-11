@@ -808,9 +808,9 @@ export const PhotographerPortfolioPage = () =>
                       </p>
                     ) : null}
 
-                    {formattedPricePerHour ? (
+                    {/* {formattedPricePerHour ? (
                       <p className="text-foreground">{formattedPricePerHour}</p>
-                    ) : null}
+                    ) : null} */}
 
                     {renderProfileContactLinks("pt-1")}
                     {renderProfileSpecialties("pt-1")}
@@ -836,9 +836,9 @@ export const PhotographerPortfolioPage = () =>
                   </p>
                 ) : null}
 
-                {formattedPricePerHour ? (
+                {/* {formattedPricePerHour ? (
                   <p className="text-foreground">{formattedPricePerHour}</p>
-                ) : null}
+                ) : null} */}
 
                 {renderProfileContactLinks("pt-1")}
                 {renderProfileSpecialties("pt-1")}

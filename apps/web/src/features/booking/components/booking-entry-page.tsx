@@ -6,7 +6,6 @@ import { useSearchParams } from "next/navigation";
 
 import { photographerService } from "../../../services/photographer.service";
 import { BookingBriefPage } from "./booking-brief-page";
-import { BookingRequestPage } from "./booking-request-page";
 
 const readParam = (
     params: URLSearchParams,
@@ -35,6 +34,7 @@ export const BookingEntryPage = () =>
         return {
             photographerSlug: readParam(params, "photographerSlug"),
             sessionType: readParam(params, "sessionType"),
+            shootType: readParam(params, "shootType"),
             style: readParam(params, "style"),
             location: readParam(params, "location"),
             date: readParam(params, "date"),
@@ -52,28 +52,23 @@ export const BookingEntryPage = () =>
         retry: false,
     });
 
-    if (!photographerSlug) {
-        return (
-            <BookingBriefPage
-                prefill={{
-                    sessionType: resolvedParams.sessionType,
-                    style: resolvedParams.style,
-                    location: resolvedParams.location,
-                    date: resolvedParams.date,
-                    budget: resolvedParams.budget,
-                }}
-            />
-        );
-    }
-
     return (
-        <BookingRequestPage
-            photographer={photographerQuery.data ?? null}
-            isLoading={photographerQuery.isLoading}
+        <BookingBriefPage
+            selectedPhotographer={
+                photographerSlug ? photographerQuery.data ?? null : null
+            }
+            isSelectedPhotographerLoading={
+                Boolean(photographerSlug) && photographerQuery.isLoading
+            }
+            selectedPhotographerError={
+                Boolean(photographerSlug) && photographerQuery.isError
+            }
             prefill={{
                 sessionType: resolvedParams.sessionType,
-                sessionDate: resolvedParams.date,
+                shootType: resolvedParams.shootType,
+                style: resolvedParams.style,
                 location: resolvedParams.location,
+                date: resolvedParams.date,
                 budget: resolvedParams.budget,
             }}
         />

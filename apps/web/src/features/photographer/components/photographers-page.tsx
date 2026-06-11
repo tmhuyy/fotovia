@@ -368,7 +368,7 @@ export const PhotographersPage = () =>
           <div className="grid gap-8 lg:grid-cols-[320px_minmax(0,1fr)]">
             <Card className="h-fit rounded-[2rem] border-border bg-surface shadow-sm">
               <CardContent className="space-y-6 p-6">
-                <div className="overflow-hidden rounded-[1.75rem] border border-border bg-background">
+                {/* <div className="overflow-hidden rounded-[1.75rem] border border-border bg-background">
                   <div className="bg-[radial-gradient(circle_at_25%_20%,rgba(214,187,145,0.45),transparent_36%),radial-gradient(circle_at_80%_0%,rgba(237,229,255,0.7),transparent_38%)] px-5 py-6">
                     <p className="text-xs uppercase tracking-[0.28em] text-muted">
                       Filter discovery
@@ -383,7 +383,7 @@ export const PhotographersPage = () =>
                       real Fotovia portfolios.
                     </p>
                   </div>
-                </div>
+                </div> */}
 
                 <PhotographerFilters
                   search={search}

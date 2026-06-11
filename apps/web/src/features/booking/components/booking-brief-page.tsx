@@ -21,7 +21,10 @@ import { Section } from "../../../components/common/section";
 import { buttonVariants } from "../../../components/ui/button";
 import { bookingService } from "../../../services/booking.service";
 import { useAuthStore } from "../../../store/auth.store";
-import type { CreateOpenBookingPayload } from "../types/booking.types";
+import type {
+  CreateBookingPayload,
+  CreateOpenBookingPayload,
+} from "../types/booking.types";
 import
 {
   bookingBriefSchema,
@@ -42,6 +45,7 @@ import
 } from "../data/additional-services";
 import { ConfirmBookingRequestDialog } from "./confirm-booking-request-dialog";
 import { useQueryClient } from "@tanstack/react-query";
+import type { PhotographerDetail } from "../../photographer/types/photographer-detail.types";
 
 const BOOKING_BRIEF_DRAFT_STORAGE_KEY = "fotovia.bookingBriefDraft";
 
@@ -58,6 +62,9 @@ interface BookingBriefPrefill
 interface BookingBriefPageProps
 {
   prefill?: BookingBriefPrefill;
+  selectedPhotographer?: PhotographerDetail | null;
+  isSelectedPhotographerLoading?: boolean;
+  selectedPhotographerError?: boolean;
 }
 
 interface BookingBriefDraft
@@ -286,6 +293,32 @@ const buildOpenBookingPayload = (
   };
 };
 
+const buildSelectedPhotographerBookingPayload = (
+  values: BookingBriefFormValues,
+  photographer: PhotographerDetail,
+): CreateBookingPayload =>
+{
+  const shootType = values.shootType.trim();
+
+  return {
+    photographerProfileId: photographer.id,
+    photographerSlug: photographer.slug,
+    photographerName: photographer.name,
+    title: values.title.trim(),
+    shootType,
+    sessionType: shootType,
+    sessionDate: values.preferredDate.trim(),
+    sessionTime: values.preferredTime?.trim() || "flexible",
+    duration: "flexible",
+    location: values.location.trim(),
+    budget: serializeBudgetRange(values.budgetFrom, values.budgetTo),
+    contactPreference: values.contactPreference.trim(),
+    concept: values.concept.trim(),
+    inspiration: values.inspiration?.trim() || undefined,
+    notes: serializeAdditionalServices(values.additionalServices),
+  };
+};
+
 const getSubmitErrorMessage = (error: unknown): string =>
 {
   if (isAxiosError(error)) {
@@ -384,7 +417,12 @@ const BookingAuthPrompt = ({
   );
 };
 
-export const BookingBriefPage = ({ prefill }: BookingBriefPageProps) =>
+export const BookingBriefPage = ({
+  prefill,
+  selectedPhotographer = null,
+  isSelectedPhotographerLoading = false,
+  selectedPhotographerError = false,
+}: BookingBriefPageProps) =>
 {
   const pathname = usePathname();
   const router = useRouter();
@@ -453,7 +491,10 @@ export const BookingBriefPage = ({ prefill }: BookingBriefPageProps) =>
       shootType: prefilledShootType,
       preferredDate: resolvedPrefill.date ?? "",
       preferredTime: "",
-      location: resolvedPrefill.location ?? "",
+      location:
+        resolvedPrefill.location ??
+        selectedPhotographer?.location?.trim() ??
+        "",
       budgetFrom: prefilledBudget?.from ?? BUDGET_MIN_VND,
       budgetTo:
         prefilledBudget?.to ??
@@ -464,7 +505,7 @@ export const BookingBriefPage = ({ prefill }: BookingBriefPageProps) =>
       inspiration: "",
       additionalServices: [],
     };
-  }, [resolvedPrefill]);
+  }, [resolvedPrefill, selectedPhotographer?.location]);
 
   const form = useForm<BookingBriefFormValues>({
     resolver: zodResolver(bookingBriefSchema),
@@ -478,9 +519,11 @@ export const BookingBriefPage = ({ prefill }: BookingBriefPageProps) =>
       setIsCreatingBooking(true);
 
       try {
-        const createdBooking = await bookingService.createOpenBooking(
-          buildOpenBookingPayload(values),
-        );
+        const createdBooking = selectedPhotographer
+          ? await bookingService.createBooking(
+            buildSelectedPhotographerBookingPayload(values, selectedPhotographer),
+          )
+          : await bookingService.createOpenBooking(buildOpenBookingPayload(values));
 
         clearBookingDraft();
         await Promise.all([
@@ -492,6 +535,12 @@ export const BookingBriefPage = ({ prefill }: BookingBriefPageProps) =>
           }),
           queryClient.invalidateQueries({
             queryKey: ["client-bookings"],
+          }),
+          queryClient.invalidateQueries({
+            queryKey: ["photographer-bookings"],
+          }),
+          queryClient.invalidateQueries({
+            queryKey: ["public-photographer-detail", selectedPhotographer?.slug],
           }),
         ]);
 
@@ -512,7 +561,7 @@ export const BookingBriefPage = ({ prefill }: BookingBriefPageProps) =>
         setIsCreatingBooking(false);
       }
     },
-    [queryClient, router],
+    [queryClient, router, selectedPhotographer],
   );
 
   useEffect(() =>
@@ -580,6 +629,18 @@ export const BookingBriefPage = ({ prefill }: BookingBriefPageProps) =>
         "Photographer accounts cannot create client booking requests. Please browse open requests instead.",
       );
       router.push("/bookings/open");
+      return;
+    }
+
+    if (selectedPhotographerError) {
+      setSubmitError(
+        "We could not load the selected photographer. Please go back and choose another photographer.",
+      );
+      return;
+    }
+
+    if (isSelectedPhotographerLoading) {
+      setSubmitError("Please wait while we load the selected photographer.");
       return;
     }
 
@@ -681,6 +742,8 @@ export const BookingBriefPage = ({ prefill }: BookingBriefPageProps) =>
 
                 <div className="min-w-0 space-y-6 lg:sticky lg:top-24 lg:self-start">
                   <BookingBriefSummaryCard
+                    selectedPhotographer={selectedPhotographer}
+                    isSelectedPhotographerLoading={isSelectedPhotographerLoading}
                     errorMessage={submitError}
                     submitLabel="Confirm request"
                     submittingLabel="Preparing..."

@@ -9,9 +9,12 @@ import { contactOptions, shootTypeOptions } from "../data/booking-options";
 import { getAdditionalServiceLabelsFromValues } from "../data/additional-services";
 import type { BookingBriefFormValues } from "../schemas/booking-brief.schema";
 import { formatBudgetRange } from "../utils/booking-budget";
+import type { PhotographerDetail } from "../../photographer/types/photographer-detail.types";
 
 interface BookingBriefSummaryCardProps
 {
+    selectedPhotographer?: PhotographerDetail | null;
+    isSelectedPhotographerLoading?: boolean;
     errorMessage?: string | null;
     submitLabel?: string;
     submittingLabel?: string;
@@ -67,6 +70,8 @@ const hasNumberValue = (value?: number) =>
 };
 
 export const BookingBriefSummaryCard = ({
+    selectedPhotographer = null,
+    isSelectedPhotographerLoading = false,
     errorMessage,
     submitLabel = "Send booking request",
     submittingLabel = "Sending...",
@@ -121,6 +126,50 @@ export const BookingBriefSummaryCard = ({
                         Review before sending.
                     </h2>
                 </div>
+
+                {isSelectedPhotographerLoading ? (
+                    <div className="rounded-2xl border border-border bg-background px-4 py-4">
+                        <p className="text-xs uppercase tracking-[0.3em] text-muted">
+                            Selected photographer
+                        </p>
+
+                        <div className="mt-3 h-5 w-32 animate-pulse rounded-full bg-border/60" />
+                        <div className="mt-2 h-4 w-44 animate-pulse rounded-full bg-border/50" />
+                    </div>
+                ) : selectedPhotographer ? (
+                    <div className="rounded-2xl border border-border bg-background px-4 py-4">
+                        <p className="text-xs uppercase tracking-[0.3em] text-muted">
+                            Selected photographer
+                        </p>
+
+                        <div className="mt-3 flex items-center gap-3">
+                            {selectedPhotographer.avatarUrl ? (
+                                <img
+                                    src={selectedPhotographer.avatarUrl}
+                                    alt={selectedPhotographer.name}
+                                    className="h-11 w-11 rounded-full border border-border object-cover"
+                                />
+                            ) : (
+                                <div className="flex h-11 w-11 items-center justify-center rounded-full border border-border bg-surface font-serif text-lg text-foreground">
+                                    {selectedPhotographer.name.charAt(0).toUpperCase()}
+                                </div>
+                            )}
+
+                            <div className="min-w-0">
+                                <p className="truncate text-sm font-semibold text-foreground">
+                                    {selectedPhotographer.name}
+                                </p>
+
+                                <p className="truncate text-xs text-muted">
+                                    Photography
+                                    {selectedPhotographer.location
+                                        ? ` · ${selectedPhotographer.location}`
+                                        : ""}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                ) : null}
 
                 <div className="rounded-2xl border border-border bg-background px-4 py-3">
                     <p className="text-xs uppercase tracking-[0.3em] text-muted">

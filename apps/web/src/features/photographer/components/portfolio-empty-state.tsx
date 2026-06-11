@@ -15,12 +15,6 @@ export const PortfolioEmptyState = () =>
                         <h2 className="font-serif text-3xl text-foreground">
                             Your portfolio is empty.
                         </h2>
-
-                        <p className="max-w-2xl text-sm leading-7 text-muted">
-                            Upload your first work so clients can understand your
-                            photography style. Fotovia will analyze your cover and
-                            gallery images, then suggest style tags automatically.
-                        </p>
                     </div>
                 </div>
 
@@ -43,18 +37,6 @@ export const PortfolioEmptyState = () =>
                     >
                         Edit profile
                     </Link>
-                </div>
-
-                <div className="rounded-2xl border border-dashed border-border bg-background px-4 py-4">
-                    <p className="text-xs uppercase tracking-[0.22em] text-muted">
-                        Suggested first upload
-                    </p>
-
-                    <p className="mt-2 text-sm leading-7 text-muted">
-                        Start with one strong cover image and a small gallery of 3
-                        to 6 photos. Choose work that shows the type of booking you
-                        want clients to request.
-                    </p>
                 </div>
             </div>
         </div>
